@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="850.0" prefWidth="1400.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.monopoly_deal_game.controller.AddBotPlayerScreenController">
+   <children>
+      <ImageView fitHeight="944.0" fitWidth="1400.0" layoutX="-2.0" layoutY="1.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@BackGround.png" />
+         </image>
+      </ImageView>
+      <VBox alignment="TOP_CENTER" layoutX="400.0" layoutY="180.0" prefWidth="600.0" spacing="20.0">
+         <children>
+            <Label text="Add bot players" textFill="WHITE">
+               <font>
+                  <Font name="System Bold" size="36.0" />
+               </font>
+            </Label>
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+               <children>
+                  <Label text="Number of bots (2–5)" textFill="WHITE" />
+                  <ComboBox fx:id="botCountCombo" prefWidth="120.0" />
+               </children>
+            </HBox>
+            <HBox alignment="CENTER" spacing="24.0">
+               <children>
+                  <Button fx:id="startGameButton" mnemonicParsing="false" onAction="#onStartGame" prefHeight="48.0" prefWidth="180.0" text="Start game" />
+                  <Button mnemonicParsing="false" onAction="#onBack" prefHeight="48.0" prefWidth="120.0" text="Back" />
+               </children>
+            </HBox>
+         </children>
+         <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />
+         </padding>
+      </VBox>
+   </children>
+</AnchorPane>

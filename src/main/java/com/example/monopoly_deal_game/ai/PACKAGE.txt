@@ -1,0 +1,18 @@
+包名：com.example.monopoly_deal_game.ai
+================================================================================
+【包含的类】
+  - BotPolicy              接口：根据 GameSession 选择下一步 PlayerCommand。
+  - RandomLegalBotPolicy   占位实现（待 logic 提供合法行动枚举）。
+  （另有 package-info.java。）
+
+【接口】
+  - BotPolicy：chooseCommand(String botPlayerId, GameSession session)。
+
+【需要实现什么】
+  - 难度级别、启发式（租、偷、防 Just Say No）。
+  - 在轮到 ComputerPlayer 时由 TurnManager 或调度器调用策略。
+
+【与其它包的关系】
+  - → model：只读 GameSession；ComputerPlayer 持有 BotPolicy 实现。
+  - → logic：产出 PlayerCommand，由 GameLogic 校验并执行。
+  - 禁止依赖 JavaFX 与 FXML。

@@ -1,0 +1,17 @@
+包名：com.example.monopoly_deal_game.persistence
+================================================================================
+【包含的类】
+  - SaveGameService  load(Path) / save(Path, GameSession)。
+  （另有 package-info.java。）
+
+【接口】
+  - 无；可扩展 SaveGameCodec 等接口以支持多版本格式。
+
+【需要实现什么】
+  - 序列化 GameSession（及版本号、校验）。
+  - 原子写盘：临时文件 + rename，避免存档损坏。
+  - 与 LoadGameScreenController、GameEngine 恢复对局流程对接。
+
+【与其它包的关系】
+  - → model：只读写领域对象，不依赖 JavaFX。
+  - ← controller：读档界面调用 load；菜单「保存」将来也可调用 save。

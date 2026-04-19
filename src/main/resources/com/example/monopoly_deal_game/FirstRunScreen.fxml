@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane prefHeight="850.0" prefWidth="1400.0" style="-fx-background-color: #f0f0f0;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+
+    <children>
+        <!-- Main game layer -->
+        <AnchorPane fx:id="gameRoot" prefHeight="850.0" prefWidth="1400.0">
+
+            <children>
+                <!-- Top bar -->
+                <HBox fx:id="topbar" alignment="CENTER_LEFT" prefHeight="34.0" spacing="10.0" style="-fx-background-color: #2f2f2f; -fx-padding: 0 10 0 10;" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                    <children>
+                        <Button fx:id="menuButton" text="Menu" />
+                        <Button fx:id="debugButton" text="DB" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="topbarTitle" style="-fx-text-fill: white; -fx-font-size: 14px;" text="Monopoly Deal" />
+                    </children>
+                </HBox>
+
+                <!-- Left sidebar -->
+                <VBox fx:id="leftSidebar" prefWidth="184.0" spacing="8.0" style="-fx-background-color: linear-gradient(to right, rgba(0,0,0,0.18), rgba(0,0,0,0)); -fx-padding: 8 8 8 8;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="34.0">
+
+                    <children>
+                        <HBox spacing="6.0">
+                            <children>
+                                <Button fx:id="uiMinusButton" text="-" />
+                                <Label fx:id="uiScaleLabel" text="1.0x" />
+                                <Button fx:id="uiPlusButton" text="+" />
+                            </children>
+                        </HBox>
+
+                        <Pane fx:id="deckPane" prefHeight="190.0" style="-fx-border-color: #8a8a8a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.65);" />
+                        <Pane fx:id="discardPane" prefHeight="180.0" style="-fx-border-color: #8a8a8a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.65);" />
+                        <Pane fx:id="voidPane" prefHeight="110.0" style="-fx-border-color: #8a8a8a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.65);" />
+
+                        <Label fx:id="movesLabel" text="Moves: 0" />
+                        <Button fx:id="primaryActionButton" maxWidth="1.7976931348623157E308" prefHeight="44.0" text="Action" />
+                        <Button fx:id="undoButton" maxWidth="1.7976931348623157E308" prefHeight="44.0" text="Undo Card" />
+
+                        <Pane VBox.vgrow="ALWAYS" />
+                        <Label fx:id="versionLabel" style="-fx-font-size: 12px;" text="Version x.x.x" />
+                    </children>
+                </VBox>
+
+                <!-- Opponents area -->
+                <Pane fx:id="opponentsPane" style="-fx-border-color: #7a7a7a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.25);" AnchorPane.bottomAnchor="283.0" AnchorPane.leftAnchor="194.0" AnchorPane.rightAnchor="8.0" AnchorPane.topAnchor="44.0" />
+
+                <!-- Your board area -->
+                <Pane fx:id="selfBoardPane" prefHeight="86.0" style="-fx-border-color: #7a7a7a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.25);" AnchorPane.bottomAnchor="189.0" AnchorPane.leftAnchor="194.0" AnchorPane.rightAnchor="8.0" />
+
+                <!-- Hand area -->
+                <Pane fx:id="handPane" prefHeight="176.0" style="-fx-border-color: #7a7a7a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.35);" AnchorPane.bottomAnchor="8.0" AnchorPane.leftAnchor="194.0" AnchorPane.rightAnchor="8.0" />
+
+                <!-- Action overlay (e.g. pick card, pick target) -->
+                <Pane fx:id="actionLayer" pickOnBounds="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+            </children>
+        </AnchorPane>
+
+        <!-- Menu overlay (hidden by default) -->
+        <StackPane fx:id="menuOverlay" managed="false" style="-fx-background-color: rgba(0,0,0,0.58);" visible="false">
+            <children>
+                <VBox alignment="CENTER" spacing="16.0">
+                    <children>
+                        <Label style="-fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: #ececec;" text="Menu" />
+                        <Label style="-fx-font-size: 20px; -fx-text-fill: #ececec;" text="UI Scale / FPS / Debug / Tips" />
+                        <Button prefHeight="54.0" prefWidth="300.0" text="Return to Game" />
+                        <Button prefHeight="54.0" prefWidth="300.0" text="Leave Game" />
+                    </children>
+                    <padding>
+                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                    </padding>
+                </VBox>
+            </children>
+        </StackPane>
+    </children>
+</StackPane>

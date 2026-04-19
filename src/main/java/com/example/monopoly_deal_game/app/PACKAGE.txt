@@ -1,0 +1,16 @@
+包名：com.example.monopoly_deal_game.app
+================================================================================
+【包含的类】 - MonopolyDealApplication  JavaFX Application 子类，加载首屏 FXML。
+  - Launcher                 含 main(String[])，启动 MonopolyDealApplication。
+  （另有 package-info.java 为模块级文档。）
+
+【接口】
+  - 无。
+
+【需要实现什么】
+  - 全局窗口标题、图标、可选的启动异常处理。
+  - 若需单例 GameEngine 生命周期，可在应用层创建并注入到后续控制器（待与设计一致）。
+
+【与其它包的关系】
+  - 依赖 controller.ScreenNavigation：仅用于解析首屏 FXML 的 URL。
+  - 不依赖 model / logic，保持入口轻薄。

@@ -1,0 +1,22 @@
+包名：com.example.monopoly_deal_game.network
+================================================================================
+【包含的类】
+  - GameServer          主机监听、房间与广播（骨架）。
+  - NetworkClient       客户端连接、发送 PlayerCommand、接收状态（骨架）。
+  - MessageRouter       消息类型分发（骨架）。
+  - ConnectionManager   连接与重连（骨架）。
+  - HeartbeatService    心跳（骨架，选做）。
+  （另有 package-info.java。）
+
+【接口】
+  - 无；可按需要增加 MessageHandler 等接口。
+
+【需要实现什么】
+  - 协议定义：加入房间、状态同步、断线处理。
+  - 主机权威：客户端不得直接改 model，只提交命令或展示快照。
+  - 与 controller.SyncController（待建）对接。
+
+【与其它包的关系】
+  - → logic：GameServer 调用 GameLogic 应用指令。
+  - → model：广播 GameSession 或其 DTO。
+  - uses logic.PlayerCommand 作为上行消息载荷类型之一。

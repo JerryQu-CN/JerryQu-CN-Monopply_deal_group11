@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="850.0" prefWidth="1400.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.monopoly_deal_game.controller.StartScreenController">
+   <children>
+      <ImageView fitHeight="944.0" fitWidth="1400.0" layoutX="-2.0" layoutY="1.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@BackGround.png" />
+         </image>
+      </ImageView>
+      <Button fx:id="realPlayerButton" layoutX="238.0" layoutY="271.0" mnemonicParsing="false" onAction="#onRealPlayer" prefHeight="108.0" prefWidth="317.0" text="Add New Game(Real player)" />
+      <Button fx:id="botPlayerButton" layoutX="859.0" layoutY="280.0" mnemonicParsing="false" onAction="#onBotPlayer" prefHeight="108.0" prefWidth="317.0" text="Add New Game(Bot player)" />
+      <Button fx:id="loadingButton" layoutX="238.0" layoutY="528.0" mnemonicParsing="false" onAction="#onLoadingGame" prefHeight="108.0" prefWidth="317.0" text="Loading Game" />
+      <Button fx:id="exitButton" layoutX="859.0" layoutY="528.0" mnemonicParsing="false" onAction="#onExit" prefHeight="108.0" prefWidth="317.0" text="Exit" />
+      <Text layoutX="541.0" layoutY="155.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Monopoly Deal ">
+         <font>
+            <Font size="48.0" />
+         </font>
+      </Text>
+   </children>
+</AnchorPane>
