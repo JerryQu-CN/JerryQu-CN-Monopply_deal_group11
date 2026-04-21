@@ -1,5 +1,6 @@
 package com.example.monopoly_deal_game.app;
 
+import com.example.monopoly_deal_game.controller.AppContext;
 import com.example.monopoly_deal_game.controller.ScreenNavigation;
 import com.example.monopoly_deal_game.controller.StageAware;
 import javafx.application.Application;
@@ -18,6 +19,7 @@ public class MonopolyDealApplication extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        AppContext.install(AppContext.createDefault());
         FXMLLoader fxmlLoader = new FXMLLoader(ScreenNavigation.fxmlUrl("StartScreen.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), ScreenNavigation.SCENE_WIDTH, ScreenNavigation.SCENE_HEIGHT);
         Object controller = fxmlLoader.getController();

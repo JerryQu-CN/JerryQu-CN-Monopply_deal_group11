@@ -81,7 +81,20 @@ public class LoadGameScreenController implements StageAware, Initializable {
 
     @FXML
     void onStartGame(ActionEvent event) {
-        // TODO(controller): SaveGameService.load → GameEngine 恢复会话后再 navigate
+        String raw = savePathField.getText();
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        Path path = Path.of(raw.strip());
+        try {
+            var session = AppContext.get().saveGameService().load(path);
+            // TODO(controller+logic): GameEngine 提供 resume(session) 后再依赖返回值决定是否跳转
+            if (session == null) {
+                return;
+            }
+        } catch (UnsupportedOperationException ignored) {
+            // persistence 未实现时仍进入对局界面便于调试 UI
+        }
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 

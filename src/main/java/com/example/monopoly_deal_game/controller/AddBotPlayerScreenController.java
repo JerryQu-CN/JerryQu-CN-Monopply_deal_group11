@@ -44,7 +44,15 @@ public class AddBotPlayerScreenController implements StageAware, Initializable {
 
     @FXML
     void onStartGame(ActionEvent event) {
-        // TODO(controller+logic): 根据 Combo解析「人类玩家数 + 机器人数」并校验 ≤5
+        Integer bots = botCountCombo.getValue();
+        if (bots == null) {
+            return;
+        }
+        try {
+            AppContext.get().gameEngine().startLocalGame(1, bots);
+        } catch (UnsupportedOperationException ignored) {
+            // logic 未实现时仍进入对局界面便于调试 UI
+        }
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 
