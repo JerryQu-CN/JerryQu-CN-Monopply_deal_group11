@@ -1,6 +1,8 @@
 package com.example.monopoly_deal_game.view;
 
 import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.view.animation.MotionContext;
+import com.example.monopoly_deal_game.view.scene.ScenePaneResolver;
 
 /**
  * 将 {@link GameplayUiBundle} 与模型更新串起来的占位协调类（后续可实现 {@link GameObserver} 或绑定只读 VM）。
@@ -12,13 +14,25 @@ import com.example.monopoly_deal_game.model.GameSession;
 public class GameplayViewCoordinator {
 
     private final GameplayUiBundle zones;
+    private final ScenePaneResolver sceneResolver;
 
     public GameplayViewCoordinator(GameplayUiBundle zones) {
         this.zones = zones;
+        this.sceneResolver = new ScenePaneResolver(zones);
     }
 
     public GameplayUiBundle zones() {
         return zones;
+    }
+
+    public ScenePaneResolver sceneResolver() {
+        return sceneResolver;
+    }
+
+    /** 供 {@link com.example.monopoly_deal_game.view.animation.UiMotion} 使用；时长可按需调整。 */
+    public MotionContext motionContext() {
+        return MotionContext.forTable(
+                zones.deckPane(), zones.handPane(), zones.discardPane(), zones.actionLayer());
     }
 
     /** TODO(view+logic): 根据 session 重绘手牌区、对手缩略、银行/物业等。 */

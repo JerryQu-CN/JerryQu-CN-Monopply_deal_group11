@@ -43,7 +43,7 @@ public class AddBotPlayerScreenController implements StageAware, Initializable {
     }
 
     @FXML
-    void onStartGame(ActionEvent event) {
+    void onStartGame() {
         Integer bots = botCountCombo.getValue();
         if (bots == null) {
             return;

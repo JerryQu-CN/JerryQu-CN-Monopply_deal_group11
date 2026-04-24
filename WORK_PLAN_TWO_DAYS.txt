@@ -1,0 +1,167 @@
+================================================================================
+Monopoly Deal 课设 — 两天超详细工作规划（前期：Controller 接线 + UI 落地）
+================================================================================
+使用说明：按「时段 → 步骤」顺序做；每步打勾后再进入下一步。若某步卡住，先保证 `mvn compile`
+能通过，再继续。
+
+--------------------------------------------------------------------------------
+开始之前（10～15 分钟，只做一次）
+--------------------------------------------------------------------------------
+步骤 0.1  确认 JDK：在 PowerShell 执行
+          `"%JAVA_HOME%\bin\java.exe" -version`（或你本机 JDK 路径），能输出版本即可。
+步骤 0.2  确认项目在磁盘路径正确，并能编译：
+          `cd` 到项目根目录（含 pom.xml、mvnw.cmd 的那一层）。
+          执行：`.\mvnw.cmd compile`
+          若报错，先解决编译（缺 JAVA_HOME 则按你之前设置的
+          `C:\Users\jerry\.jdks\openjdk-25.0.2` 临时 ` $env:JAVA_HOME=...`）。
+步骤 0.3  用 IDE 打开同一项目，刷新 Maven，确认无红色报错。
+步骤 0.4  在纸上或备忘录写三句话：
+          (1) Controller 只通过 AppContext 拿 GameEngine / SaveGameService；
+          (2) 规则与状态在 logic/model，不在 FXML；
+          (3) 牌面在 view.cards，轨迹动画在 view.animation。
+
+================================================================================
+第一天 — 导航、依赖、大厅/读档「能走通」
+================================================================================
+目标：从启动到三种入口之一进入对局壳界面，再能返回主菜单；不追求规则完整。
+
+--------------------------------------------------------------------------------
+上午块 A — AppContext 与入口（约 1.5～2 小时）
+--------------------------------------------------------------------------------
+步骤 A1  打开 `app/MonopolyDealApplication.java`，确认 `start` 里**最先**有
+          `AppContext.install(AppContext.createDefault());`
+          若没有，补上并保存。
+步骤 A2  打开 `controller/AppContext.java`，读一遍三个方法：`install`、`get`、
+          `gameEngine` / `saveGameService`。心里记住：以后新 ScreenController
+          需要引擎时，一律 `AppContext.get()`，不要 `new GameEngine()`。
+步骤 A3  运行应用（IDE 运行 `MonopolyDealApplication` 或 `Launcher`，以你项目
+          实际入口为准）。窗口应能打开主菜单。
+步骤 A4  依次点击：真人联机 / 人机 / 读档，确认**不会**因缺 Stage 而崩溃。
+          若某按钮无反应，检查对应 FXML 的 `onAction` 与 Controller 方法名是否一致。
+
+--------------------------------------------------------------------------------
+上午块 B — 梳理「开始游戏」调用链（约 1 小时）
+--------------------------------------------------------------------------------
+步骤 B1  打开 `controller/AddBotPlayerScreenController.java`，找到 `onStartGame`。
+          确认：先 `botCountCombo.getValue()` 判空，再调用
+          `AppContext.get().gameEngine().startLocalGame(1, bots)`（可能抛
+          UnsupportedOperationException，当前可忽略），最后
+          `ScreenNavigation.show(stage, GAMEPLAY_FXML)`。
+步骤 B2  打开 `controller/AddPlayerScreenController.java`，对照 B1，确认联机入口
+          调用的是 `startLanGame()`（逻辑未实现时同样可能抛异常，属预期）。
+步骤 B3  打开 `controller/LoadGameScreenController.java`，确认读档路径校验仍有效，
+          且 `onStartGame` 里会调用 `saveGameService().load(path)`（未实现时会抛
+          UnsupportedOperationException，当前可捕获或忽略后仍跳转，便于调 UI）。
+步骤 B4  在 `logic/GameEngine.java` 里看三个方法签名：`launchGame`、`startLocalGame`、
+          `startLanGame`。在笔记本上写：「人机完成后要填 startLocalGame；联机填
+          startLanGame；读档以后要能把 GameSession 交给引擎恢复」——不必今天写完。
+
+--------------------------------------------------------------------------------
+下午块 C — ScreenNavigation 与返回（约 1～1.5 小时）
+--------------------------------------------------------------------------------
+步骤 C1  打开 `controller/ScreenNavigation.java`，确认 `SCENE_WIDTH` / `SCENE_HEIGHT`
+          与 FXML 设计一致（或接受轻微差异）。
+步骤 C2  从 `StartScreen` 进入子界面，再点「返回」，应回到主菜单。若某屏无返回按钮，
+          在对应 FXML 增加 `Button`，`onAction` 指向 Controller 里已有的 `onBack` 或新建方法，
+          内层调用 `ScreenNavigation.show(stage, "StartScreen.fxml")`。
+步骤 C3  进入 `GameplayScreen`，点顶栏 `Menu`，再点 `Leave Game`，应回到 `StartScreen`。
+          若不能，检查 `FirstRunScreen.fxml` / `GameplayScreen.fxml` 里菜单按钮是否绑定
+          `onMenuLeave`（与 `AbstractGameplayScreenController` 一致）。
+
+--------------------------------------------------------------------------------
+下午块 D — FXML 结构对齐设计图（约 2～3 小时）
+--------------------------------------------------------------------------------
+步骤 D1  打开课设/设计图，列出每个界面**必须**具备的控件（标签、列表、输入框、占位 Pane）。
+步骤 D2  逐个打开 `resources/.../*.fxml`，对照列表：缺的控件在 Scene Builder 或 XML 里补上，
+          并给需要代码访问的加上 `fx:id`。
+步骤 D3  在对应 Controller 里为每个新 `fx:id` 增加 `@FXML` 字段；若暂时不用，可只声明不报错。
+步骤 D4  保存后执行 `.\mvnw.cmd compile`，确保 FXML 与 Controller 无加载期错误。
+步骤 D5  再运行应用，手点一遍所有屏，确认无异常栈（控制台可暂时有 TODO 抛出的异常，但界面别崩）。
+
+--------------------------------------------------------------------------------
+第一天收尾检查清单
+--------------------------------------------------------------------------------
+[ ] `mvn compile` 成功
+[ ] 主菜单 → 三条子流程之一 → 对局壳界面 → 能返回主菜单（至少一条路径完整）
+[ ] 笔记本/文档里记清：下一步 logic 要接哪几个 Engine 方法
+
+================================================================================
+第二天 — 对局壳里「看得见」的 UI + 一条动效
+================================================================================
+目标：Gameplay 里用代码往 Pane 里挂控件；至少一种牌面 + 一种动画可演示；为接 GameSession 留钩子。
+
+--------------------------------------------------------------------------------
+上午块 E — GameplayUiBundle 与 Coordinator（约 1.5～2 小时）
+--------------------------------------------------------------------------------
+步骤 E1  打开 `view/GameplayUiBundle.java`，读 record 里每个字段含义（deck、hand、
+          discard、actionLayer、menuOverlay 等）。
+步骤 E2  打开 `controller/AbstractGameplayScreenController.java`，找到 `initialize` 里
+          `viewCoordinator = new GameplayViewCoordinator(toUiBundle());`。
+          确认 `toUiBundle()` 里传入的 `fx:id` 与 FXML 一致（否则运行时空指针）。
+步骤 E3  在 `AbstractGameplayScreenController` 里**临时**加一段调试（或新建私有方法
+          `debugPlaceHolder()` 在 `initialize` 末尾调用）：
+          向 `handPane.getChildren().add(new Label("hand OK"));` 仅用于验证 Pane 可用。
+          运行进对局屏，应能看到文字。确认后**可删除**该 Label，或改成正式 UI。
+步骤 E4  打开 `view/GameplayViewCoordinator.java`，确认存在 `motionContext()` 与
+          `sceneResolver()`，后面动效从这里拿 `MotionContext`。
+
+--------------------------------------------------------------------------------
+上午块 F — 牌面第一条竖切（约 2～3 小时）
+--------------------------------------------------------------------------------
+步骤 F1  打开 `model/BankCard.java`（或任选一种最简单的牌），确认如何构造一张测试牌
+          （若尚无构造器，可临时在测试代码或 Controller 里 `new BankCard()` 并满足编译）。
+步骤 F2  打开 `view/cards/BankCardNode.java`，在 `renderFrom` 里用 `getChildren().setAll`
+          或 `StackPane` + `Label` 显示**假数据**（例如固定 "M3"），先不读真实字段。
+步骤 F3  在 `AbstractGameplayScreenController` 或 `GameplayViewCoordinator` 里写私有方法
+          `showTestCards()`：构造 2～3 张 `BankCard`，`CardNodeFactory.from(card)`，
+          把返回的 `Node` 加进 `handPane`（可用 `HBox` 包一层排布）。
+步骤 F4  运行进入对局屏，确认能看见几张牌。若看不见，检查 `handPane` 是否被别的层挡住、
+          或子节点宽高为 0（给 `AbstractCardNode` 设 `prefWidth/prefHeight`）。
+步骤 F5  将 `BankCardNode` 中假数据逐步换成 `BankCard` 上真实字段（等 model 补全后再做）。
+
+--------------------------------------------------------------------------------
+下午块 G — 一条动效（约 2 小时）
+--------------------------------------------------------------------------------
+步骤 G1  打开 `view/animation/DrawMotion.java`（或任选 `ShuffleMotion`），阅读
+          `AbstractUiMotion` 的 `play` 流程。
+步骤 G2  将 `buildAnimation` 内 `PauseTransition` 换成简单 `TranslateTransition` 或
+          `FadeTransition`：例如把一张 `Rectangle` 或 `BankCardNode` 从 `deckPane` 区域
+          移到 `handPane` 区域（坐标可先写死数字，再改为 `localToScene` 换算）。
+步骤 G3  在 Controller 里给 `primaryActionButton` 已有 `onPrimaryAction`：在其中调用
+          `new DrawMotion().play(viewCoordinator.motionContext(), () -> { /* 可选：刷新手牌 */ });`
+          注意：动画必须在 JavaFX 应用线程触发（按钮事件已在 FX 线程，一般无需 `Platform.runLater`）。
+步骤 G4  运行：点击 `Action`（或你绑定的按钮），应能看到位移/渐变。若没有，在 `buildAnimation`
+          里 `System.out.println` 确认方法被调用。
+
+--------------------------------------------------------------------------------
+下午块 H — 为刷新留钩子（约 1～1.5 小时）
+--------------------------------------------------------------------------------
+步骤 H1  打开 `view/GameObserver.java` 与 `GameplayViewCoordinator.refreshFromSession`。
+步骤 H2  在 `refreshFromSession` 内写最小逻辑：例如根据 `GameSession` 为 null 与否，
+          更新 `movesLabel` 的文本（若 Controller 能拿到 `movesLabel`，可通过方法注入或
+          把 `Label` 引用传入 Coordinator——任选一种简单方式，保持单向依赖）。
+步骤 H3  在 `controller/CONTROLLER_RELATIONS.txt` 里用一句话记下：「会话更新时由 logic
+          回调 → Coordinator.refreshFromSession」。
+步骤 H4  再次 `mvn compile` 与手动点测。
+
+--------------------------------------------------------------------------------
+第二天收尾检查清单
+--------------------------------------------------------------------------------
+[ ] 对局屏 `handPane`（或指定区）能显示 `CardNodeFactory` 生成的节点
+[ ] 至少一种 `UiMotion` 能手动触发并播放
+[ ] `refreshFromSession` 有占位实现或明确 TODO，便于第三天接 `GameObserver`
+
+================================================================================
+附录 — 常用文件速查
+================================================================================
+  AppContext / 入口：     app/MonopolyDealApplication.java, controller/AppContext.java
+  切场景：               controller/ScreenNavigation.java
+  对局壳控制器：         controller/AbstractGameplayScreenController.java
+  布局分区：             view/GameplayUiBundle.java, view/GameplayViewCoordinator.java
+  牌面：                 view/cards/*
+  动画：                 view/animation/*
+  对局内图层：           view/scene/*
+
+================================================================================
+版本：与仓库内 WORK_PLAN_TWO_DAYS.txt 同步；可按实际进度改日期与勾选清单。
+================================================================================
