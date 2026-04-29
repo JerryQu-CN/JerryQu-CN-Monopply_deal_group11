@@ -81,6 +81,7 @@ public class LoadGameScreenController implements StageAware, Initializable {
 
     @FXML
     void onStartGame(ActionEvent event) {
+<<<<<<< HEAD
         String raw = savePathField.getText();
         if (raw == null || raw.isBlank()) {
             return;
@@ -95,6 +96,9 @@ public class LoadGameScreenController implements StageAware, Initializable {
         } catch (UnsupportedOperationException ignored) {
             // persistence 未实现时仍进入对局界面便于调试 UI
         }
+=======
+        // TODO(controller): SaveGameService.load → GameEngine 恢复会话后再 navigate
+>>>>>>> ec928dc (Initial commit: rename folder and add all files)
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 

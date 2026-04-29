@@ -83,11 +83,15 @@ public class AddPlayerScreenController implements StageAware, Initializable {
 
     @FXML
     void onStartGame(ActionEvent event) {
+<<<<<<< HEAD
         try {
             AppContext.get().gameEngine().startLanGame();
         } catch (UnsupportedOperationException ignored) {
             // logic 未实现时仍进入对局界面便于调试 UI
         }
+=======
+        // TODO(controller+logic): GameEngine.startLanGame(...) 或 Host 上 startLocalGame(...)
+>>>>>>> ec928dc (Initial commit: rename folder and add all files)
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 

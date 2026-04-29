@@ -1,11 +1,17 @@
 包名：com.example.monopoly_deal_game.view
 ================================================================================
+<<<<<<< HEAD
 【包含的类 / 子包】
   - GameObserver、GameplayUiBundle、GameplayViewCoordinator（根包）
   - view.cards：AbstractCardNode 与 Property/Action/Bank 牌面子类、CardNodeFactory
   - view.animation：UiMotion、AbstractUiMotion、Shuffle/Draw/Place/MoveMotion、MotionContext
   - view.scene：UiSceneLayer、ScenePaneResolver（对局内图层 → Pane）
   （另有各子包 package-info.java。）
+=======
+【包含的类】
+  - GameObserver  会话更新时通知 UI（观察者模式）。
+  （另有 package-info.java。）
+>>>>>>> ec928dc (Initial commit: rename folder and add all files)
 
 【接口】
   - GameObserver：onSessionUpdated(GameSession)。
