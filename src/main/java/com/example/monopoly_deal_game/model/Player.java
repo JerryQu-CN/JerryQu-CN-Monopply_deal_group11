@@ -1,11 +1,11 @@
 package com.example.monopoly_deal_game.model;
 
-import com.example.monopoly_deal_game.model.card.Card;
-import com.example.monopoly_deal_game.model.card.PropertyCard;
-import com.example.monopoly_deal_game.model.card.property.PropertyColor;
 import com.example.monopoly_deal_game.model.collection.Bank;
 import com.example.monopoly_deal_game.model.collection.Hand;
 import com.example.monopoly_deal_game.model.collection.PropertySet;
+import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.model.cards.CardColor;
+import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +52,11 @@ public class Player {
     }
     
     public boolean isAI() {
+        return isAI;
+    }
+
+    /** 与同项目 {@link ComputerPlayer#isComputer()} 命名兼容。 */
+    public boolean isComputer() {
         return isAI;
     }
     
@@ -174,11 +179,11 @@ public class Player {
         return false;
     }
     
-    public boolean hasSingleColorPropertySet(PropertyColor color) {
+    public boolean hasSingleColorPropertySet(CardColor color) {
         return getSingleColorPropertySet(color) != null;
     }
     
-    public PropertySet getSingleColorPropertySet(PropertyColor color) {
+    public PropertySet getSingleColorPropertySet(CardColor color) {
         for (PropertySet set : propertySets) {
             if (set.getEffectiveColor() == color && set.hasSingleColorProperty()) {
                 return set;
@@ -187,7 +192,7 @@ public class Player {
         return null;
     }
     
-    public boolean hasRentableProperties(PropertyColor color) {
+    public boolean hasRentableProperties(CardColor color) {
         for (PropertySet set : propertySets) {
             for (PropertyCard card : set.getPropertyCards()) {
                 if (card.getColors().contains(color) && card.isBase()) {
@@ -198,8 +203,8 @@ public class Player {
         return false;
     }
     
-    public boolean hasRentableProperties(List<PropertyColor> colors) {
-        for (PropertyColor color : colors) {
+    public boolean hasRentableProperties(List<CardColor> colors) {
+        for (CardColor color : colors) {
             if (hasRentableProperties(color)) {
                 return true;
             }

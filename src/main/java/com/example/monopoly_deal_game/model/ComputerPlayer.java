@@ -11,6 +11,19 @@ public class ComputerPlayer extends Player {
 
     private BotPolicy policy;
 
+    public ComputerPlayer() {
+        super("Computer", true);
+    }
+
+    public ComputerPlayer(String name) {
+        super(name, true);
+    }
+
+    public ComputerPlayer(String name, BotPolicy policy) {
+        super(name, true);
+        this.policy = policy;
+    }
+
     @Override
     public boolean isComputer() {
         return true;
