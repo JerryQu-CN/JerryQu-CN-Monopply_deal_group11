@@ -14,7 +14,7 @@
  * <h3>与其它包的关系</h3>
  * <ul>
  *   <li><b>→ logic</b>：通过 {@link com.example.monopoly_deal_game.logic.GameLogic} 查询合法行动集合（待提供 API）。</li>
- *   <li><b>→ model</b>：只读 {@link com.example.monopoly_deal_game.model.GameSession} 决策。</li>
+ *   <li><b>→ model</b>：只读 {@link com.example.monopoly_deal_game.game.model.GameSession} 决策。</li>
  * </ul>
  *
  * <h3>TODO</h3>

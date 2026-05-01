@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.view;
 
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.view.animation.MotionContext;
 import com.example.monopoly_deal_game.view.scene.ScenePaneResolver;
 

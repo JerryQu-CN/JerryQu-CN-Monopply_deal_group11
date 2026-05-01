@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * 真人联机大厅占位界面（需求 1 的座位与房间 UI 可在此扩展）。
  *
  * TODO(controller+network): 房间列表、加入房间改为 {@link com.example.monopoly_deal_game.network.NetworkClient} 真实回调。
- * TODO(controller+logic): 点击「开始游戏」时调用 {@link com.example.monopoly_deal_game.logic.GameEngine#startLanGame()} 或 {@code initGame} 传参。
+ * TODO(controller+logic): 点击「开始游戏」时调用 {@link com.example.monopoly_deal_game.game.engine.GameEngine#startLanGame()} 或 {@code initGame} 传参。
  */
 public class AddPlayerScreenController implements StageAware, Initializable {
 
@@ -83,15 +83,11 @@ public class AddPlayerScreenController implements StageAware, Initializable {
 
     @FXML
     void onStartGame(ActionEvent event) {
-<<<<<<< HEAD
         try {
             AppContext.get().gameEngine().startLanGame();
         } catch (UnsupportedOperationException ignored) {
             // logic 未实现时仍进入对局界面便于调试 UI
         }
-=======
-        // TODO(controller+logic): GameEngine.startLanGame(...) 或 Host 上 startLocalGame(...)
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 

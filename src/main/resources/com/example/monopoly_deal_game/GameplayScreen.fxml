@@ -11,10 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-<<<<<<< HEAD
            fx:controller="com.example.monopoly_deal_game.controller.GameplayScreenController"
-=======
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
            prefWidth="1400.0" prefHeight="850.0"
            style="-fx-background-color: #f0f0f0;">
 
@@ -33,13 +30,8 @@
                       AnchorPane.topAnchor="0.0"
                       prefHeight="34.0">
                     <children>
-<<<<<<< HEAD
                         <Button fx:id="menuButton" onAction="#onMenu" text="Menu" />
                         <Button fx:id="debugButton" onAction="#onDebug" text="DB" />
-=======
-                        <Button fx:id="menuButton" text="Menu" />
-                        <Button fx:id="debugButton" text="DB" />
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
                         <Region HBox.hgrow="ALWAYS" />
                         <Label fx:id="topbarTitle" text="Monopoly Deal — Gameplay" style="-fx-text-fill: white; -fx-font-size: 14px;" />
                     </children>
@@ -57,15 +49,9 @@
                     <children>
                         <HBox spacing="6.0">
                             <children>
-<<<<<<< HEAD
                                 <Button fx:id="uiMinusButton" onAction="#onUiMinus" text="-" />
                                 <Label fx:id="uiScaleLabel" text="1.0x" />
                                 <Button fx:id="uiPlusButton" onAction="#onUiPlus" text="+" />
-=======
-                                <Button fx:id="uiMinusButton" text="-" />
-                                <Label fx:id="uiScaleLabel" text="1.0x" />
-                                <Button fx:id="uiPlusButton" text="+" />
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
                             </children>
                         </HBox>
 
@@ -77,13 +63,8 @@
                               style="-fx-border-color: #8a8a8a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.65);" />
 
                         <Label fx:id="movesLabel" text="Moves: 0" />
-<<<<<<< HEAD
                         <Button fx:id="primaryActionButton" onAction="#onPrimaryAction" text="Action" prefHeight="44.0" maxWidth="1.7976931348623157E308" />
                         <Button fx:id="undoButton" onAction="#onUndo" text="Undo Card" prefHeight="44.0" maxWidth="1.7976931348623157E308" />
-=======
-                        <Button fx:id="primaryActionButton" text="Action" prefHeight="44.0" maxWidth="1.7976931348623157E308" />
-                        <Button fx:id="undoButton" text="Undo Card" prefHeight="44.0" maxWidth="1.7976931348623157E308" />
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
 
                         <Pane VBox.vgrow="ALWAYS" />
                         <Label fx:id="versionLabel" text="Version x.x.x" style="-fx-font-size: 12px;" />
@@ -142,13 +123,8 @@
                         <Label text="Menu" style="-fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: #ececec;" />
                         <Label text="UI Scale / FPS / Debug / Tips"
                                style="-fx-font-size: 20px; -fx-text-fill: #ececec;" />
-<<<<<<< HEAD
                         <Button fx:id="menuReturnButton" onAction="#onMenuReturn" text="Return to Game" prefWidth="300.0" prefHeight="54.0" />
                         <Button fx:id="menuLeaveButton" onAction="#onMenuLeave" text="Leave Game" prefWidth="300.0" prefHeight="54.0" />
-=======
-                        <Button text="Return to Game" prefWidth="300.0" prefHeight="54.0" />
-                        <Button text="Leave Game" prefWidth="300.0" prefHeight="54.0" />
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
                     </children>
                     <padding>
                         <Insets top="20.0" right="20.0" bottom="20.0" left="20.0" />

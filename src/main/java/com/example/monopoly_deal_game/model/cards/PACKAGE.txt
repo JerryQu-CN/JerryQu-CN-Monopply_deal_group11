@@ -1,0 +1,5 @@
+包名：com.example.monopoly_deal_game.model.cards
+================================================================================
+【职责】卡牌领域模型：抽象 Card、各类具体牌型、CardColor / CardType 枚举。
+
+【关系】一局对局的牌堆与玩家列表在 game.model.GameSession；本包不包含会话状态。

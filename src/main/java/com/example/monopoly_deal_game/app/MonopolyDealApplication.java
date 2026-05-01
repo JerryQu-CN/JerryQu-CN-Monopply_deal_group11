@@ -1,9 +1,6 @@
 package com.example.monopoly_deal_game.app;
 
-<<<<<<< HEAD
 import com.example.monopoly_deal_game.controller.AppContext;
-=======
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
 import com.example.monopoly_deal_game.controller.ScreenNavigation;
 import com.example.monopoly_deal_game.controller.StageAware;
 import javafx.application.Application;
@@ -16,16 +13,13 @@ import java.io.IOException;
 /**
  * JavaFX 应用入口（原 HelloApplication 已按课设命名规范更名）。
  *
- * TODO(app): 如需启动前加载配置、单例 {@link com.example.monopoly_deal_game.logic.GameEngine} 预热，可在此扩展。
+ * TODO(app): 如需启动前加载配置、单例 {@link com.example.monopoly_deal_game.game.engine.GameEngine} 预热，可在此扩展。
  */
 public class MonopolyDealApplication extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-<<<<<<< HEAD
         AppContext.install(AppContext.createDefault());
-=======
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
         FXMLLoader fxmlLoader = new FXMLLoader(ScreenNavigation.fxmlUrl("StartScreen.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), ScreenNavigation.SCENE_WIDTH, ScreenNavigation.SCENE_HEIGHT);
         Object controller = fxmlLoader.getController();

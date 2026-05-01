@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.model.Card;
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.game.model.GameSession;
 
 /**
  * 规则中枢（架构图 GameLogic：initGame / drawCard / playCard / endTurn / checkGameOver）。

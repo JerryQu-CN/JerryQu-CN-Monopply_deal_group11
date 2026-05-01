@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.model.Card;
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.game.model.GameSession;
 
 /**
  * 抽牌堆 / 弃牌堆 / 洗牌回补（需求 1.5、2.4）。

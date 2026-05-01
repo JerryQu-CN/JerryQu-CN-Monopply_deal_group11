@@ -1,4 +1,6 @@
-package com.example.monopoly_deal_game.model;
+package com.example.monopoly_deal_game.model.cards;
+
+import com.example.monopoly_deal_game.model.Player;
 
 /**
  * 所有手牌/牌堆中的卡牌基类（设计图：抽象 Card）。
@@ -7,8 +9,6 @@ package com.example.monopoly_deal_game.model;
  * {@link #use(Player, Player)} 可仅作钩子，真正结算在 {@link com.example.monopoly_deal_game.logic.CardEffectExecutor}。
  */
 public abstract class Card {
-<<<<<<< HEAD
-=======
     protected int id;                // 唯一编号
     protected String name;           // 名称
     protected String description;    // 卡面描述
@@ -21,19 +21,14 @@ public abstract class Card {
         this.value = value;
         this.description = description;
     }
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
 
     /**
      * @param user   出牌玩家
      * @param target 目标玩家（部分行动牌可为 null）
      */
     public abstract void use(Player user, Player target);
-<<<<<<< HEAD
-=======
 
-    // Getter & Setter
     public int getValue() { return value; }
     public String getName() { return name; }
     public boolean isCountsTowardLimit() { return countsTowardLimit; }
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
 }

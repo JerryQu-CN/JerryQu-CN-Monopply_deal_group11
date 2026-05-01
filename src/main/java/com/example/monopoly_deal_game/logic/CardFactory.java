@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.model.Card;
+import com.example.monopoly_deal_game.model.cards.Card;
 
 import java.util.List;
 

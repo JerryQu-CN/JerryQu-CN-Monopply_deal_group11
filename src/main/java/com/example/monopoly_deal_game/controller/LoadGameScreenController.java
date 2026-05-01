@@ -18,7 +18,7 @@ import java.util.ResourceBundle;
  * 读档界面：路径校验后进入对局。
  *
  * TODO(controller+persistence): 使用 {@link com.example.monopoly_deal_game.persistence.SaveGameService#load(java.nio.file.Path)}
- * 得到 {@link com.example.monopoly_deal_game.model.GameSession}，再交给 {@link com.example.monopoly_deal_game.logic.GameEngine} 恢复。
+ * 得到 {@link com.example.monopoly_deal_game.game.model.GameSession}，再交给 {@link com.example.monopoly_deal_game.game.engine.GameEngine} 恢复。
  */
 public class LoadGameScreenController implements StageAware, Initializable {
 
@@ -81,7 +81,6 @@ public class LoadGameScreenController implements StageAware, Initializable {
 
     @FXML
     void onStartGame(ActionEvent event) {
-<<<<<<< HEAD
         String raw = savePathField.getText();
         if (raw == null || raw.isBlank()) {
             return;
@@ -96,9 +95,6 @@ public class LoadGameScreenController implements StageAware, Initializable {
         } catch (UnsupportedOperationException ignored) {
             // persistence 未实现时仍进入对局界面便于调试 UI
         }
-=======
-        // TODO(controller): SaveGameService.load → GameEngine 恢复会话后再 navigate
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 

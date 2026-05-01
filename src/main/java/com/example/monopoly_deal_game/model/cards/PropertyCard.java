@@ -75,7 +75,7 @@ public class PropertyCard extends Card {
         return rentLevels;
     }
 
-    /** 与 {@link Player} / {@code PropertySet} 协作：该牌可算作哪些颜色用于查询与租金判定。 */
+    /** 与 {@link Player} / {@link com.example.monopoly_deal_game.model.Property} 协作：可算作的颜色用于成套与租金判定。 */
     public List<CardColor> getApplicableColors() {
         LinkedHashSet<CardColor> set = new LinkedHashSet<>();
         set.add(primaryColor);

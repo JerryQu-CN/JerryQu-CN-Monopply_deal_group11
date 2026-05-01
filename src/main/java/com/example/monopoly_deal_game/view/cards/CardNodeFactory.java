@@ -1,9 +1,9 @@
 package com.example.monopoly_deal_game.view.cards;
 
-import com.example.monopoly_deal_game.model.ActionCard;
-import com.example.monopoly_deal_game.model.BankCard;
-import com.example.monopoly_deal_game.model.Card;
-import com.example.monopoly_deal_game.model.PropertyCard;
+import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.BankCard;
+import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
 /**
  * 从领域模型生成对应 {@link AbstractCardNode}，集中 {@code instanceof}，避免散落。

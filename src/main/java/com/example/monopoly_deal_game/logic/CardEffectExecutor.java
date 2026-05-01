@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.model.ActionCard;
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.model.Player;
 
 /**

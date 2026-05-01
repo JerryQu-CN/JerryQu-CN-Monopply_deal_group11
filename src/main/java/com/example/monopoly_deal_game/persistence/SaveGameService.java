@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.persistence;
 
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.game.model.GameSession;
 
 import java.nio.file.Path;
 

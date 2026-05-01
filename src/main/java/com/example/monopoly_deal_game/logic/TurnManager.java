@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.game.model.GameSession;
 
 /**
  * 回合与「本回合已打出张数」管理（需求3.1–3.2：0–3 张，Just Say No 豁免）。

@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.view.cards;
 
-import com.example.monopoly_deal_game.model.ActionCard;
-import com.example.monopoly_deal_game.model.Card;
+import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.Card;
 
 /**
  * 行动牌牌面（Rent、Deal Breaker、Just Say No 等共用壳，具体文案由 model 标签区分后绘制）。

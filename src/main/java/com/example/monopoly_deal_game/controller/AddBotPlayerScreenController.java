@@ -14,7 +14,7 @@ import java.util.ResourceBundle;
 /**
  * 人机大厅：机器人数量与开始游戏（需求 1.2：机器人 1–4，总人数 ≤5）。
  *
- * TODO(controller+logic): 调用 {@link com.example.monopoly_deal_game.logic.GameEngine#startLocalGame} 创建 {@link com.example.monopoly_deal_game.model.ComputerPlayer} 列表。
+ * TODO(controller+logic): 调用 {@link com.example.monopoly_deal_game.game.engine.GameEngine#startLocalGame} 创建 {@link com.example.monopoly_deal_game.model.ComputerPlayer} 列表。
  * TODO(controller+ai): 将 {@link com.example.monopoly_deal_game.ai.BotPolicy} 注入各机器人玩家。
  */
 public class AddBotPlayerScreenController implements StageAware, Initializable {
@@ -43,8 +43,7 @@ public class AddBotPlayerScreenController implements StageAware, Initializable {
     }
 
     @FXML
-<<<<<<< HEAD
-    void onStartGame() {
+    void onStartGame(ActionEvent event) {
         Integer bots = botCountCombo.getValue();
         if (bots == null) {
             return;
@@ -54,10 +53,6 @@ public class AddBotPlayerScreenController implements StageAware, Initializable {
         } catch (UnsupportedOperationException ignored) {
             // logic 未实现时仍进入对局界面便于调试 UI
         }
-=======
-    void onStartGame(ActionEvent event) {
-        // TODO(controller+logic): 根据 Combo解析「人类玩家数 + 机器人数」并校验 ≤5
->>>>>>> ec928dc (Initial commit: rename folder and add all files)
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 

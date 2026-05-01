@@ -1,4 +1,4 @@
-package com.example.monopoly_deal_game.model;
+package com.example.monopoly_deal_game.model.cards;
 
 public enum CardColor {
     RED, BLUE, GREEN, YELLOW, ORANGE, PURPLE, LIGHT_BLUE, BROWN,

@@ -1,4 +1,6 @@
-package com.example.monopoly_deal_game.model;
+package com.example.monopoly_deal_game.model.cards;
+
+import com.example.monopoly_deal_game.model.Player;
 
 import java.util.List;
 

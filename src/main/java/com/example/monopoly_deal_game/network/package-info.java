@@ -3,7 +3,7 @@
  * <p>
  * 职责：{@link com.example.monopoly_deal_game.network.NetworkClient} 与 {@link com.example.monopoly_deal_game.network.GameServer} 传输消息；
  * 主机运行与单机相同的 {@link com.example.monopoly_deal_game.logic.GameLogic}，客户端发 {@link com.example.monopoly_deal_game.logic.PlayerCommand}，
- * 收到 {@link com.example.monopoly_deal_game.model.GameSession} 快照或增量更新。
+ * 收到 {@link com.example.monopoly_deal_game.game.model.GameSession} 快照或增量更新。
  * </p>
  *
  * <h3>需要实现的功能</h3>

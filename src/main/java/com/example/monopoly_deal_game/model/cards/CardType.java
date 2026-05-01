@@ -1,4 +1,4 @@
-package com.example.monopoly_deal_game.model;
+package com.example.monopoly_deal_game.model.cards;
 
 public enum CardType {
     PROPERTY,   // 地产卡

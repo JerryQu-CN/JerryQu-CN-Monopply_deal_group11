@@ -1,14 +1,16 @@
 包名：com.example.monopoly_deal_game.logic
 ================================================================================
+【本周任务说明书】
+  - 详见同目录 LOGIC_TASKS.md（勾选清单、前置依赖、类级交付物、验收口径）。
+
 【包含的类】
-  - GameConfig 人数、起手牌、摸牌张数、手牌上限、每回合出牌上限等常量。
-  - GameEngine           门面：launchGame / startLocalGame / startLanGame。
   - GameLogic            规则中枢：initGame / drawCard / playCard / endTurn / checkGameOver。
   - TurnManager          回合与「每回合出牌计数」、Just Say No 是否计入限额。
   - CardManager          抽牌堆/弃牌堆、洗牌回补（摸牌中途耗尽）。
   - CardFactory          生成完整牌库。
   - CardEffectExecutor   行动牌效果（Rent、Deal Breaker、Just Say No 链等）。
   - PlayerCommand        玩家意图密封接口（供 UI/网络序列化扩展）。
+  （门面与数值常量在本项目的 game.engine / game.rules 包：GameEngine、GameConfig）
   （另有 package-info.java。）
 
 【接口】
@@ -16,11 +18,12 @@
 
 【需要实现什么】
   - 对照功能说明文档第 1–3、4–16 节：发牌、回合补牌、0–3 出牌、弃牌至 7 张、
- 各类行动牌与租金支付、胜利判定。
+    各类行动牌与租金支付、胜利判定。
   - 为 CardEffectExecutor 按牌类型拆分方法或策略表，便于分工单元测试。
 
 【与其它包的关系】
-  - → model：唯一允许修改 GameSession 内领域数据的核心（通过本包类协作完成）。
-  - ← controller：只调 GameEngine / GameLogic的公开 API。
+  - → game.model：唯一允许修改 GameSession 内领域数据的核心（通过本包类协作完成）。
+  - → model.cards：牌类型与领域 Card 基类。
+  - ← controller：只调 GameEngine / GameLogic 的公开 API。
   - ← network：主机执行客户端提交的 PlayerCommand。
   - ← ai：BotPolicy 产出 PlayerCommand，由本包校验并应用。

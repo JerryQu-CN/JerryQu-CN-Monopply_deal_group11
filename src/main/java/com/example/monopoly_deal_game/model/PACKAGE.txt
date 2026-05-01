@@ -1,28 +1,24 @@
 包名：com.example.monopoly_deal_game.model
 ================================================================================
 【包含的类】
-  - Card（抽象） 所有卡牌基类。
-  - PropertyCard      物业牌（含双色系、Wild 等扩展字段待补全）。
-  - BankCard          钞票类。
-  - ActionCard        行动牌。
-  - Property          某颜色物业集合/进度与租金（待与 PropertyCard 关联）。
-  - Player            玩家（人类/机器人统一）。
-  - ComputerPlayer    机器人，持有 BotPolicy（来自 ai 包）。
-  - GameState         全局进行标记（当前玩家、阶段等）。
-  - GameSession       一局聚合根：玩家列表、牌堆、状态。
+  - Property            物业区一组同色/相容的 {@link PropertyCard} 列表（成套、垄断与租金；原 PropertySet 并入此类）。
+  - Player              玩家（人类/机器人统一）。
+  - ComputerPlayer      机器人，持有 BotPolicy（来自 ai 包）。
+  （卡牌族在子包 model.cards：Card、PropertyCard、BankCard、ActionCard、RentCard、CardColor、CardType）
+  （一局对局聚合根与会话状态在 game.model：GameSession、GameState）
   （另有 package-info.java。）
 
 【接口】
-  - 无独立接口文件（Card 为抽象类）。
+  - 无独立接口文件（Card 为抽象类，位于 model.cards）。
 
 【需要实现什么】
-  - 需求 1：发 5 张起手、抽牌堆/弃牌堆引用。
+  - 需求 1：发 5 张起手、抽牌堆/弃牌堆引用（见 game.model.GameSession + logic.CardManager）。
   - 需求 4–5：银行区、物业区分组、Wild/双色切换字段。
   - 需求 16：完整套判定所需的数据结构。
   - persistence：Session 必须可序列化（勿包含 JavaFX Node）。
 
 【与其它包的关系】
-  - ← logic：GameLogic、CardManager、CardEffectExecutor 读写本会话。
+  - ← logic：GameLogic、CardManager、CardEffectExecutor 读写 game.model.GameSession。
   - ← persistence：SaveGameService 序列化 GameSession。
   - ← network：主机广播的状态应能还原为 Session。
   - → ai：ComputerPlayer 引用 BotPolicy（策略接口在 ai 包）。

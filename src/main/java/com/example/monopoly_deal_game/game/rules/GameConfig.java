@@ -1,7 +1,7 @@
-package com.example.monopoly_deal_game.logic;
+package com.example.monopoly_deal_game.game.rules;
 
 /**
- * 数值与规则常量（对应设计图 GameConfig，与 GameEngine 组合使用）。
+ * 数值与规则常量（对应设计图 GameConfig，与 {@link com.example.monopoly_deal_game.game.engine.GameEngine} 组合使用）。
  *
  * TODO(logic): 与官方 Monopoly Deal 牌库数量、各颜色套数一致；课设需求已列出的必须实现：
  * 起手5张、回合开始手牌>0摸2张、=0摸5张、手牌上限7、每回合出牌0–3且Just Say No不计入。

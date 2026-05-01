@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.view.cards;
 
-import com.example.monopoly_deal_game.model.Card;
+import com.example.monopoly_deal_game.model.cards.Card;
 import javafx.scene.layout.Region;
 
 /**

@@ -13,7 +13,7 @@
   - StageAware：setStage(Stage)。
 
 【需要实现什么】
-  - 各按钮事件与 logic.GameEngine / GameLogic 对接（开局、读档、联机）。
+  - 各按钮事件与 game.engine.GameEngine / GameLogic 对接（开局、读档、联机）。
   - GameplayScreen.fxml 建议新增专用控制器，绑定手牌/银行/物业 UI（需求 17）。
   - 联机建议增加 SyncController：转发 network 消息并刷新界面。
 

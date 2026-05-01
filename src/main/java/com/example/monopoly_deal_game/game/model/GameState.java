@@ -1,4 +1,4 @@
-package com.example.monopoly_deal_game.model;
+package com.example.monopoly_deal_game.game.model;
 
 /**
  * 全局进行标记（设计图：currentPlayer、isGameRunning、roundCount 等）。

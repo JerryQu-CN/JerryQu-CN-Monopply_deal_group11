@@ -1,7 +1,7 @@
 /**
  * <h2>界面动效（与牌面类解耦）</h2>
  * <p>
- * 建议：动效只操作 {@link javafx.scene.Node} 的几何与透明度，不修改 {@link com.example.monopoly_deal_game.model.GameSession}；
+ * 建议：动效只操作 {@link javafx.scene.Node} 的几何与透明度，不修改 {@link com.example.monopoly_deal_game.game.model.GameSession}；
  * 动画结束后再由 controller 调 logic 提交「动画已播完」后的状态（若需要与规则同步）。
  * </p>
  *

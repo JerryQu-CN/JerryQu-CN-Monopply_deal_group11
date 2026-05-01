@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.view.cards;
 
-import com.example.monopoly_deal_game.model.Card;
-import com.example.monopoly_deal_game.model.PropertyCard;
+import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
 /**
  * 物业牌（含双色系 / Wild）牌面。

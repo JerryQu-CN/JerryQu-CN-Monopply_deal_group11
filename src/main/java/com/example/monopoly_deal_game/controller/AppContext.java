@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.controller;
 
-import com.example.monopoly_deal_game.logic.GameEngine;
+import com.example.monopoly_deal_game.game.engine.GameEngine;
 import com.example.monopoly_deal_game.persistence.SaveGameService;
 
 import java.util.Objects;

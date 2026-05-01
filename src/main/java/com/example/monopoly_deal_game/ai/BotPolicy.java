@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.ai;
 
 import com.example.monopoly_deal_game.logic.PlayerCommand;
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.game.model.GameSession;
 
 /**
  * 机器人决策策略（设计图 Strategy）。

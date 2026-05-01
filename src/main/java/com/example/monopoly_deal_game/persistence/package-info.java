@@ -1,8 +1,8 @@
 /**
  * <h2>持久化层（Persistence）</h2>
  * <p>
- * 职责：把 {@link com.example.monopoly_deal_game.model.GameSession}（及必要版本号）写入磁盘，并在读档时恢复，
- * 供 {@link com.example.monopoly_deal_game.controller.LoadGameScreenController} 与 {@link com.example.monopoly_deal_game.logic.GameEngine} 使用。
+ * 职责：把 {@link com.example.monopoly_deal_game.game.model.GameSession}（及必要版本号）写入磁盘，并在读档时恢复，
+ * 供 {@link com.example.monopoly_deal_game.controller.LoadGameScreenController} 与 {@link com.example.monopoly_deal_game.game.engine.GameEngine} 使用。
  * </p>
  *
  * <h3>需要实现的功能</h3>

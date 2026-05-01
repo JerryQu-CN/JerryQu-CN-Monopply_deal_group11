@@ -1,7 +1,7 @@
 /**
  * <h2>控制器层（Controller / MVC中的 C）</h2>
  * <p>
- * 职责：承接 FXML 按钮/输入事件，调用 {@link com.example.monopoly_deal_game.logic.GameEngine}
+ * 职责：承接 FXML 按钮/输入事件，调用 {@link com.example.monopoly_deal_game.game.engine.GameEngine}
  * 或 {@link com.example.monopoly_deal_game.logic.GameLogic} 暴露的 API；<strong>不写具体结算规则</strong>。
  * 设计图中 {@code LobbyController}、{@code GameController} 与本包中各 {@code *ScreenController} 对应：
  * 大厅流程由 {@code StartScreen}、{@code AddPlayerScreen} 等共同完成，对局由 {@code GameplayScreen}（待绑定）完成。

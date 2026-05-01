@@ -1,0 +1,12 @@
+包组：com.example.monopoly_deal_game.game （及子包 engine / rules / model）
+================================================================================
+【与子包边界】
+  - game.engine   GameEngine — 门面：launchGame、startLocalGame、startLanGame。
+  - game.rules    GameConfig — 人数上下限、起手牌、回合摸牌、手牌上限、每回合出牌上限等常量。
+  - game.model    GameSession、GameState — 一局对局的聚合与会话级状态标记。
+
+【与其它包】
+  - logic：GameLogic、CardManager、CardEffectExecutor、TurnManager 等规则实现对 GameSession 的写入。
+  - model：Player、ComputerPlayer、Property 仍在本项目根模型包。
+  - model.cards：Card 及子类，与一局会话解耦。
+  - controller：只通过 GameEngine 暴露的 API 触发对局；不散落「引擎」类在项目根目录。

@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.ai;
 
 import com.example.monopoly_deal_game.logic.PlayerCommand;
-import com.example.monopoly_deal_game.model.GameSession;
+import com.example.monopoly_deal_game.game.model.GameSession;
 
 /**
  * 占位：随机合法行动（待 logic 暴露枚举后实现）。
