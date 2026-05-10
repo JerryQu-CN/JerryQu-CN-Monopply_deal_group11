@@ -1,4 +1,3 @@
-```java
 package com.example.monopoly_deal_game.logic;
 
 import com.example.monopoly_deal_game.model.cards.Card;
@@ -75,4 +74,3 @@ public class CardManager {
         }
     }
 }
-```
