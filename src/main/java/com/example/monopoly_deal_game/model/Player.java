@@ -6,11 +6,16 @@ import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-public class Player {
+public class Player implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
     private final String playerId;
     private String name;
     private boolean isAI;
@@ -25,6 +30,13 @@ public class Player {
     private Bank bank;
     /** 物业区：多组 {@link Property}，每组内含若干 {@link PropertyCard} */
     private final List<Property> properties;
+
+    /**
+     * 本局「从手牌打出」的卡牌快照序列，仅供 UI 牌桌区展示（与银行/物业中的实体牌解耦）。
+     */
+    private final List<PlayedCardSnapshot> playedCardsDisplay = new ArrayList<>();
+
+    private static final int MAX_PLAYED_CARDS_DISPLAY = 48;
 
     public Player(String name, boolean isAI) {
         this.playerId = UUID.randomUUID().toString();
@@ -132,6 +144,24 @@ public class Player {
         return properties;
     }
 
+    public List<PlayedCardSnapshot> getPlayedCardsDisplay() {
+        return Collections.unmodifiableList(playedCardsDisplay);
+    }
+
+    public void recordPlayedCardForDisplay(PlayedCardSnapshot snapshot) {
+        if (snapshot == null) {
+            return;
+        }
+        playedCardsDisplay.add(snapshot);
+        while (playedCardsDisplay.size() > MAX_PLAYED_CARDS_DISPLAY) {
+            playedCardsDisplay.remove(0);
+        }
+    }
+
+    public void clearPlayedCardsDisplay() {
+        playedCardsDisplay.clear();
+    }
+
     public void addProperty(Property property) {
         if (property == null) return;
         properties.add(property);
@@ -225,6 +255,19 @@ public class Player {
             }
         }
         return total;
+    }
+
+    /**
+     * 已达「成套垄断」的物业组数量，用于胜负（三套即胜等规则）。
+     */
+    public int getFullSetCount() {
+        int n = 0;
+        for (Property p : properties) {
+            if (p.isMonopoly()) {
+                n++;
+            }
+        }
+        return n;
     }
 
     public void resetTurnState() {

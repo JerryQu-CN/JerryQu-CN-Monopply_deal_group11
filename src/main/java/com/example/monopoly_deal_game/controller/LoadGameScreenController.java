@@ -1,5 +1,6 @@
 package com.example.monopoly_deal_game.controller;
 
+import com.example.monopoly_deal_game.game.model.GameSession;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -87,15 +88,15 @@ public class LoadGameScreenController implements StageAware, Initializable {
         }
         Path path = Path.of(raw.strip());
         try {
-            var session = AppContext.get().saveGameService().load(path);
-            // TODO(controller+logic): GameEngine 提供 resume(session) 后再依赖返回值决定是否跳转
-            if (session == null) {
-                return;
+            GameSession session = AppContext.get().saveGameService().load(path);
+            if (session != null) {
+                AppContext.get().gameEngine().resumeSession(session);
+                ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
             }
-        } catch (UnsupportedOperationException ignored) {
-            // persistence 未实现时仍进入对局界面便于调试 UI
+        } catch (UnsupportedOperationException e) {
+            statusLabel.setText("Load not implemented yet — choose another mode.");
+            statusLabel.setStyle("-fx-text-fill: #ffcccc;");
         }
-        ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }
 
     @FXML

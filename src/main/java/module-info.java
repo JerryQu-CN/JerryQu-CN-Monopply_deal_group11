@@ -21,4 +21,6 @@ module com.example.monopoly_deal_game {
     exports com.example.monopoly_deal_game.network;
     exports com.example.monopoly_deal_game.persistence;
     exports com.example.monopoly_deal_game.ai;
+    exports com.example.monopoly_deal_game.demo.autorun;
+    exports com.example.monopoly_deal_game.journal;
 }

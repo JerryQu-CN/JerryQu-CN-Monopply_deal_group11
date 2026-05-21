@@ -70,6 +70,16 @@
                             <noHeaderFiles>true</noHeaderFiles>
                         </configuration>
                     </execution>
+                    <execution>
+                        <!-- mvn -q javafx:run@autorun -->
+                        <id>autorun</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.example.monopoly_deal_game/com.example.monopoly_deal_game.demo.autorun.AutorunFrontendLauncher</mainClass>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

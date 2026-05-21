@@ -23,6 +23,11 @@ public class BankCard extends Card {
     }
 
     @Override
+    public CardType getCardType() {
+        return CardType.CURRENCY;
+    }
+
+    @Override
     public void use(Player user, Player target) {
         throw new UnsupportedOperationException("TODO(model+logic): 作为现金入账或支付");
     }

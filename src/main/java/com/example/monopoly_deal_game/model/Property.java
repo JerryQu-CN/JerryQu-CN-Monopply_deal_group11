@@ -1,8 +1,12 @@
 package com.example.monopoly_deal_game.model;
 
+import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,11 +17,15 @@ import java.util.UUID;
  * 玩家在物业区的一组地产：由多张 {@link PropertyCard} 组成，用于同色成套、垄断与租金计算。
  * （原单独的 {@code PropertySet} 已并入本类；卡牌本身仍是 {@link PropertyCard}，见需求 5.3–5.6、15.3–15.4。）
  */
-public final class Property {
+public final class Property implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private final String id = UUID.randomUUID().toString();
     private Player owner;
     private final List<PropertyCard> cards = new ArrayList<>();
+    /** 置于该成套上的房屋/旅馆（各含一张行动牌）。官方每套至多 1 房 + 1 店。 */
+    private final List<Card> buildingCards = new ArrayList<>();
 
     public String getId() {
         return id;
@@ -65,10 +73,90 @@ public final class Property {
         return cards.remove(card);
     }
 
+    public List<Card> getBuildingCards() {
+        return Collections.unmodifiableList(buildingCards);
+    }
+
+    public boolean addBuildingCard(Card building) {
+        if (building == null) {
+            return false;
+        }
+        if (building instanceof ActionCard ac) {
+            if (ac.getActionType() != ActionCard.ActionType.HOUSE
+                    && ac.getActionType() != ActionCard.ActionType.HOTEL) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        if (!isMonopoly()) {
+            return false;
+        }
+        if (acn(building) == ActionCard.ActionType.HOUSE && hasHouseBuilding()) {
+            return false;
+        }
+        if (acn(building) == ActionCard.ActionType.HOTEL && (!hasHouseBuilding() || hasHotelBuilding())) {
+            return false;
+        }
+        buildingCards.add(building);
+        return true;
+    }
+
+    private static ActionCard.ActionType acn(Card c) {
+        return ((ActionCard) c).getActionType();
+    }
+
+    private boolean hasHouseBuilding() {
+        return buildingCards.stream().anyMatch(c -> c instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.HOUSE);
+    }
+
+    private boolean hasHotelBuilding() {
+        return buildingCards.stream().anyMatch(c -> c instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.HOTEL);
+    }
+
+    public int getBuildingRentBonus() {
+        int b = 0;
+        for (Card c : buildingCards) {
+            if (c instanceof ActionCard ac) {
+                if (ac.getActionType() == ActionCard.ActionType.HOUSE) {
+                    b += 3;
+                } else if (ac.getActionType() == ActionCard.ActionType.HOTEL) {
+                    b += 4;
+                }
+            }
+        }
+        return b;
+    }
+
+    public void clearBuildings() {
+        buildingCards.clear();
+    }
+
+    /** 成套被拆散或将整组移走时，将房屋/旅馆牌取下并交由调用方丢弃。 */
+    public List<Card> takeAllBuildings() {
+        List<Card> out = new ArrayList<>(buildingCards);
+        buildingCards.clear();
+        return out;
+    }
+
     public boolean hasSingleColorProperty() {
         if (cards.isEmpty()) return false;
-        CardColor anchor = cards.get(0).getCurrentColor();
-        return cards.stream().allMatch(p -> Objects.equals(p.getCurrentColor(), anchor));
+        CardColor anchor = null;
+        for (PropertyCard pc : cards) {
+            CardColor current = pc.getCurrentColor();
+            if (current == null || current == CardColor.NONE) {
+                return false;
+            }
+            if (current == CardColor.WILD) {
+                return false;
+            }
+            if (anchor == null) {
+                anchor = current;
+            } else if (anchor != current) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** 同色且不混杂时为锚定颜色；否则视为杂色/万能语义。 */
@@ -78,11 +166,33 @@ public final class Property {
         return cards.get(0).getCurrentColor();
     }
 
-    /** 已满 {@link PropertyCard#getFullSetThreshold()} 张时为垄断。 */
+    /**
+     * 成套垄断：同色（含对齐后的万能）且达到该颜色要求的张数。
+     * 混血行或尚未声明为单色系的万能行不构成垄断。
+     */
     public boolean isMonopoly() {
-        if (cards.isEmpty()) return false;
-        int need = Math.max(cards.get(0).getFullSetThreshold(), 1);
-        return cards.size() >= need;
+        if (cards.isEmpty()) {
+            return false;
+        }
+        if (!hasSingleColorProperty()) {
+            return false;
+        }
+        CardColor eff = getEffectiveColor();
+        if (eff == null || eff == CardColor.NONE || eff == CardColor.WILD) {
+            return false;
+        }
+        int need = requiredSetSize();
+        int n = cards.size();
+        return n >= need && need >= 1;
+    }
+
+    private int requiredSetSize() {
+        for (PropertyCard pc : cards) {
+            if (!pc.isWild()) {
+                return Math.max(1, pc.getFullSetThreshold());
+            }
+        }
+        return Math.max(1, cards.get(0).getFullSetThreshold());
     }
 
     public boolean accepts(PropertyCard incoming) {
@@ -92,10 +202,10 @@ public final class Property {
             return true;
         }
         for (CardColor color : incoming.getApplicableColors()) {
-            if (color == CardColor.WILD || color == anchor || incoming.isWild()) {
+            if (color == anchor) {
                 return true;
             }
         }
-        return incoming.getApplicableColors().contains(anchor);
+        return incoming.isWild();
     }
 }

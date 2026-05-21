@@ -1,0 +1,132 @@
+package com.example.monopoly_deal_game.logic;
+
+import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.model.Player;
+import com.example.monopoly_deal_game.model.Property;
+import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.model.cards.CardColor;
+import com.example.monopoly_deal_game.model.cards.PropertyCard;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
+public final class PropertyPlayHelper {
+
+    private static final List<CardColor> BOARD_COLOR_RANK =
+            List.of(CardColor.BROWN, CardColor.LIGHT_BLUE, CardColor.PURPLE, CardColor.ORANGE,
+                    CardColor.RED, CardColor.YELLOW, CardColor.GREEN, CardColor.BLUE,
+                    CardColor.RAILROAD, CardColor.UTILITY, CardColor.WILD, CardColor.NONE);
+    private static final Comparator<Property> PROPERTY_BOARD_ORDER =
+            Comparator.comparingInt(PropertyPlayHelper::displayRank);
+
+    private PropertyPlayHelper() {}
+
+    private static int displayRank(Property row) {
+        if (row == null) return 999;
+        CardColor c = row.getEffectiveColor();
+        int i = BOARD_COLOR_RANK.indexOf(c);
+        return i >= 0 ? i : 100 + c.ordinal();
+    }
+
+    public static void sortBoardPropertiesNaturalOrder(Player owner) {
+        if (owner == null) return;
+        List<Property> list = owner.getProperties();
+        if (list.size() > 1) list.sort(PROPERTY_BOARD_ORDER);
+    }
+
+    public static void placePropertyCard(Player owner, PropertyCard card) {
+        Objects.requireNonNull(owner);
+        Objects.requireNonNull(card);
+        for (Property row : owner.getProperties()) {
+            if (!row.isMonopoly() && row.accepts(card)) {
+                alignWildToRow(row, card);
+                row.addCard(card);
+                sortBoardPropertiesNaturalOrder(owner);
+                return;
+            }
+        }
+        Property nov = new Property();
+        if (card.isWild()) {
+            card.alignToDeclaredColor(card.getCurrentColor());
+        }
+        nov.addCard(card);
+        owner.addProperty(nov);
+        sortBoardPropertiesNaturalOrder(owner);
+    }
+
+    public static void transferPropertyGroup(Player from, Player to, Property group, GameSession session) {
+        Objects.requireNonNull(from); Objects.requireNonNull(to); Objects.requireNonNull(group); Objects.requireNonNull(session);
+        from.removeProperty(group);
+        List<PropertyCard> toPlace = new ArrayList<>(group.getCards());
+        List<Card> buildings = new ArrayList<>(group.takeAllBuildings());
+        for (PropertyCard pc : toPlace) {
+            group.removeCard(pc);
+            placePropertyCardSkippingSort(to, pc);
+        }
+        attachBuildingsFromStolenSet(to, buildings, session);
+        sortBoardPropertiesNaturalOrder(to);
+    }
+
+    private static void placePropertyCardSkippingSort(Player owner, PropertyCard card) {
+        for (Property row : owner.getProperties()) {
+            if (!row.isMonopoly() && row.accepts(card)) {
+                alignWildToRow(row, card);
+                row.addCard(card);
+                return;
+            }
+        }
+        Property nov = new Property();
+        nov.addCard(card);
+        owner.addProperty(nov);
+    }
+
+    private static void attachBuildingsFromStolenSet(Player to, List<Card> buildings, GameSession session) {
+        if (buildings == null || buildings.isEmpty()) return;
+        buildings.sort(Comparator.comparingInt(b -> (b instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.HOTEL) ? 1 : 0));
+        for (Card b : buildings) {
+            boolean placed = false;
+            if (b instanceof ActionCard ac && (ac.getActionType() == ActionCard.ActionType.HOUSE || ac.getActionType() == ActionCard.ActionType.HOTEL)) {
+                for (Property row : to.getProperties()) {
+                    if (row.isMonopoly() && row.addBuildingCard(b)) {
+                        placed = true;
+                        break;
+                    }
+                }
+            }
+            if (!placed) session.discardCard(b);
+        }
+    }
+
+    private static void alignWildToRow(Property row, PropertyCard incoming) {
+        if (incoming == null || row == null || !incoming.isWild()) return;
+        if (row.getCards().isEmpty()) return;
+        CardColor anchor = row.getEffectiveColor();
+        if (anchor == CardColor.NONE || anchor == CardColor.WILD) {
+            for (PropertyCard pc : row.getCards()) {
+                CardColor c = pc.getCurrentColor();
+                if (c != null && c != CardColor.NONE && c != CardColor.WILD) { anchor = c; break; }
+            }
+        }
+        if (anchor != null && anchor != CardColor.NONE && anchor != CardColor.WILD) {
+            incoming.alignToDeclaredColor(anchor);
+        }
+    }
+
+    public static void removePropertyCardFromBoard(Player victim, PropertyCard pc, GameSession session) {
+        Objects.requireNonNull(victim); Objects.requireNonNull(pc); Objects.requireNonNull(session);
+        for (Property row : new ArrayList<>(victim.getProperties())) {
+            if (!row.removeCard(pc)) continue;
+            if (row.getCards().isEmpty()) {
+                for (Card b : row.takeAllBuildings()) session.discardCard(b);
+                victim.removeProperty(row);
+            } else if (!row.isMonopoly()) {
+                for (Card b : row.takeAllBuildings()) session.discardCard(b);
+            }
+            sortBoardPropertiesNaturalOrder(victim);
+            return;
+        }
+    }
+}

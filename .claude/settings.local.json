@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/**)",
+      "Read(//d//**)",
+      "Bash(where java *)",
+      "Bash(/c/Windows/System32/where java *)"
+    ]
+  }
+}

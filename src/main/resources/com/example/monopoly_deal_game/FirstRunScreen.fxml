@@ -10,74 +10,119 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane fx:controller="com.example.monopoly_deal_game.controller.FirstRunScreenController" prefHeight="850.0" prefWidth="1400.0" style="-fx-background-color: #f0f0f0;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:controller="com.example.monopoly_deal_game.controller.FirstRunScreenController"
+           prefHeight="850.0" prefWidth="1400.0"
+           style="-fx-background-color: linear-gradient(to bottom, #eef7ee 0%, #dcefe0 50%, #c5e6cd 100%);"
+           xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
 
     <children>
-        <!-- Main game layer -->
-        <AnchorPane fx:id="gameRoot" prefHeight="850.0" prefWidth="1400.0">
+        <AnchorPane fx:id="gameRoot" prefHeight="850.0" prefWidth="1400.0"
+                    style="-fx-background-color: transparent;">
 
             <children>
-                <!-- Top bar -->
-                <HBox fx:id="topbar" alignment="CENTER_LEFT" prefHeight="34.0" spacing="10.0" style="-fx-background-color: #2f2f2f; -fx-padding: 0 10 0 10;" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                <HBox fx:id="topbar" alignment="CENTER_LEFT" prefHeight="42.0" spacing="12.0"
+                      style="-fx-background-color: linear-gradient(to right, #1b3d1f, #2e7d32); -fx-padding: 8 14 8 14;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 10, 0, 0, 2);"
+                      AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                     <children>
-                        <Button fx:id="menuButton" onAction="#onMenu" text="Menu" />
-                        <Button fx:id="debugButton" onAction="#onDebug" text="DB" />
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Label fx:id="topbarTitle" style="-fx-text-fill: white; -fx-font-size: 14px;" text="Monopoly Deal" />
+                        <Button fx:id="menuButton" onAction="#onMenu" text="菜单" style="-fx-font-weight:bold;"/>
+                        <Button fx:id="debugButton" onAction="#onDebug" text="调试"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="topbarTitle"
+                               style="-fx-text-fill: #f1f8e9; -fx-font-size: 15px; -fx-font-weight: bold;"
+                               text="Monopoly Deal · 简明桌"/>
                     </children>
                 </HBox>
 
-                <!-- Left sidebar -->
-                <VBox fx:id="leftSidebar" prefWidth="184.0" spacing="8.0" style="-fx-background-color: linear-gradient(to right, rgba(0,0,0,0.18), rgba(0,0,0,0)); -fx-padding: 8 8 8 8;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="34.0">
+                <VBox fx:id="leftSidebar" prefWidth="196.0" spacing="10.0"
+                      style="-fx-background-color: rgba(255,255,255,0.94); -fx-background-radius: 0 12 12 0;
+                             -fx-border-color: rgba(46,125,50,0.22); -fx-border-width: 0 1 0 0;
+                             -fx-padding: 12 12 14 14;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 4, 0);"
+                      AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="42.0">
 
                     <children>
-                        <HBox spacing="6.0">
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
                             <children>
-                                <Button fx:id="uiMinusButton" onAction="#onUiMinus" text="-" />
-                                <Label fx:id="uiScaleLabel" text="1.0x" />
-                                <Button fx:id="uiPlusButton" onAction="#onUiPlus" text="+" />
+                                <Label text="缩放" style="-fx-font-weight:bold;-fx-font-size:11px;"/>
+                                <Button fx:id="uiMinusButton" onAction="#onUiMinus" text="−"/>
+                                <Label fx:id="uiScaleLabel" text="1.0x"/>
+                                <Button fx:id="uiPlusButton" onAction="#onUiPlus" text="+"/>
                             </children>
                         </HBox>
 
-                        <Pane fx:id="deckPane" prefHeight="190.0" style="-fx-border-color: #8a8a8a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.65);" />
-                        <Pane fx:id="discardPane" prefHeight="180.0" style="-fx-border-color: #8a8a8a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.65);" />
-                        <Pane fx:id="voidPane" prefHeight="110.0" style="-fx-border-color: #8a8a8a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.65);" />
+                        <Label text="抽牌堆" style="-fx-font-weight:bold;-fx-font-size:11px;-fx-text-fill:#1b5e20;"/>
+                        <Pane fx:id="deckPane" prefHeight="180.0"
+                              style="-fx-background-color:rgba(255,255,255,0.95); -fx-background-radius:10;
+                                     -fx-border-color:rgba(46,125,50,0.35); -fx-border-radius:10;"/>
+                        <Label text="弃牌堆" style="-fx-font-weight:bold;-fx-font-size:11px;-fx-text-fill:#1b5e20;"/>
+                        <Pane fx:id="discardPane" prefHeight="168.0"
+                              style="-fx-background-color:rgba(255,255,255,0.95); -fx-background-radius:10;
+                                     -fx-border-color:rgba(46,125,50,0.35); -fx-border-radius:10;"/>
+                        <Pane fx:id="voidPane" prefHeight="52.0" style="-fx-background-color:transparent;"/>
 
-                        <Label fx:id="movesLabel" text="Moves: 0" />
-                        <Button fx:id="primaryActionButton" maxWidth="1.7976931348623157E308" onAction="#onPrimaryAction" prefHeight="44.0" text="Action" />
-                        <Button fx:id="undoButton" maxWidth="1.7976931348623157E308" onAction="#onUndo" prefHeight="44.0" text="Undo Card" />
+                        <Label fx:id="moneyHudLabel" maxWidth="176.0"
+                               style="-fx-font-size:11px;-fx-text-fill:#1b5e20;-fx-background-color:rgba(200,230,200,0.55);
+                                      -fx-padding:8 10 8 10;-fx-background-radius:8;" text="资金 —" wrapText="true"/>
 
-                        <Pane VBox.vgrow="ALWAYS" />
-                        <Label fx:id="versionLabel" style="-fx-font-size: 12px;" text="Version x.x.x" />
+                        <Label fx:id="movesLabel" text="出牌: —" style="-fx-font-size:11px;"/>
+                        <Label fx:id="feedbackLabel" maxWidth="176.0" style="-fx-font-size:10px;-fx-text-fill:#c62828;"
+                               text="" wrapText="true"/>
+                        <Button fx:id="primaryActionButton" maxWidth="1.7976931348623157E308"
+                                onAction="#onPrimaryAction" prefHeight="46.0" text="本轮操作"
+                                style="-fx-font-weight:bold;-fx-background-radius:8;"/>
+                        <Button fx:id="undoButton" maxWidth="1.7976931348623157E308"
+                                onAction="#onUndo" prefHeight="40.0" text="撤销出牌（未启用）"
+                                style="-fx-opacity:0.75;-fx-background-radius:8;"/>
+
+                        <Pane VBox.vgrow="ALWAYS"/>
+                        <Label fx:id="versionLabel" style="-fx-font-size:11px;-fx-text-fill:#555;" text="Version x.x.x"/>
                     </children>
                 </VBox>
 
-                <!-- Opponents area -->
-                <Pane fx:id="opponentsPane" style="-fx-border-color: #7a7a7a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.25);" AnchorPane.bottomAnchor="283.0" AnchorPane.leftAnchor="194.0" AnchorPane.rightAnchor="8.0" AnchorPane.topAnchor="44.0" />
+                <Pane fx:id="opponentsPane"
+                      style="-fx-background-color:rgba(255,255,255,0.92); -fx-background-radius:12;
+                             -fx-border-color:rgba(46,125,50,0.28); -fx-border-radius:12;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 14, 0, 0, 2);"
+                      AnchorPane.bottomAnchor="466.0" AnchorPane.leftAnchor="206.0"
+                      AnchorPane.rightAnchor="12.0" AnchorPane.topAnchor="54.0"/>
 
-                <!-- Your board area -->
-                <Pane fx:id="selfBoardPane" prefHeight="86.0" style="-fx-border-color: #7a7a7a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.25);" AnchorPane.bottomAnchor="189.0" AnchorPane.leftAnchor="194.0" AnchorPane.rightAnchor="8.0" />
+                <Pane fx:id="selfBoardPane" prefHeight="252.0"
+                      style="-fx-background-color:rgba(255,255,255,0.94); -fx-background-radius:12;
+                             -fx-border-color:rgba(21,101,192,0.28); -fx-border-radius:12;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 14, 0, 0, 2);"
+                      AnchorPane.bottomAnchor="216.0" AnchorPane.leftAnchor="206.0" AnchorPane.rightAnchor="12.0"/>
 
-                <!-- Hand area -->
-                <Pane fx:id="handPane" prefHeight="176.0" style="-fx-border-color: #7a7a7a; -fx-border-style: dashed; -fx-background-color: rgba(255,255,255,0.35);" AnchorPane.bottomAnchor="8.0" AnchorPane.leftAnchor="194.0" AnchorPane.rightAnchor="8.0" />
+                <Pane fx:id="handPane" prefHeight="196.0"
+                      style="-fx-background-color:rgba(255,255,255,0.97); -fx-background-radius:12;
+                             -fx-border-color:rgba(46,125,50,0.55); -fx-border-width:2; -fx-border-radius:12;
+                             -fx-effect: dropshadow(gaussian, rgba(46,125,50,0.22), 16, 0, 0, 4);"
+                      AnchorPane.bottomAnchor="12.0" AnchorPane.leftAnchor="206.0"
+                      AnchorPane.rightAnchor="12.0"/>
 
-                <!-- Action overlay (e.g. pick card, pick target) -->
-                <Pane fx:id="actionLayer" pickOnBounds="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                <Pane fx:id="actionLayer" mouseTransparent="true" pickOnBounds="false"
+                      AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
             </children>
         </AnchorPane>
 
-        <!-- Menu overlay (hidden by default) -->
-        <StackPane fx:id="menuOverlay" managed="false" style="-fx-background-color: rgba(0,0,0,0.58);" visible="false">
+        <StackPane fx:id="menuOverlay" managed="false"
+                   style="-fx-background-color: rgba(0,0,0,0.62);" visible="false">
             <children>
-                <VBox alignment="CENTER" spacing="16.0">
+                <VBox alignment="CENTER" spacing="16.0"
+                      style="-fx-background-color:rgba(30,55,38,0.92); -fx-background-radius:16;
+                             -fx-padding:32 44 36 44;
+                             -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.45),24,0,0,4);">
                     <children>
-                        <Label style="-fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: #ececec;" text="Menu" />
-                        <Label style="-fx-font-size: 20px; -fx-text-fill: #ececec;" text="UI Scale / FPS / Debug / Tips" />
-                        <Button fx:id="menuReturnButton" onAction="#onMenuReturn" prefHeight="54.0" prefWidth="300.0" text="Return to Game" />
-                        <Button fx:id="menuLeaveButton" onAction="#onMenuLeave" prefHeight="54.0" prefWidth="300.0" text="Leave Game" />
+                        <Label style="-fx-font-size:40px;-fx-font-weight:bold;-fx-text-fill:#f5fcef;" text="菜单"/>
+                        <Label style="-fx-font-size:14px;-fx-text-fill:#c8e6c9;" text="返回或离开当前对局"/>
+                        <Button fx:id="menuReturnButton" onAction="#onMenuReturn" prefHeight="50.0" prefWidth="300.0"
+                                style="-fx-font-weight:bold;-fx-background-radius:8;" text="返回对局"/>
+                        <Button fx:id="menuLeaveButton" onAction="#onMenuLeave" prefHeight="50.0" prefWidth="300.0"
+                                style="-fx-background-radius:8;" text="离开对局"/>
                     </children>
                     <padding>
-                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
                     </padding>
                 </VBox>
             </children>

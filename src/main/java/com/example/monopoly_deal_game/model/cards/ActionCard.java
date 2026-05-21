@@ -25,7 +25,9 @@ public class ActionCard extends Card {
         DEBT_COLLECTOR,  // 需求 13: 向指定玩家收取 5M
         JUST_SAY_NO,     // 需求 14: 抵挡对方的行动
         PASS_GO,         // 需求 6: 额外抽取 2 张牌
-        DOUBLE_RENT      // 需求 8: 使下一张租金卡金额翻倍
+        DOUBLE_RENT,     // 需求 8: 使下一张租金卡金额翻倍
+        HOUSE,           // 官方牌组: 置于成套物业上，加租（具体由 logic 结算）
+        HOTEL            // 官方牌组: 置于已有房屋的全套上
     }
 
     private final ActionType actionType;
@@ -47,6 +49,11 @@ public class ActionCard extends Card {
         } else {
             this.countsTowardLimit = true;
         }
+    }
+
+    @Override
+    public CardType getCardType() {
+        return CardType.ACTION;
     }
 
     @Override

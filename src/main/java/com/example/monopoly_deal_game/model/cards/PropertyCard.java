@@ -2,6 +2,7 @@ package com.example.monopoly_deal_game.model.cards;
 
 import com.example.monopoly_deal_game.model.Player;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -48,10 +49,44 @@ public class PropertyCard extends Card {
         }
     }
 
+    /**
+     * 双色万能 / 彩虹：并入已有同色成套或参与租金判定时，将「当前算作的颜色」对齐到锚定色系。
+     */
+    public void alignToDeclaredColor(CardColor anchor) {
+        if (!isWild || anchor == null || anchor == CardColor.NONE) {
+            return;
+        }
+        if (anchor == CardColor.WILD) {
+            return;
+        }
+        // 彩虹（双 WILD）：官方视作任意单色；模型里直接记入锚定颜色。
+        if (primaryColor == CardColor.WILD && secondaryColor == CardColor.WILD) {
+            this.currentColor = anchor;
+            return;
+        }
+        if (secondaryColor != null && secondaryColor != CardColor.NONE && secondaryColor != CardColor.WILD) {
+            if (anchor == primaryColor) {
+                this.currentColor = primaryColor;
+            } else if (anchor == secondaryColor) {
+                this.currentColor = secondaryColor;
+            }
+        }
+    }
+
+    /** UI：双色万能可在打出前翻面；彩虹牌由 align 自动对齐，不需要切换。 */
+    public boolean canFlipWildDualColor() {
+        return isWild && secondaryColor != null && secondaryColor != CardColor.NONE && secondaryColor != CardColor.WILD;
+    }
+
     public int getRent(int count) {
         if (rentLevels == null || count <= 0) return 0;
         int index = Math.min(count, rentLevels.length) - 1;
         return rentLevels[index];
+    }
+
+    @Override
+    public CardType getCardType() {
+        return CardType.PROPERTY;
     }
 
     @Override
@@ -78,11 +113,22 @@ public class PropertyCard extends Card {
     /** 与 {@link Player} / {@link com.example.monopoly_deal_game.model.Property} 协作：可算作的颜色用于成套与租金判定。 */
     public List<CardColor> getApplicableColors() {
         LinkedHashSet<CardColor> set = new LinkedHashSet<>();
+        if (primaryColor == CardColor.WILD && secondaryColor == CardColor.WILD) {
+            for (CardColor c : CardColor.values()) {
+                if (c != CardColor.NONE) {
+                    set.add(c);
+                }
+            }
+            return List.copyOf(set);
+        }
         set.add(primaryColor);
         if (secondaryColor != null && secondaryColor != CardColor.NONE) {
             set.add(secondaryColor);
         }
         set.add(getCurrentColor());
+        if (isWild) {
+            set.add(CardColor.WILD);
+        }
         return List.copyOf(set);
     }
 

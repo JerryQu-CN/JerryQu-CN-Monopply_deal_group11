@@ -50,8 +50,8 @@ public class AddBotPlayerScreenController implements StageAware, Initializable {
         }
         try {
             AppContext.get().gameEngine().startLocalGame(1, bots);
-        } catch (UnsupportedOperationException ignored) {
-            // logic 未实现时仍进入对局界面便于调试 UI
+        } catch (IllegalArgumentException ex) {
+            return;
         }
         ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
     }

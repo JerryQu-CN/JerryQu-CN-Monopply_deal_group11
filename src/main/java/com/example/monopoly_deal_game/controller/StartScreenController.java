@@ -39,7 +39,7 @@ public class StartScreenController implements StageAware {
 
     @FXML
     void onBotPlayer(ActionEvent event) {
-        ScreenNavigation.show(stage, "AddBotPlayerScreen.fxml");
+        ScreenNavigation.show(stage, "JoinRoomScreen.fxml");
     }
 
     @FXML

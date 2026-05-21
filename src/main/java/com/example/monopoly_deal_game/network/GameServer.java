@@ -1,10 +1,240 @@
 package com.example.monopoly_deal_game.network;
 
-/**
- * 主机端服务（设计图 GameServer / NetworkServer）。
- *
- * TODO(network): 绑定 {@link com.example.monopoly_deal_game.game.engine.GameEngine}，校验客户端命令并广播状态。
- */
+import com.example.monopoly_deal_game.controller.AppContext;
+import com.example.monopoly_deal_game.controller.HostLobbyBridge;
+import com.example.monopoly_deal_game.game.engine.GameEngine;
+import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.model.Player;
+
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+
 public class GameServer {
-    // TODO(network): ServerSocket / NIO / 自定义协议
+
+    private static GameEngine gameEngine = null;
+    private static final Map<String, Room> ROOMS = new ConcurrentHashMap<>();
+
+    public GameServer(GameEngine gameEngine) { GameServer.gameEngine = Objects.requireNonNull(gameEngine); }
+
+    public Room createRoom(String hostName, int maxPlayers) {
+        if (maxPlayers < 2 || maxPlayers > 5) throw new IllegalArgumentException("maxPlayers must be between 2 and 5");
+        String roomId = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        Room room = new Room(roomId, hostName, maxPlayers);
+        ROOMS.put(roomId, room);
+        room.startAcceptLoop();
+        return room;
+    }
+
+    public Room joinRoom(String roomId, String playerName) {
+        Room room = ROOMS.get(roomId);
+        if (room == null) throw new IllegalArgumentException("Room not found");
+        room.addLocalPlayer(playerName);
+        room.broadcast(Room.snapshot(room));
+        return room;
+    }
+
+    public void startRoom(String roomId) {
+        Room room = ROOMS.get(roomId);
+        if (room == null) throw new IllegalArgumentException("Room not found");
+        room.startGame();
+    }
+
+    public Room getRoom(String roomId) { return ROOMS.get(roomId); }
+
+    public static final class Room {
+        private final String roomId;
+        private final String hostName;
+        private final int maxPlayers;
+        private final List<String> players = new CopyOnWriteArrayList<>();
+        private final List<ClientConnection> clients = new CopyOnWriteArrayList<>();
+        private volatile boolean ready;
+        private volatile boolean started;
+        private volatile GameSession session;
+        private volatile ServerSocket serverSocket;
+        private volatile int port;
+
+        private Room(String roomId, String hostName, int maxPlayers) {
+            this.roomId = roomId; this.hostName = hostName; this.maxPlayers = maxPlayers; this.players.add(hostName);
+        }
+        public String getRoomId(){return roomId;} public String getHostName(){return hostName;} public int getMaxPlayers(){return maxPlayers;} public int getPort(){return port;} public List<String> getPlayers(){return Collections.unmodifiableList(players);} public boolean isReady(){return ready;} public boolean isStarted(){return started;} public GameSession getSession(){return session;}
+        public void broadcastSessionSnapshot() {
+            if (session == null) return;
+            broadcast(NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
+                    .roomId(roomId)
+                    .text("SESSION_SNAPSHOT")
+                    .players(players)
+                    .port(port)
+                    .session(session)
+                    .build());
+        }
+
+        private void startAcceptLoop() {
+            try { serverSocket = new ServerSocket(0); port = serverSocket.getLocalPort(); } catch (Exception ignored) { return; }
+            Thread accept = new Thread(() -> {
+                while (!serverSocket.isClosed()) {
+                    try {
+                        Socket socket = serverSocket.accept();
+                        ClientConnection conn = new ClientConnection(socket, this);
+                        clients.add(conn);
+                        conn.send(snapshot(this));
+                        conn.start();
+                    } catch (Exception ex) {
+                System.err.println("[GameServer] accept failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+                ex.printStackTrace(System.err);
+                break;
+            }
+                }
+            }, "room-accept-" + roomId);
+            accept.setDaemon(true); accept.start();
+        }
+
+        private void addLocalPlayer(String playerName) {
+            if (started) throw new IllegalStateException("Room already started");
+            if (players.size() >= maxPlayers) throw new IllegalStateException("Room full");
+            if (!players.contains(playerName)) {
+                players.add(playerName);
+                pushRoomState();
+                com.example.monopoly_deal_game.controller.HostLobbyBridge.emit(
+                        NetworkMessage.builder(NetworkMessage.Type.ROOM_STATE)
+                                .roomId(roomId)
+                                .players(players)
+                                .maxPlayers(maxPlayers)
+                                .port(port)
+                                .text((ready ? "READY" : "LOBBY") + "|" + hostName)
+                                .session(session)
+                                .build());
+            }
+        }
+
+        private void startGame() {
+            if (players.size() < 2) throw new IllegalStateException("Need at least 2 players");
+            session = new GameSession();
+            for (String name : players) session.getPlayers().add(new Player(name, false));
+            gameEngine.resumeSession(session);
+            gameEngine.getGameLogic().initGame(session);
+            ready = true;
+            started = true;
+            broadcastSessionSnapshot();
+        }
+
+        private void handleMessage(ClientConnection conn, NetworkMessage msg) {
+            if (msg == null) return;
+            switch (msg.getType()) {
+                case JOIN_ROOM -> {
+                    if (started) {
+                        conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR)
+                                .roomId(roomId)
+                                .text("Room already started")
+                                .build());
+                        return;
+                    }
+                    if (msg.getRoomId() != null && !roomId.equalsIgnoreCase(msg.getRoomId().trim())) {
+                        conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR)
+                                .roomId(roomId)
+                                .text("Room not found")
+                                .build());
+                        return;
+                    }
+                    if (msg.getPlayerName() != null) addLocalPlayer(msg.getPlayerName());
+                    conn.send(snapshot(this));
+                    pushRoomState();
+                    HostLobbyBridge.emit(snapshot(this));
+                    return;
+                }
+                case HOST_ROOM, HELLO -> {
+                    conn.send(snapshot(this));
+                    return;
+                }
+                case READY -> ready = true;
+                case START_GAME -> startGame();
+                case PLAYER_ACTION -> {
+                    if (msg.getSession() != null && isValidTurnProgression(msg.getPlayerName(), msg.getSession())) {
+                        session = msg.getSession();
+                        broadcastSessionSnapshot();
+                        return;
+                    }
+                    if (session != null) {
+                        conn.send(NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
+                                .roomId(roomId)
+                                .text("SESSION_SNAPSHOT")
+                                .players(players)
+                                .port(port)
+                                .session(session)
+                                .build());
+                    }
+                    return;
+                }
+                case DISCONNECT -> clients.remove(conn);
+                default -> { }
+            }
+            broadcast(snapshot(this));
+        }
+
+        private boolean isValidTurnProgression(String playerName, GameSession candidate) {
+            if (playerName == null || playerName.isBlank() || session == null || candidate == null) {
+                return false;
+            }
+            Player authoritativeCurrent = session.getCurrentPlayer();
+            if (authoritativeCurrent == null || !playerName.equals(authoritativeCurrent.getName())) {
+                return false;
+            }
+            if (candidate.getPlayers().size() != session.getPlayers().size()) {
+                return false;
+            }
+            for (int i = 0; i < session.getPlayers().size(); i++) {
+                if (!session.getPlayers().get(i).getName().equals(candidate.getPlayers().get(i).getName())) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void broadcast(NetworkMessage msg) { for (ClientConnection c : new ArrayList<>(clients)) c.send(msg); }
+
+        private void pushRoomState() {
+            broadcast(snapshot(this));
+        }
+
+        private static NetworkMessage snapshot(Room room) {
+            return NetworkMessage.builder(NetworkMessage.Type.ROOM_STATE)
+                    .roomId(room.roomId).players(room.players).maxPlayers(room.maxPlayers).port(room.port)
+                    .text((room.ready ? "READY" : "LOBBY") + "|" + room.hostName).session(room.session).build();
+        }
+    }
+
+    public static final class ClientConnection {
+        private final Socket socket; private final ObjectOutputStream out; private final ObjectInputStream in; private final Room room;
+        public ClientConnection(Socket socket, Room room) throws Exception { this.socket = socket; this.room = room; this.out = new ObjectOutputStream(socket.getOutputStream()); this.in = new ObjectInputStream(socket.getInputStream()); }
+        private void start() {
+            Thread reader = new Thread(() -> {
+                try { while (!socket.isClosed()) { Object obj = in.readObject(); if (obj instanceof NetworkMessage msg) room.handleMessage(this, msg); } } catch (Exception ex) {
+                    System.err.println("[GameServer] client reader failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+                    ex.printStackTrace(System.err);
+                }
+            }, "room-client-reader"); reader.setDaemon(true); reader.start();
+        }
+        public void send(NetworkMessage msg) {
+            try {
+                out.reset();
+                out.writeObject(msg);
+                out.flush();
+            } catch (Exception ex) {
+                System.err.println("[GameServer] send failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+                ex.printStackTrace(System.err);
+                close();
+            }
+        }
+        public void close() { try { socket.close(); } catch (Exception ignored) { } }
+    }
 }
