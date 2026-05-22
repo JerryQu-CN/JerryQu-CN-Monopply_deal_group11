@@ -70,13 +70,15 @@ public class GameServer {
         public String getRoomId(){return roomId;} public String getHostName(){return hostName;} public int getMaxPlayers(){return maxPlayers;} public int getPort(){return port;} public List<String> getPlayers(){return Collections.unmodifiableList(players);} public boolean isReady(){return ready;} public boolean isStarted(){return started;} public GameSession getSession(){return session;}
         public void broadcastSessionSnapshot() {
             if (session == null) return;
-            broadcast(NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
+            NetworkMessage msg = NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
                     .roomId(roomId)
                     .text("SESSION_SNAPSHOT")
                     .players(players)
                     .port(port)
                     .session(session)
-                    .build());
+                    .build();
+            broadcast(msg);
+            HostLobbyBridge.emit(msg);
         }
 
         private void startAcceptLoop() {

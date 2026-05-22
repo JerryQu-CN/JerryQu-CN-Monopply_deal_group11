@@ -18,7 +18,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -72,9 +76,10 @@ public class AddPlayerScreenController implements StageAware, Initializable {
         if (cap == null) cap = 4;
         GameServer.Room room = AppContext.get().gameServer().createRoom(nickname, cap);
         roomId = room.getRoomId();
+        String lanIp = detectLanIpAddress();
         roomIdLabel.setText("Room ID: " + roomId + " (host)");
         if (roomConnectionLabel != null) {
-            roomConnectionLabel.setText("Host IP: 127.0.0.1   Port: " + room.getPort());
+            roomConnectionLabel.setText("Host IP: " + lanIp + "   Port: " + room.getPort());
         }
         joinedPlayers.setAll(room.getPlayers());
         AppContext.get().networkLobbyState().setRoomId(roomId);
@@ -85,7 +90,7 @@ public class AddPlayerScreenController implements StageAware, Initializable {
             joinRoomField.setText(roomId);
         }
         if (joinHostField != null) {
-            joinHostField.setText("127.0.0.1");
+            joinHostField.setText(lanIp);
         }
         if (joinPortField != null) {
             joinPortField.setText(String.valueOf(room.getPort()));
@@ -202,5 +207,50 @@ public class AddPlayerScreenController implements StageAware, Initializable {
     private String nicknameOrHost() {
         String n = hostNameField.getText() == null ? "" : hostNameField.getText().strip();
         return n.isEmpty() ? "Host" : n;
+    }
+
+    private String detectLanIpAddress() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (!networkInterface.isUp() || networkInterface.isLoopback() || networkInterface.isVirtual()) {
+                    continue;
+                }
+                Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress address = addresses.nextElement();
+                    if (address instanceof Inet4Address && !address.isLoopbackAddress() && !address.isLinkLocalAddress()) {
+                        String hostAddress = address.getHostAddress();
+                        if (hostAddress.startsWith("192.168.") || hostAddress.startsWith("10.") || is172PrivateAddress(hostAddress)) {
+                            return hostAddress;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("[AddPlayerScreen] failed to detect LAN IP: " + ex.getMessage());
+        }
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception ignored) {
+            return "127.0.0.1";
+        }
+    }
+
+    private boolean is172PrivateAddress(String hostAddress) {
+        if (hostAddress == null || !hostAddress.startsWith("172.")) {
+            return false;
+        }
+        String[] parts = hostAddress.split("\\.");
+        if (parts.length < 2) {
+            return false;
+        }
+        try {
+            int second = Integer.parseInt(parts[1]);
+            return second >= 16 && second <= 31;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
     }
 }

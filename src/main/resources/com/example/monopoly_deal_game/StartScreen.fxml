@@ -14,8 +14,8 @@
             <Image url="@BackGround.png" />
          </image>
       </ImageView>
-      <Button fx:id="realPlayerButton" layoutX="238.0" layoutY="271.0" mnemonicParsing="false" onAction="#onRealPlayer" prefHeight="108.0" prefWidth="317.0" text="Create Room (Real player)" />
-      <Button fx:id="botPlayerButton" layoutX="859.0" layoutY="280.0" mnemonicParsing="false" onAction="#onBotPlayer" prefHeight="108.0" prefWidth="317.0" text="Join Room (Real player)" />
+      <Button fx:id="realPlayerButton" layoutX="238.0" layoutY="271.0" mnemonicParsing="false" onAction="#onRealPlayer" prefHeight="108.0" prefWidth="317.0" text="Add New Game(Real player)" />
+      <Button fx:id="botPlayerButton" layoutX="859.0" layoutY="280.0" mnemonicParsing="false" onAction="#onBotPlayer" prefHeight="108.0" prefWidth="317.0" text="Add New Game(Bot player)" />
       <Button fx:id="loadingButton" layoutX="238.0" layoutY="528.0" mnemonicParsing="false" onAction="#onLoadingGame" prefHeight="108.0" prefWidth="317.0" text="Loading Game" />
       <Button fx:id="exitButton" layoutX="859.0" layoutY="528.0" mnemonicParsing="false" onAction="#onExit" prefHeight="108.0" prefWidth="317.0" text="Exit" />
       <Text layoutX="541.0" layoutY="155.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Monopoly Deal ">
