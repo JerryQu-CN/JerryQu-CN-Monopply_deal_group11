@@ -4,7 +4,11 @@ package com.example.monopoly_deal_game.logic;
 
 import com.example.monopoly_deal_game.model.Player;
 
+import com.example.monopoly_deal_game.model.Property;
+
 import com.example.monopoly_deal_game.model.cards.CardColor;
+
+import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
 
 
@@ -24,13 +28,13 @@ import com.example.monopoly_deal_game.model.cards.CardColor;
 
 public record CardPlayOptions(
 
-        boolean asBankMoney, CardColor rentColorChoice, Player actionTargetPlayer) {
+        boolean asBankMoney, CardColor rentColorChoice, Player actionTargetPlayer, PropertyCard sourcePropertyCard, PropertyCard targetPropertyCard, Property targetPropertyGroup) {
 
 
 
     public static CardPlayOptions auto() {
 
-        return new CardPlayOptions(false, null, null);
+        return new CardPlayOptions(false, null, null, null, null, null);
 
     }
 
@@ -38,7 +42,7 @@ public record CardPlayOptions(
 
     public static CardPlayOptions bankOnly() {
 
-        return new CardPlayOptions(true, null, null);
+        return new CardPlayOptions(true, null, null, null, null, null);
 
     }
 
@@ -46,7 +50,7 @@ public record CardPlayOptions(
 
     public static CardPlayOptions rentWithColor(CardColor color) {
 
-        return new CardPlayOptions(false, color, null);
+        return new CardPlayOptions(false, color, null, null, null, null);
 
     }
 
@@ -56,7 +60,7 @@ public record CardPlayOptions(
 
     public static CardPlayOptions rentWithColorAndPlayer(CardColor color, Player payer) {
 
-        return new CardPlayOptions(false, color, payer);
+        return new CardPlayOptions(false, color, payer, null, null, null);
 
     }
 
@@ -64,7 +68,25 @@ public record CardPlayOptions(
 
     public CardPlayOptions withActionTarget(Player p) {
 
-        return new CardPlayOptions(asBankMoney, rentColorChoice, p);
+        return new CardPlayOptions(asBankMoney, rentColorChoice, p, sourcePropertyCard, targetPropertyCard, targetPropertyGroup);
+
+    }
+
+    public CardPlayOptions withSourcePropertyCard(PropertyCard card) {
+
+        return new CardPlayOptions(asBankMoney, rentColorChoice, actionTargetPlayer, card, targetPropertyCard, targetPropertyGroup);
+
+    }
+
+    public CardPlayOptions withTargetPropertyCard(PropertyCard card) {
+
+        return new CardPlayOptions(asBankMoney, rentColorChoice, actionTargetPlayer, sourcePropertyCard, card, targetPropertyGroup);
+
+    }
+
+    public CardPlayOptions withTargetPropertyGroup(Property group) {
+
+        return new CardPlayOptions(asBankMoney, rentColorChoice, actionTargetPlayer, sourcePropertyCard, targetPropertyCard, group);
 
     }
 

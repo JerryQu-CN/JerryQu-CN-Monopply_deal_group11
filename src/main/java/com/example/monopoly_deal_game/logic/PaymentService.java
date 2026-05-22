@@ -59,7 +59,8 @@ public final class PaymentService {
                         return executeTransferChosen(payer, receiver, choice, session);
                     }
                 }
-                // 选人取消或校验失败：降级自动抵扣
+                // 真人付款者必须自己选择支付内容；取消或校验失败时不自动替他交牌。
+                return 0;
             }
         }
         return automatedPayRemainder(payer, receiver, amountM, session);
@@ -75,14 +76,14 @@ public final class PaymentService {
     }
 
     /** 银行或可视为现金的桌面上物业（不能选择手牌）。 */
-    static boolean isPayableHeldByPlayer(Player payer, Card c) {
+    public static boolean isPayableHeldByPlayer(Player payer, Card c) {
         if (payer == null || c == null) {
             return false;
         }
         if (payer.getBank().getCards().contains(c)) {
             return true;
         }
-        return findPropertyOwningCard(payer, c) != null;
+        return c instanceof PropertyCard pc && !pc.isMultiColorWild() && findPropertyOwningCard(payer, c) != null;
     }
 
     private static Property findPropertyOwningCard(Player payer, Card c) {
@@ -125,7 +126,7 @@ public final class PaymentService {
         int t = p.getBank().getCards().stream().mapToInt(c -> Math.max(0, c.getValue())).sum();
         for (Property ps : p.getProperties()) {
             for (PropertyCard pc : ps.getCards()) {
-                if (pc.getValue() > 0) {
+                if (!pc.isMultiColorWild() && pc.getValue() > 0) {
                     t += pc.getValue();
                 }
             }
@@ -148,9 +149,9 @@ public final class PaymentService {
             if (payer.getBank().removeCard(c)) {
                 receiver.getBank().addCard(c);
                 paidTotal += Math.max(0, c.getValue());
-            } else if (c instanceof PropertyCard pc) {
+            } else if (c instanceof PropertyCard pc && !pc.isMultiColorWild()) {
                 PropertyPlayHelper.removePropertyCardFromBoard(payer, pc, session);
-                receiver.getBank().addCard(pc);
+                PropertyPlayHelper.placePropertyCard(receiver, pc);
                 paidTotal += Math.max(0, pc.getValue());
             }
         }
@@ -190,11 +191,11 @@ public final class PaymentService {
             if (remaining <= 0) {
                 break;
             }
-            if (pc.getValue() <= 0) {
+            if (pc.isMultiColorWild() || pc.getValue() <= 0) {
                 continue;
             }
             PropertyPlayHelper.removePropertyCardFromBoard(payer, pc, session);
-            receiver.getBank().addCard(pc);
+            PropertyPlayHelper.placePropertyCard(receiver, pc);
             remaining -= pc.getValue();
             paidTotal += pc.getValue();
         }

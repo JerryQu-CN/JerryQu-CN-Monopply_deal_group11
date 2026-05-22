@@ -25,6 +25,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -50,8 +51,12 @@ final class PaymentPickDialogs {
 
         Dialog<Optional<List<Card>>> dialog = new Dialog<>();
         dialog.initModality(Modality.APPLICATION_MODAL);
-        if (owner != null) {
-            dialog.initOwner(owner);
+        Window activeOwner = owner;
+        if (activeOwner == null && !Window.getWindows().isEmpty()) {
+            activeOwner = Window.getWindows().stream().filter(Window::isShowing).findFirst().orElse(null);
+        }
+        if (activeOwner != null) {
+            dialog.initOwner(activeOwner);
         }
         dialog.setTitle("交付资产");
 
@@ -115,8 +120,10 @@ final class PaymentPickDialogs {
         int propTiles = 0;
         for (Property ps : payer.getProperties()) {
             for (PropertyCard pc : ps.getCards()) {
-                propRow.getChildren().add(buildChip(pc, picked, refreshHints));
-                propTiles++;
+                if (PaymentService.isPayableHeldByPlayer(payer, pc)) {
+                    propRow.getChildren().add(buildChip(pc, picked, refreshHints));
+                    propTiles++;
+                }
             }
         }
 

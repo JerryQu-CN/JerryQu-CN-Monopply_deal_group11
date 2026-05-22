@@ -135,27 +135,26 @@ public class GameplayViewCoordinator {
         if (current == null || zones.opponentsPane() == null || zones.selfBoardPane() == null) return;
 
         List<Player> players = session.getPlayers();
-        TilePane boardGrid = new TilePane();
-        boardGrid.setHgap(12);
-        boardGrid.setVgap(12);
-        boardGrid.setPrefColumns(Math.max(1, Math.min(3, players.size())));
-        boardGrid.setTileAlignment(Pos.TOP_LEFT);
-        boardGrid.setPadding(new Insets(8, 8, 8, 8));
+        VBox tableRows = new VBox(8);
+        tableRows.setPadding(new Insets(8, 8, 8, 8));
+        int playerCount = Math.max(1, players.size());
         for (Player p : players) {
-            boardGrid.getChildren().add(buildPlayerBoardPanel(p, !p.equals(current)));
+            VBox row = buildPlayerBoardPanel(p, !p.equals(current));
+            row.setMaxWidth(Double.MAX_VALUE);
+            row.prefHeightProperty().bind(zones.opponentsPane().heightProperty().subtract(16 + (playerCount - 1) * 8.0).divide(playerCount));
+            row.minHeightProperty().bind(row.prefHeightProperty());
+            row.maxHeightProperty().bind(row.prefHeightProperty());
+            tableRows.getChildren().add(row);
         }
-        ScrollPane opponentsScroll = wrapVerticalScroll(new VBox(boardGrid));
-        zones.opponentsPane().getChildren().add(opponentsScroll);
-        opponentsScroll.prefWidthProperty().bind(zones.opponentsPane().widthProperty());
-        opponentsScroll.prefHeightProperty().bind(zones.opponentsPane().heightProperty());
+        ScrollPane tableScroll = wrapVerticalScroll(tableRows);
+        tableScroll.setFitToWidth(true);
+        tableScroll.setVbarPolicy(players.size() > 5 ? ScrollPane.ScrollBarPolicy.AS_NEEDED : ScrollPane.ScrollBarPolicy.NEVER);
+        zones.opponentsPane().getChildren().add(tableScroll);
+        tableScroll.prefWidthProperty().bind(zones.opponentsPane().widthProperty());
+        tableScroll.prefHeightProperty().bind(zones.opponentsPane().heightProperty());
 
-        VBox selfVBox = new VBox(8);
-        selfVBox.setPadding(new Insets(6, 4, 6, 4));
-        selfVBox.getChildren().add(buildPlayerBoardPanel(current, false));
-        ScrollPane selfScroll = wrapVerticalScroll(selfVBox);
-        zones.selfBoardPane().getChildren().add(selfScroll);
-        selfScroll.prefWidthProperty().bind(zones.selfBoardPane().widthProperty());
-        selfScroll.prefHeightProperty().bind(zones.selfBoardPane().heightProperty());
+        zones.selfBoardPane().setVisible(false);
+        zones.selfBoardPane().setManaged(false);
     }
 
     private static final double PROP_SCALE_OPP = 0.58;
@@ -165,12 +164,14 @@ public class GameplayViewCoordinator {
 
     /** 统一的玩家牌桌面板：顶部信息 + 左（房产列）/ 右（银行流式铺排）。 */
     private VBox buildPlayerBoardPanel(Player p, boolean isOpponent) {
-        double propScale = isOpponent ? PROP_SCALE_OPP : PROP_SCALE_SELF;
-        double bankScale = isOpponent ? BANK_SCALE_OPP : BANK_SCALE_SELF;
+        int players = Math.max(1, com.example.monopoly_deal_game.controller.AppContext.get().gameEngine().getCurrentSession() != null ? com.example.monopoly_deal_game.controller.AppContext.get().gameEngine().getCurrentSession().getPlayers().size() : 2);
+        double propScale = players >= 5 ? 0.44 : players == 4 ? 0.50 : players == 3 ? 0.56 : 0.62;
+        double bankScale = players >= 5 ? 0.40 : players == 4 ? 0.45 : players == 3 ? 0.50 : 0.56;
         double cardW = TableCardKit.TABLE_CARD_BASE_W * propScale;
 
-        VBox board = new VBox(isOpponent ? 4 : 8);
-        board.setPadding(new Insets(2, 2, 4, 2));
+        VBox board = new VBox(5);
+        board.setPadding(new Insets(4, 8, 5, 8));
+        board.setStyle("-fx-background-color: rgba(255,255,255,0.42); -fx-background-radius: 10; -fx-border-color: rgba(76,175,80,0.35); -fx-border-radius: 10;");
 
         String head =
                 p.getName()
@@ -255,6 +256,7 @@ public class GameplayViewCoordinator {
         propOuter.getChildren().add(propColumns);
 
         ScrollPane propScroll = wrapVerticalScroll(propOuter);
+        propScroll.setFitToWidth(true);
         propScroll.setMinWidth(200);
         HBox.setHgrow(propScroll, Priority.ALWAYS);
         split.getChildren().add(propScroll);
@@ -291,10 +293,10 @@ public class GameplayViewCoordinator {
 
         ScrollPane bankScroll = new ScrollPane(bankFlow);
         bankScroll.setFitToWidth(true);
-        bankScroll.setPrefViewportHeight(isOpponent ? 120 : 200);
+        bankScroll.setPrefViewportHeight(72);
         // JavaFX ScrollPane 无 setMaxViewportHeight；用 Region.maxHeight 限制可视区整体高度
-        bankScroll.setMinHeight(isOpponent ? 72 : 100);
-        bankScroll.setMaxHeight(isOpponent ? 150 : 240);
+        bankScroll.setMinHeight(54);
+        bankScroll.setMaxHeight(92);
         bankScroll.setFocusTraversable(false);
         bankScroll.setPannable(false);
         bankScroll.setStyle("-fx-background: transparent;");
@@ -309,6 +311,8 @@ public class GameplayViewCoordinator {
         bankCol.getChildren().add(bankTotal);
 
         split.getChildren().add(bankCol);
+        HBox.setHgrow(propScroll, Priority.ALWAYS);
+        HBox.setHgrow(bankCol, Priority.NEVER);
         board.getChildren().add(split);
         return board;
     }

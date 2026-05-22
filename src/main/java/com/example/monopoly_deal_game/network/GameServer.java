@@ -163,10 +163,16 @@ public class GameServer {
                 case PLAYER_ACTION -> {
                     if (msg.getSession() != null && isValidTurnProgression(msg.getPlayerName(), msg.getSession())) {
                         session = msg.getSession();
+                        gameEngine.resumeSession(session);
+                        System.out.println("[GameServer] accepted PLAYER_ACTION from " + msg.getPlayerName()
+                                + ", current=" + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "?")
+                                + ", phase=" + session.getGameState().getPhase());
                         broadcastSessionSnapshot();
                         return;
                     }
                     if (session != null) {
+                        System.err.println("[GameServer] rejected PLAYER_ACTION from " + msg.getPlayerName()
+                                + ", authoritativeCurrent=" + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "?"));
                         conn.send(NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
                                 .roomId(roomId)
                                 .text("SESSION_SNAPSHOT")

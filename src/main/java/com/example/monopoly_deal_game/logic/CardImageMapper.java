@@ -32,7 +32,7 @@ public final class CardImageMapper {
         if (card instanceof ActionCard ac) {
             return switch (ac.getActionType()) {
                 case DEAL_BREAKER -> "dealBreaker.png";
-                case FORCE_DEAL -> "slyDeal.png";
+                case FORCE_DEAL -> "forcedDeal.png";
                 case SLY_DEAL -> "slyDeal.png";
                 case ITS_MY_BIRTHDAY -> "birthday.png";
                 case DEBT_COLLECTOR -> "debtCollector.png";
@@ -42,12 +42,6 @@ public final class CardImageMapper {
                 case HOUSE -> "house.png";
                 case HOTEL -> "hotel.png";
             };
-        }
-        if (card instanceof PropertyCard pc) {
-            if (pc.isWild()) {
-                return "propertyWildCard.png";
-            }
-            return colorToPropertyFile(pc.getCurrentColor());
         }
         if (card instanceof RentCard rc) {
             if (rc.isWildRent()) {
@@ -62,6 +56,25 @@ public final class CardImageMapper {
             }
             return "rainbowRent.png";
         }
+        if (card instanceof PropertyCard pc) {
+            if (pc.isWild()) {
+                return pc.isMultiColorWild() ? "propertyWildCard.png" : wildPropertyFileByExactColors(pc);
+            }
+            return colorToPropertyFile(pc.getCurrentColor());
+        }
+        return "propertyWildCard.png";
+    }
+
+    private static String wildPropertyFileByExactColors(PropertyCard pc) {
+        CardColor a = pc.getPrimaryColor();
+        CardColor b = pc.getSecondaryColor();
+        if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) return "brown-lightBlue.png";
+        if (pairEquals(a, b, CardColor.RED, CardColor.YELLOW)) return "red-yellowCard.png";
+        if (pairEquals(a, b, CardColor.PURPLE, CardColor.ORANGE)) return "pink-orangeCard.png";
+        if (pairEquals(a, b, CardColor.BLUE, CardColor.GREEN)) return "green-blackCard.png";
+        if (pairEquals(a, b, CardColor.RAILROAD, CardColor.GREEN)) return "green-blackCard.png";
+        if (pairEquals(a, b, CardColor.LIGHT_BLUE, CardColor.RAILROAD)) return "lightBlue-blackCard.png";
+        if (pairEquals(a, b, CardColor.RAILROAD, CardColor.UTILITY)) return "black-lightGreenCard.png";
         return "propertyWildCard.png";
     }
 
@@ -95,7 +108,7 @@ public final class CardImageMapper {
             return "red-yellow.png";
         }
         if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) {
-            return "brown-lightBlue.png";
+            return "rainbowRent.png";
         }
         if (pairEquals(a, b, CardColor.GREEN, CardColor.RAILROAD)
                 || pairEquals(a, b, CardColor.GREEN, CardColor.UTILITY)) {
@@ -109,5 +122,9 @@ public final class CardImageMapper {
 
     private static boolean pairEquals(CardColor a, CardColor b, CardColor x, CardColor y) {
         return (a == x && b == y) || (a == y && b == x);
+    }
+
+    private static boolean containsPair(List<CardColor> colors, CardColor a, CardColor b) {
+        return colors != null && colors.contains(a) && colors.contains(b);
     }
 }

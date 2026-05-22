@@ -41,7 +41,7 @@ public final class PropertyPlayHelper {
         Objects.requireNonNull(owner);
         Objects.requireNonNull(card);
         for (Property row : owner.getProperties()) {
-            if (!row.isMonopoly() && row.accepts(card)) {
+            if (row.accepts(card) && chosenColorMatchesRow(row, card)) {
                 alignWildToRow(row, card);
                 row.addCard(card);
                 sortBoardPropertiesNaturalOrder(owner);
@@ -72,13 +72,16 @@ public final class PropertyPlayHelper {
 
     private static void placePropertyCardSkippingSort(Player owner, PropertyCard card) {
         for (Property row : owner.getProperties()) {
-            if (!row.isMonopoly() && row.accepts(card)) {
+            if (row.accepts(card) && chosenColorMatchesRow(row, card)) {
                 alignWildToRow(row, card);
                 row.addCard(card);
                 return;
             }
         }
         Property nov = new Property();
+        if (card.isWild()) {
+            card.alignToDeclaredColor(card.getCurrentColor());
+        }
         nov.addCard(card);
         owner.addProperty(nov);
     }
@@ -98,6 +101,16 @@ public final class PropertyPlayHelper {
             }
             if (!placed) session.discardCard(b);
         }
+    }
+
+    private static boolean chosenColorMatchesRow(Property row, PropertyCard incoming) {
+        if (row == null || incoming == null || row.getCards().isEmpty()) return true;
+        if (!incoming.isWild()) return true;
+        CardColor chosen = incoming.getCurrentColor();
+        if (chosen == null || chosen == CardColor.NONE || chosen == CardColor.WILD) return true;
+        CardColor rowColor = row.getEffectiveColor();
+        if (rowColor == CardColor.NONE || rowColor == CardColor.WILD) return true;
+        return rowColor == chosen;
     }
 
     private static void alignWildToRow(Property row, PropertyCard incoming) {

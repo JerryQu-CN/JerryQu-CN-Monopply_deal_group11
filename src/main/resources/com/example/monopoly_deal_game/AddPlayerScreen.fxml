@@ -20,9 +20,9 @@
             <Image url="@BackGround.png" />
          </image>
       </ImageView>
-      <VBox alignment="TOP_CENTER" layoutX="350.0" layoutY="120.0" prefWidth="700.0" spacing="14.0">
+      <VBox alignment="TOP_CENTER" layoutX="350.0" layoutY="110.0" prefWidth="700.0" spacing="14.0">
          <children>
-            <Label text="Add players (real)" textFill="WHITE">
+            <Label text="Create Room" textFill="WHITE">
                <font>
                   <Font name="System Bold" size="36.0" />
                </font>
@@ -32,27 +32,35 @@
                   <Font size="22.0" />
                </font>
             </Label>
+            <Label fx:id="roomConnectionLabel" text="Host IP: --------   Port: --------" textFill="WHITE">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <VBox alignment="TOP_LEFT" spacing="10.0" style="-fx-background-color: rgba(255,255,255,0.15); -fx-background-radius: 12; -fx-padding: 16;">
+               <children>
+                  <Label text="Host Nickname" textFill="WHITE">
+                     <font><Font size="20.0" /></font>
+                  </Label>
+                  <TextField fx:id="hostNameField" prefWidth="260.0" promptText="Enter host nickname" />
+               </children>
+            </VBox>
             <HBox alignment="CENTER_LEFT" spacing="12.0">
                <children>
                   <Label text="Max players this game (2–5)" textFill="WHITE" />
                   <ComboBox fx:id="maxPlayersCombo" prefWidth="120.0" />
-               </children>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="12.0">
-               <children>
-                  <Label text="Join room" textFill="WHITE" />
-                  <TextField fx:id="joinRoomField" prefWidth="220.0" promptText="Enter room ID" />
-                  <Button fx:id="joinRoomButton" mnemonicParsing="false" onAction="#onJoinRoom" text="Join" />
+                  <Button fx:id="hostRoomButton" mnemonicParsing="false" onAction="#onHostRoom" prefHeight="42.0" prefWidth="160.0" text="Create Room" />
                </children>
             </HBox>
             <Label text="Players in this room" textFill="WHITE" />
-            <ListView fx:id="joinedPlayersList" prefHeight="200.0" prefWidth="640.0" />
+            <ListView fx:id="joinedPlayersList" prefHeight="260.0" prefWidth="640.0" />
             <HBox alignment="CENTER" spacing="24.0">
                <children>
                   <Button fx:id="startGameButton" mnemonicParsing="false" onAction="#onStartGame" prefHeight="48.0" prefWidth="180.0" text="Start game" />
                   <Button mnemonicParsing="false" onAction="#onBack" prefHeight="48.0" prefWidth="120.0" text="Back" />
                </children>
             </HBox>
+            <Label fx:id="joinStatusLabel" text="" textFill="WHITE" wrapText="true" />
          </children>
          <padding>
             <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />

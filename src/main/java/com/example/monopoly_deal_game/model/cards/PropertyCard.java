@@ -75,7 +75,7 @@ public class PropertyCard extends Card {
 
     /** UI：双色万能可在打出前翻面；彩虹牌由 align 自动对齐，不需要切换。 */
     public boolean canFlipWildDualColor() {
-        return isWild && secondaryColor != null && secondaryColor != CardColor.NONE && secondaryColor != CardColor.WILD;
+        return isWild && getSelectableColors().size() > 1;
     }
 
     public int getRent(int count) {
@@ -100,6 +100,37 @@ public class PropertyCard extends Card {
 
     public boolean isWild() {
         return isWild;
+    }
+
+    public boolean isMultiColorWild() {
+        return isWild && primaryColor == CardColor.WILD && secondaryColor == CardColor.WILD;
+    }
+
+    public CardColor getPrimaryColor() {
+        return primaryColor;
+    }
+
+    public CardColor getSecondaryColor() {
+        return secondaryColor;
+    }
+
+    public List<CardColor> getSelectableColors() {
+        LinkedHashSet<CardColor> colors = new LinkedHashSet<>();
+        if (isMultiColorWild()) {
+            for (CardColor c : CardColor.values()) {
+                if (c != CardColor.NONE && c != CardColor.WILD) {
+                    colors.add(c);
+                }
+            }
+            return List.copyOf(colors);
+        }
+        if (primaryColor != null && primaryColor != CardColor.NONE && primaryColor != CardColor.WILD) {
+            colors.add(primaryColor);
+        }
+        if (secondaryColor != null && secondaryColor != CardColor.NONE && secondaryColor != CardColor.WILD) {
+            colors.add(secondaryColor);
+        }
+        return List.copyOf(colors);
     }
 
     public int getFullSetThreshold() {

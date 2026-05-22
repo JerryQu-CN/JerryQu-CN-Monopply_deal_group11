@@ -11,7 +11,7 @@ import java.util.List;
 public final class NetworkMessage implements Serializable {
     @Serial private static final long serialVersionUID = 1L;
 
-    public enum Type { HELLO, HOST_ROOM, JOIN_ROOM, ROOM_STATE, START_GAME, SESSION_SNAPSHOT, PLAYER_ACTION, READY, ERROR, DISCONNECT, PING }
+    public enum Type { HELLO, HOST_ROOM, JOIN_ROOM, ROOM_STATE, START_GAME, SESSION_SNAPSHOT, PLAYER_ACTION, PAYMENT_REQUEST, PAYMENT_RESPONSE, READY, ERROR, DISCONNECT, PING }
 
     private final Type type;
     private final String roomId;

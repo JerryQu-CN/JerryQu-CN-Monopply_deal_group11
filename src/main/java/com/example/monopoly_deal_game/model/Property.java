@@ -89,6 +89,9 @@ public final class Property implements Serializable {
         } else {
             return false;
         }
+        if (getEffectiveColor() == CardColor.RAILROAD || getEffectiveColor() == CardColor.UTILITY) {
+            return false;
+        }
         if (!isMonopoly()) {
             return false;
         }
@@ -142,28 +145,35 @@ public final class Property implements Serializable {
     public boolean hasSingleColorProperty() {
         if (cards.isEmpty()) return false;
         CardColor anchor = null;
+        boolean hasNonMultiColorAnchor = false;
         for (PropertyCard pc : cards) {
+            if (pc.isMultiColorWild()) {
+                continue;
+            }
             CardColor current = pc.getCurrentColor();
-            if (current == null || current == CardColor.NONE) {
+            if (current == null || current == CardColor.NONE || current == CardColor.WILD) {
                 return false;
             }
-            if (current == CardColor.WILD) {
-                return false;
-            }
+            hasNonMultiColorAnchor = true;
             if (anchor == null) {
                 anchor = current;
             } else if (anchor != current) {
                 return false;
             }
         }
-        return true;
+        return hasNonMultiColorAnchor;
     }
 
     /** 同色且不混杂时为锚定颜色；否则视为杂色/万能语义。 */
     public CardColor getEffectiveColor() {
         if (cards.isEmpty()) return CardColor.NONE;
         if (!hasSingleColorProperty()) return CardColor.WILD;
-        return cards.get(0).getCurrentColor();
+        for (PropertyCard pc : cards) {
+            if (!pc.isMultiColorWild()) {
+                return pc.getCurrentColor();
+            }
+        }
+        return CardColor.WILD;
     }
 
     /**
@@ -188,17 +198,24 @@ public final class Property implements Serializable {
 
     private int requiredSetSize() {
         for (PropertyCard pc : cards) {
-            if (!pc.isWild()) {
+            if (!pc.isWild() || !pc.isMultiColorWild()) {
                 return Math.max(1, pc.getFullSetThreshold());
             }
         }
-        return Math.max(1, cards.get(0).getFullSetThreshold());
+        return Integer.MAX_VALUE;
     }
 
     public boolean accepts(PropertyCard incoming) {
-        if (incoming == null || cards.isEmpty()) return true;
+        if (incoming == null) return false;
+        if (cards.isEmpty()) return true;
         CardColor anchor = getEffectiveColor();
         if (anchor == CardColor.NONE || anchor == CardColor.WILD) {
+            return incoming.isMultiColorWild() || hasCompatibleColorPair(incoming);
+        }
+        if (cards.size() >= requiredSetSize()) {
+            return false;
+        }
+        if (incoming.isMultiColorWild()) {
             return true;
         }
         for (CardColor color : incoming.getApplicableColors()) {
@@ -206,6 +223,20 @@ public final class Property implements Serializable {
                 return true;
             }
         }
-        return incoming.isWild();
+        return false;
+    }
+
+    private boolean hasCompatibleColorPair(PropertyCard incoming) {
+        for (PropertyCard existing : cards) {
+            if (existing.isMultiColorWild() || incoming.isMultiColorWild()) {
+                return true;
+            }
+            for (CardColor color : incoming.getApplicableColors()) {
+                if (color != CardColor.NONE && color != CardColor.WILD && existing.getApplicableColors().contains(color)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

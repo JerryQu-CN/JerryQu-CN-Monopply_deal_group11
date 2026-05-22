@@ -1,9 +1,7 @@
 package com.example.monopoly_deal_game.controller;
 
-import com.example.monopoly_deal_game.game.engine.GameEngine;
 import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.network.GameServer;
-import com.example.monopoly_deal_game.network.NetworkClient;
 import com.example.monopoly_deal_game.network.NetworkMessage;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -28,14 +26,10 @@ import java.util.ResourceBundle;
 
 public class AddPlayerScreenController implements StageAware, Initializable {
     @FXML private ListView<String> joinedPlayersList;
-    @FXML private TextField joinRoomField;
-    @FXML private TextField joinHostField;
-    @FXML private TextField joinPortField;
-    @FXML private Label joinStatusLabel;
-    @FXML private Button joinRoomButton;
     @FXML private ComboBox<Integer> maxPlayersCombo;
     @FXML private Label roomIdLabel;
     @FXML private Label roomConnectionLabel;
+    @FXML private Label joinStatusLabel;
     @FXML private Button startGameButton;
     @FXML private TextField hostNameField;
     @FXML private Button hostRoomButton;
@@ -43,11 +37,12 @@ public class AddPlayerScreenController implements StageAware, Initializable {
     private Stage stage;
     private String roomId;
     private boolean hosting;
-    private boolean joinMode;
-    private NetworkClient client;
     private final ObservableList<String> joinedPlayers = FXCollections.observableArrayList();
 
-    public void setStage(Stage stage) { this.stage = stage; }
+    @Override
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -56,21 +51,14 @@ public class AddPlayerScreenController implements StageAware, Initializable {
         joinedPlayers.setAll(List.of("Waiting for host..."));
         joinedPlayersList.setItems(joinedPlayers);
         updateModeUi();
-        AppContext.get().networkLobbyState().addListener(msg -> {
-            if (msg != null) {
-                Platform.runLater(() -> syncLobbyFromServer(msg));
-            }
-        });
         HostLobbyBridge.setListener(msg -> Platform.runLater(() -> syncLobbyFromServer(msg)));
     }
 
     @FXML
     void onHostRoom(ActionEvent event) {
         hosting = true;
-        joinMode = false;
         String nickname = nicknameOrHost();
         AppContext.get().networkLobbyState().setLocalPlayerName(nickname);
-        AppContext.get().networkLobbyState().setHost(true);
         AppContext.get().networkLobbyState().setHost(true);
         Integer cap = maxPlayersCombo.getSelectionModel().getSelectedItem();
         if (cap == null) cap = 4;
@@ -86,49 +74,13 @@ public class AddPlayerScreenController implements StageAware, Initializable {
         AppContext.get().networkLobbyState().setReady(false);
         AppContext.get().networkLobbyState().getPlayers().clear();
         AppContext.get().networkLobbyState().getPlayers().addAll(room.getPlayers());
-        if (joinRoomField != null) {
-            joinRoomField.setText(roomId);
-        }
-        if (joinHostField != null) {
-            joinHostField.setText(lanIp);
-        }
-        if (joinPortField != null) {
-            joinPortField.setText(String.valueOf(room.getPort()));
-        }
         updateModeUi();
-    }
-
-    @FXML
-    void onJoinRoom(ActionEvent event) {
-        joinMode = true;
-        hosting = false;
-        String code = joinRoomField.getText() == null ? "" : joinRoomField.getText().strip();
-        String host = joinHostField.getText() == null ? "" : joinHostField.getText().strip();
-        String portText = joinPortField.getText() == null ? "" : joinPortField.getText().strip();
-        if (code.isEmpty() || host.isEmpty() || portText.isEmpty()) {
-            setStatus("Missing room id / host / port");
-            return;
-        }
-        try {
-            int port = Integer.parseInt(portText);
-            closeClient();
-            setStatus("Connecting...");
-            client = new NetworkClient(host, port, msg -> Platform.runLater(() -> AppContext.get().networkLobbyState().sync(msg)));
-            String nick = nicknameOrHost();
-            client.send(NetworkMessage.builder(NetworkMessage.Type.HELLO).roomId(code).playerName(nick).build());
-            client.send(NetworkMessage.builder(NetworkMessage.Type.JOIN_ROOM).roomId(code).playerName(nick).build());
-            AppContext.get().networkLobbyState().setRoomId(code);
-            setStatus("Join request sent, waiting for host...");
-            updateModeUi();
-        } catch (Exception ex) {
-            setStatus("Join failed: " + ex.getMessage());
-        }
     }
 
     @FXML
     void onStartGame(ActionEvent event) {
         if (!hosting || roomId == null || joinedPlayers.size() < 2) {
-            if (joinStatusLabel != null) joinStatusLabel.setText("Only host can start after 2+ players join.");
+            setStatus("Only host can start after 2+ players join.");
             return;
         }
         try {
@@ -137,6 +89,7 @@ public class AddPlayerScreenController implements StageAware, Initializable {
             if (room != null) {
                 AppContext.get().gameEngine().resumeSession(room.getSession());
                 AppContext.get().networkLobbyState().setReady(room.isReady());
+                AppContext.get().networkLobbyState().setSession(room.getSession());
                 AppContext.get().networkLobbyState().getPlayers().clear();
                 AppContext.get().networkLobbyState().getPlayers().addAll(room.getPlayers());
             }
@@ -148,44 +101,27 @@ public class AddPlayerScreenController implements StageAware, Initializable {
 
     @FXML
     void onBack(ActionEvent event) {
-        closeClient();
         ScreenNavigation.show(stage, "StartScreen.fxml");
     }
 
     private void syncLobbyFromServer(NetworkMessage msg) {
-        boolean hasSession = msg.getSession() != null;
-        boolean started = msg.getText() != null && (msg.getText().startsWith("READY") || msg.getText().contains("START"));
+        if (msg == null) return;
         if (msg.getType() == NetworkMessage.Type.ERROR) {
             setStatus(msg.getText());
             return;
         }
-        if (msg.getType() == NetworkMessage.Type.ROOM_STATE) {
-            if (msg.getRoomId() != null) {
-                roomId = msg.getRoomId();
-                roomIdLabel.setText("Room ID: " + roomId + (msg.getText() != null && msg.getText().startsWith("READY") ? " (ready)" : " (lobby)"));
-            }
-            if (msg.getPlayers() != null && !msg.getPlayers().isEmpty()) {
-                joinedPlayers.setAll(msg.getPlayers());
-                if (hosting) {
-                    startGameButton.setDisable(msg.getPlayers().size() < 2);
-                }
-            }
+        if (msg.getRoomId() != null) {
+            roomId = msg.getRoomId();
+            roomIdLabel.setText("Room ID: " + roomId + (msg.getText() != null && msg.getText().startsWith("READY") ? " (ready)" : " (lobby)"));
         }
-        if (hasSession || started || msg.getType() == NetworkMessage.Type.START_GAME || msg.getType() == NetworkMessage.Type.SESSION_SNAPSHOT) {
-            GameSession session = msg.getSession();
-            if (session == null) {
-                session = AppContext.get().networkLobbyState().getSession();
-            }
-            if (session != null) {
-                AppContext.get().gameEngine().resumeSession(session);
-            }
-            if (stage != null && (session != null || AppContext.get().networkLobbyState().getSession() != null)) {
-                ScreenNavigation.show(stage, ScreenNavigation.GAMEPLAY_FXML);
-            }
-        }
-        if (msg.getPlayers() != null && !msg.getPlayers().isEmpty() && hosting) {
+        if (msg.getPlayers() != null && !msg.getPlayers().isEmpty()) {
             joinedPlayers.setAll(msg.getPlayers());
-            startGameButton.setDisable(msg.getPlayers().size() < 2);
+            startGameButton.setDisable(!hosting || msg.getPlayers().size() < 2);
+        }
+        if (msg.getSession() != null) {
+            GameSession session = msg.getSession();
+            AppContext.get().networkLobbyState().setSession(session);
+            AppContext.get().gameEngine().resumeSession(session);
         }
     }
 
@@ -195,13 +131,6 @@ public class AddPlayerScreenController implements StageAware, Initializable {
 
     private void setStatus(String text) {
         if (joinStatusLabel != null) joinStatusLabel.setText(text);
-    }
-
-    private void closeClient() {
-        if (client != null) {
-            try { client.close(); } catch (Exception ignored) {}
-            client = null;
-        }
     }
 
     private String nicknameOrHost() {

@@ -179,8 +179,9 @@ public class CardEffectExecutor {
                 Player victimPick =
                         PlayEligibility.resolvedActionTarget(
                                 actor, session, opt, ActionCard.ActionType.SLY_DEAL);
-                PropertyCard stolen =
-                        victimPick != null ? firstTableProperty(victimPick) : null;
+                PropertyCard stolen = opt.targetPropertyCard() != null
+                        ? opt.targetPropertyCard()
+                        : (victimPick != null ? firstTableProperty(victimPick) : null);
                 if (stolen == null) {
                     throw new IllegalStateException("没有可偷的对手的物业牌");
                 }
@@ -201,11 +202,11 @@ public class CardEffectExecutor {
                 session.discardCard(ac);
             }
             case FORCE_DEAL -> {
-                PropertyCard mine = firstTableProperty(actor);
+                PropertyCard mine = opt.sourcePropertyCard() != null ? opt.sourcePropertyCard() : firstTableProperty(actor);
                 Player opp =
                         PlayEligibility.resolvedActionTarget(
                                 actor, session, opt, ActionCard.ActionType.FORCE_DEAL);
-                PropertyCard theirs = opp != null ? firstTableProperty(opp) : null;
+                PropertyCard theirs = opt.targetPropertyCard() != null ? opt.targetPropertyCard() : (opp != null ? firstTableProperty(opp) : null);
                 if (mine == null || opp == null || theirs == null) {
                     throw new IllegalStateException("强制交换需要双方场地上至少各有一张物业牌");
                 }
@@ -227,7 +228,7 @@ public class CardEffectExecutor {
                 Player targetPlayer =
                         PlayEligibility.resolvedActionTarget(
                                 actor, session, opt, ActionCard.ActionType.DEAL_BREAKER);
-                Property complete = targetPlayer != null ? firstMonopolyOfPlayer(targetPlayer) : null;
+                Property complete = opt.targetPropertyGroup() != null ? opt.targetPropertyGroup() : (targetPlayer != null ? firstMonopolyOfPlayer(targetPlayer) : null);
                 if (complete == null) {
                     throw new IllegalStateException("没有可夺走的完整成套物业");
                 }

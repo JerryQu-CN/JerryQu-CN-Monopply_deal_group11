@@ -3,6 +3,7 @@ package com.example.monopoly_deal_game.controller;
 import com.example.monopoly_deal_game.model.Player;
 import javafx.scene.control.ChoiceDialog;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +24,12 @@ final class ActionTargetDialogs {
         dlg.setTitle(title != null ? title : "选择玩家");
         dlg.setHeaderText(header != null ? header : "请选择本轮效果作用的目标玩家");
         dlg.setContentText("目标玩家：");
-        if (owner != null) {
-            dlg.initOwner(owner);
+        Window activeOwner = owner;
+        if (activeOwner == null && !Window.getWindows().isEmpty()) {
+            activeOwner = Window.getWindows().stream().filter(Window::isShowing).findFirst().orElse(null);
+        }
+        if (activeOwner != null) {
+            dlg.initOwner(activeOwner);
         }
         return dlg.showAndWait();
     }
