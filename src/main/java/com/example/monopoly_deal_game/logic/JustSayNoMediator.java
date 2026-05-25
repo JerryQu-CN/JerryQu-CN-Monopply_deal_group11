@@ -7,7 +7,6 @@ import com.example.monopoly_deal_game.model.cards.Card;
 
 import javafx.application.Platform;
 
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -51,30 +50,29 @@ public final class JustSayNoMediator {
         if (respondent.equals(activator)) {
             return false;
         }
-        Card jsHeld = findJustSayNoRespondentHeld(respondent);
-        if (jsHeld == null) {
+        if (findJustSayNoRespondentHeld(respondent) == null) {
             return false;
         }
         if (respondent.isAI()) {
-            return aiShouldUseJsN(situationText);
+            if (aiShouldUseJsN(situationText)) {
+                Card jsHeld = findJustSayNoRespondentHeld(respondent);
+                if (jsHeld != null) {
+                    if (respondent.getHand().removeCard(jsHeld)
+                            || respondent.getBank().removeCard(jsHeld)) {
+                        session.discardCard(jsHeld);
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
         JustSayNoUi bridge = ui;
         if (bridge == null) {
             return false;
         }
         String text = situationText != null ? situationText : "";
-        boolean agrees = invokeUiOnFxThread(() -> bridge.confirmUseJustSayNo(respondent, activator, text));
-        if (!agrees) {
-            return false;
-        }
-        if (!cardStillWithRespondent(respondent, jsHeld)) {
-            return false;
-        }
-        if (!removeCardFromRespondentZones(respondent, jsHeld)) {
-            return false;
-        }
-        session.discardCard(jsHeld);
-        return true;
+        // 桥接（promptJustSayNoDialog）负责：询问 + 移除 + 弃牌 + 刷新 UI
+        return invokeUiOnFxThread(() -> bridge.confirmUseJustSayNo(respondent, activator, text));
     }
 
     /** 简易 AI：被偷物业 / 被破坏整套 / 被指名支付 ≥4M 时较高概率打出反对 */
@@ -117,11 +115,6 @@ public final class JustSayNoMediator {
         return out[0];
     }
 
-    private static boolean cardStillWithRespondent(Player respondent, Card c) {
-        return respondent.getHand().getCards().contains(c)
-                || respondent.getBank().getCards().contains(c);
-    }
-
     private static Card findJustSayNoRespondentHeld(Player p) {
         for (Card c : p.getHand().getCards()) {
             if (isJustSayNo(c)) {
@@ -134,15 +127,6 @@ public final class JustSayNoMediator {
             }
         }
         return null;
-    }
-
-    private static boolean removeCardFromRespondentZones(Player p, Card jsCard) {
-        Objects.requireNonNull(p);
-        Objects.requireNonNull(jsCard);
-        if (p.getHand().removeCard(jsCard)) {
-            return true;
-        }
-        return p.getBank().removeCard(jsCard);
     }
 
     private static boolean isJustSayNo(Card c) {

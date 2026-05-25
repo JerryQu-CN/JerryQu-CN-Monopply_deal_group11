@@ -64,9 +64,13 @@ public final class Property implements Serializable {
     }
 
     public void addCard(PropertyCard card) {
-        if (card != null) {
-            cards.add(card);
+        if (card == null) {
+            return;
         }
+        if (!(card instanceof PropertyCard)) {
+            throw new IllegalArgumentException("Only PropertyCard can be added to property sets");
+        }
+        cards.add(card);
     }
 
     public boolean removeCard(PropertyCard card) {
@@ -89,7 +93,7 @@ public final class Property implements Serializable {
         } else {
             return false;
         }
-        if (getEffectiveColor() == CardColor.RAILROAD || getEffectiveColor() == CardColor.UTILITY) {
+        if (getEffectiveColor() == CardColor.RAILROAD) {
             return false;
         }
         if (!isMonopoly()) {

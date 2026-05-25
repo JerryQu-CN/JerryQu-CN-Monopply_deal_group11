@@ -8,14 +8,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 真人玩家交付租金/赔款时自选银行牌与桌面上物业（展示型支付）；机器人仍走 {@link PaymentService} 内部自动抵扣。
+ * 支付请求桥：本地热座时直接弹付款者选择窗口；联机时可由 UI 桥把请求转发给付款者客户端。
  */
 public final class PaymentPickerMediator {
 
     @FunctionalInterface
     public interface Ui {
         /**
-         * @return 选中的牌实例（每张须属于 payer 的银行或可支付的桌面物业）；空表示放弃本次自选（逻辑层将改用自动抵扣）。
+         * @return 付款者选中的桌面资产；Optional.empty 表示当前端无法处理或玩家取消。
          */
         Optional<List<Card>> chooseCardsToPay(
                 Player payer, int amountDueM, Player receiver, GameSession session, String reasonText);

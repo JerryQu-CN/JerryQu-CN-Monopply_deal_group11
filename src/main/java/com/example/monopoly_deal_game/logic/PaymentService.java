@@ -1,5 +1,6 @@
 package com.example.monopoly_deal_game.logic;
 
+import com.example.monopoly_deal_game.controller.AppContext;
 import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.Property;
@@ -7,12 +8,11 @@ import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * 银行支付与地产作抵押：真人可自选卡牌；机器人或关闭 UI 时使用自动大额优先抵扣。
+ * 银行支付与地产作抵押：付款者必须自选桌面资产；不从手牌支付，也不自动扣款。
  */
 public final class PaymentService {
 
@@ -32,7 +32,9 @@ public final class PaymentService {
         if (amountM <= 0 || payer == receiver || receiver == null) {
             return 0;
         }
-        if (session != null && activatingActor != null) {
+        String roomId = AppContext.get().networkLobbyState().getRoomId();
+        boolean networked = roomId != null && !roomId.isBlank();
+        if (!networked && session != null && activatingActor != null) {
             String text =
                     justSayNoSituation != null && !justSayNoSituation.isBlank()
                             ? justSayNoSituation
@@ -41,29 +43,73 @@ public final class PaymentService {
                 return 0;
             }
         }
-        if (!payer.isAI()) {
-            var ui = PaymentPickerMediator.getUiOrNull();
-            if (ui != null) {
-                var picked =
-                        ui.chooseCardsToPay(
-                                payer,
-                                amountM,
-                                receiver,
-                                session,
-                                justSayNoSituation != null
-                                        ? justSayNoSituation
-                                        : "请支付 $" + amountM + "M。");
-                if (picked.isPresent()) {
-                    List<Card> choice = picked.get();
-                    if (isValidManualPaymentChoice(payer, choice, amountM)) {
-                        return executeTransferChosen(payer, receiver, choice, session);
+        if (payer.isAI()) {
+            return autoPayFromTo(payer, receiver, amountM, session);
+        }
+        var ui = PaymentPickerMediator.getUiOrNull();
+        if (ui != null) {
+            var picked =
+                    ui.chooseCardsToPay(
+                            payer,
+                            amountM,
+                            receiver,
+                            session,
+                            justSayNoSituation != null
+                                    ? justSayNoSituation
+                                    : "请支付 $" + amountM + "M。");
+            if (picked.isPresent()) {
+                List<Card> choice = picked.get();
+                if (choice.isEmpty() && totalLiquidityValue(payer) <= 0) {
+                    return 0;
+                }
+                if (isValidManualPaymentChoice(payer, choice, amountM)) {
+                    return executeTransferChosen(payer, receiver, choice, session);
+                }
+            }
+            return 0;
+        }
+        return autoPayFromTo(payer, receiver, amountM, session);
+    }
+
+    /** AI 或无 UI 时自动选卡支付：银行大额优先，物业补足余款。 */
+    private static int autoPayFromTo(Player payer, Player receiver, int amountM, GameSession session) {
+        int cap = totalLiquidityValue(payer);
+        if (cap <= 0) {
+            return 0;
+        }
+        int owed = Math.min(amountM, cap);
+        List<Card> selected = new ArrayList<>();
+        int collected = 0;
+
+        List<Card> bankCards = new ArrayList<>(payer.getBank().getCards());
+        bankCards.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        for (Card c : bankCards) {
+            if (collected >= owed) break;
+            selected.add(c);
+            collected += Math.max(0, c.getValue());
+        }
+
+        if (collected < owed) {
+            List<PropertyCard> props = new ArrayList<>();
+            for (com.example.monopoly_deal_game.model.Property row : payer.getProperties()) {
+                for (PropertyCard pc : row.getCards()) {
+                    if (pc.getValue() > 0) {
+                        props.add(pc);
                     }
                 }
-                // 真人付款者必须自己选择支付内容；取消或校验失败时不自动替他交牌。
-                return 0;
+            }
+            props.sort((a, b) -> Integer.compare(a.getValue(), b.getValue()));
+            for (PropertyCard pc : props) {
+                if (collected >= owed) break;
+                selected.add(pc);
+                collected += Math.max(0, pc.getValue());
             }
         }
-        return automatedPayRemainder(payer, receiver, amountM, session);
+
+        if (selected.isEmpty()) {
+            return 0;
+        }
+        return executeTransferChosen(payer, receiver, selected, session);
     }
 
     private static boolean payerOwnsExactlyThesePayableCards(Player payer, List<Card> choice) {
@@ -83,7 +129,7 @@ public final class PaymentService {
         if (payer.getBank().getCards().contains(c)) {
             return true;
         }
-        return c instanceof PropertyCard pc && !pc.isMultiColorWild() && findPropertyOwningCard(payer, c) != null;
+        return c instanceof PropertyCard pc && findPropertyOwningCard(payer, c) != null;
     }
 
     private static Property findPropertyOwningCard(Player payer, Card c) {
@@ -126,7 +172,7 @@ public final class PaymentService {
         int t = p.getBank().getCards().stream().mapToInt(c -> Math.max(0, c.getValue())).sum();
         for (Property ps : p.getProperties()) {
             for (PropertyCard pc : ps.getCards()) {
-                if (!pc.isMultiColorWild() && pc.getValue() > 0) {
+                if (pc.getValue() > 0) {
                     t += pc.getValue();
                 }
             }
@@ -142,6 +188,35 @@ public final class PaymentService {
         return s;
     }
 
+    public static int applyChosenPayment(Player payer, Player receiver, List<Card> sel, GameSession session) {
+        if (payer == null || receiver == null || sel == null || session == null) {
+            return 0;
+        }
+        return executeTransferChosen(payer, receiver, resolveSelectedCardsFromPayer(payer, sel), session);
+    }
+
+    private static List<Card> resolveSelectedCardsFromPayer(Player payer, List<Card> selected) {
+        List<Card> resolved = new ArrayList<>();
+        if (payer == null || selected == null) return resolved;
+        for (Card selectedCard : selected) {
+            Card owned = findPayableCardById(payer, selectedCard != null ? selectedCard.getId() : -1);
+            if (owned != null) resolved.add(owned);
+        }
+        return resolved;
+    }
+
+    private static Card findPayableCardById(Player payer, int id) {
+        for (Card c : payer.getBank().getCards()) {
+            if (c.getId() == id) return c;
+        }
+        for (Property row : payer.getProperties()) {
+            for (PropertyCard pc : row.getCards()) {
+                if (pc.getId() == id) return pc;
+            }
+        }
+        return null;
+    }
+
     private static int executeTransferChosen(Player payer, Player receiver, List<Card> sel, GameSession session) {
         int paidTotal = 0;
         List<Card> copy = new ArrayList<>(sel);
@@ -149,55 +224,11 @@ public final class PaymentService {
             if (payer.getBank().removeCard(c)) {
                 receiver.getBank().addCard(c);
                 paidTotal += Math.max(0, c.getValue());
-            } else if (c instanceof PropertyCard pc && !pc.isMultiColorWild()) {
+            } else if (c instanceof PropertyCard pc) {
                 PropertyPlayHelper.removePropertyCardFromBoard(payer, pc, session);
                 PropertyPlayHelper.placePropertyCard(receiver, pc);
                 paidTotal += Math.max(0, pc.getValue());
             }
-        }
-        return paidTotal;
-    }
-
-    private static int automatedPayRemainder(Player payer, Player receiver, int amountM, GameSession session) {
-        int remaining = amountM;
-        int paidTotal = 0;
-
-        List<Card> bankSnapshot = new ArrayList<>(payer.getBank().getCards());
-        bankSnapshot.sort(Comparator.comparingInt(Card::getValue).reversed());
-        for (Card c : bankSnapshot) {
-            if (remaining <= 0) {
-                break;
-            }
-            if (payer.getBank().removeCard(c)) {
-                receiver.getBank().addCard(c);
-                int v = Math.max(0, c.getValue());
-                remaining -= v;
-                paidTotal += v;
-            }
-        }
-
-        if (remaining <= 0) {
-            return paidTotal;
-        }
-
-        List<PropertyCard> tableProps = new ArrayList<>();
-        for (Property ps : payer.getProperties()) {
-            for (PropertyCard pc : ps.getCards()) {
-                tableProps.add(pc);
-            }
-        }
-        tableProps.sort(Comparator.comparingInt(PropertyCard::getValue));
-        for (PropertyCard pc : tableProps) {
-            if (remaining <= 0) {
-                break;
-            }
-            if (pc.isMultiColorWild() || pc.getValue() <= 0) {
-                continue;
-            }
-            PropertyPlayHelper.removePropertyCardFromBoard(payer, pc, session);
-            PropertyPlayHelper.placePropertyCard(receiver, pc);
-            remaining -= pc.getValue();
-            paidTotal += pc.getValue();
         }
         return paidTotal;
     }

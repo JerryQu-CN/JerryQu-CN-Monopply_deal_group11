@@ -152,7 +152,7 @@ public class CardEffectExecutor {
                 session.discardCard(ac);
             }
             case JUST_SAY_NO -> {
-                actor.getBank().addCard(ac);
+                session.discardCard(ac);
             }
             case ITS_MY_BIRTHDAY -> {
                 for (Player p : new ArrayList<>(session.getPlayers())) {
@@ -181,7 +181,7 @@ public class CardEffectExecutor {
                                 actor, session, opt, ActionCard.ActionType.SLY_DEAL);
                 PropertyCard stolen = opt.targetPropertyCard() != null
                         ? opt.targetPropertyCard()
-                        : (victimPick != null ? firstTableProperty(victimPick) : null);
+                        : (victimPick != null ? firstStealableProperty(victimPick) : null);
                 if (stolen == null) {
                     throw new IllegalStateException("没有可偷的对手的物业牌");
                 }
@@ -189,7 +189,7 @@ public class CardEffectExecutor {
                 if (victimOwner == null) {
                     throw new IllegalStateException("找不到被偷物业牌所属玩家");
                 }
-                if (JustSayNoMediator.tryBlockAgainstPlayer(
+                if (!opt.jsnAlreadyChecked() && JustSayNoMediator.tryBlockAgainstPlayer(
                         victimOwner,
                         actor,
                         session,
@@ -210,7 +210,7 @@ public class CardEffectExecutor {
                 if (mine == null || opp == null || theirs == null) {
                     throw new IllegalStateException("强制交换需要双方场地上至少各有一张物业牌");
                 }
-                if (JustSayNoMediator.tryBlockAgainstPlayer(
+                if (!opt.jsnAlreadyChecked() && JustSayNoMediator.tryBlockAgainstPlayer(
                         opp,
                         actor,
                         session,
@@ -242,6 +242,7 @@ public class CardEffectExecutor {
                     }
                 }
                 if (from != null
+                        && !opt.jsnAlreadyChecked()
                         && JustSayNoMediator.tryBlockAgainstPlayer(
                                 from,
                                 actor,
@@ -310,6 +311,18 @@ public class CardEffectExecutor {
 
     private static PropertyCard firstTableProperty(Player p) {
         for (Property row : p.getProperties()) {
+            if (!row.getCards().isEmpty()) {
+                return row.getCards().get(0);
+            }
+        }
+        return null;
+    }
+
+    private static PropertyCard firstStealableProperty(Player p) {
+        for (Property row : p.getProperties()) {
+            if (row.isMonopoly()) {
+                continue;
+            }
             if (!row.getCards().isEmpty()) {
                 return row.getCards().get(0);
             }

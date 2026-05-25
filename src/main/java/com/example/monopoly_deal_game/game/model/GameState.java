@@ -13,7 +13,9 @@ public class GameState implements Serializable {
     public enum Phase {
         DRAW_PHASE,
         PLAY_PHASE,
-        DISCARD_PHASE
+        DISCARD_PHASE,
+        /** 等待玩家在弹窗中做出选择（如 Just Say No、支付选牌、目标选择等）。 */
+        WAITING_FOR_SELECTION
     }
 
     private int currentPlayerIndex;

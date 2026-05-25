@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 public final class RentCalculator {
-    private static final Set<CardColor> TABLE_COLORS = EnumSet.of(CardColor.BROWN, CardColor.LIGHT_BLUE, CardColor.PURPLE, CardColor.ORANGE, CardColor.RED, CardColor.YELLOW, CardColor.GREEN, CardColor.BLUE, CardColor.RAILROAD, CardColor.UTILITY);
+    private static final Set<CardColor> TABLE_COLORS = EnumSet.of(CardColor.BROWN, CardColor.LIGHT_BLUE, CardColor.PURPLE, CardColor.ORANGE, CardColor.RED, CardColor.YELLOW, CardColor.GREEN, CardColor.BLUE, CardColor.RAILROAD);
     private RentCalculator() {}
     public static Set<CardColor> tableColors() { return EnumSet.copyOf(TABLE_COLORS); }
     public static int rentOnColor(Player landlord, CardColor color) { return rentForSingleColor(landlord, color); }

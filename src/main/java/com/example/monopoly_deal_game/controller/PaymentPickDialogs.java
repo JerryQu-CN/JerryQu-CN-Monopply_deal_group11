@@ -64,11 +64,8 @@ final class PaymentPickDialogs {
 
         LinkedHashSet<Card> picked = new LinkedHashSet<>();
 
-        ButtonType btnConfirm =
-                new ButtonType("确认交出所选牌", ButtonBar.ButtonData.OK_DONE);
-        ButtonType btnAuto =
-                new ButtonType("改用自动抵扣", ButtonBar.ButtonData.CANCEL_CLOSE);
-        pane.getButtonTypes().setAll(btnConfirm, btnAuto);
+        ButtonType btnConfirm = new ButtonType("确认交出所选牌", ButtonBar.ButtonData.OK_DONE);
+        pane.getButtonTypes().setAll(btnConfirm);
 
         Label titleLbl = new Label(reasonLines != null ? reasonLines : "");
         titleLbl.setWrapText(true);
@@ -81,25 +78,20 @@ final class PaymentPickDialogs {
 
         Runnable refreshHints =
                 () -> {
-                    int sumSel =
-                            picked.stream().mapToInt(c -> Math.max(0, c.getValue())).sum();
+                    int sumSel = picked.stream().mapToInt(c -> Math.max(0, c.getValue())).sum();
                     boolean ok =
-                            picked.isEmpty()
-                                    ? false
-                                    : PaymentService.isValidManualPaymentChoice(
-                                            payer, new ArrayList<>(picked), amountDueM);
-
+                            liquidity <= 0
+                                    || (!picked.isEmpty()
+                                            && PaymentService.isValidManualPaymentChoice(
+                                                    payer, new ArrayList<>(picked), amountDueM));
                     capLbl.setText(
                             String.format(
-                                    "需支付 %dM　|　你可抵债的资产总值：%dM\n当前已选：%dM",
-                                    amountDueM, liquidity, sumSel)
+                                            "需支付 %dM　|　你可抵债的资产总值：%dM\n当前已选：%dM",
+                                            amountDueM, liquidity, sumSel)
                                     + (liquidity > 0 && liquidity < amountDueM
                                             ? "\n※ 总资产不足时请勾选全部应交出的牌。"
                                             : ""));
-
-                    Button confirmBtn =
-                            (Button)
-                                    pane.lookupButton(btnConfirm);
+                    Button confirmBtn = (Button) pane.lookupButton(btnConfirm);
                     confirmBtn.setDisable(!ok);
                 };
 
@@ -158,6 +150,9 @@ final class PaymentPickDialogs {
                         return Optional.empty();
                     }
                     List<Card> out = new ArrayList<>(picked);
+                    if (PaymentService.totalLiquidityValue(payer) <= 0) {
+                        return Optional.of(List.of());
+                    }
                     if (!PaymentService.isValidManualPaymentChoice(payer, out, amountDueM)) {
                         return Optional.empty();
                     }
@@ -168,9 +163,7 @@ final class PaymentPickDialogs {
         return dialog.showAndWait().orElse(Optional.empty());
     }
 
-    private static StackPane buildChip(
-            Card model, LinkedHashSet<Card> picked, Runnable refreshHints) {
-
+    private static StackPane buildChip(Card model, LinkedHashSet<Card> picked, Runnable refreshHints) {
         StackPane wrap = new StackPane();
         String fn = CardFaceResolver.imageFileFor(model);
         CardView cv = new CardView(fn, model.getName(), "");

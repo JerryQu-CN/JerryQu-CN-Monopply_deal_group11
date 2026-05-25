@@ -68,7 +68,7 @@ public final class CardImageMapper {
     private static String wildPropertyFileByExactColors(PropertyCard pc) {
         CardColor a = pc.getPrimaryColor();
         CardColor b = pc.getSecondaryColor();
-        if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) return "brown-lightBlue.png";
+        if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) return "propertyWildCard.png";
         if (pairEquals(a, b, CardColor.RED, CardColor.YELLOW)) return "red-yellowCard.png";
         if (pairEquals(a, b, CardColor.PURPLE, CardColor.ORANGE)) return "pink-orangeCard.png";
         if (pairEquals(a, b, CardColor.BLUE, CardColor.GREEN)) return "green-blackCard.png";
@@ -108,7 +108,7 @@ public final class CardImageMapper {
             return "red-yellow.png";
         }
         if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) {
-            return "rainbowRent.png";
+            return "brown-lightBlue.png";
         }
         if (pairEquals(a, b, CardColor.GREEN, CardColor.RAILROAD)
                 || pairEquals(a, b, CardColor.GREEN, CardColor.UTILITY)) {

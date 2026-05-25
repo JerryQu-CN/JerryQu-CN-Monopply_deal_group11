@@ -118,7 +118,7 @@ public class PropertyCard extends Card {
         LinkedHashSet<CardColor> colors = new LinkedHashSet<>();
         if (isMultiColorWild()) {
             for (CardColor c : CardColor.values()) {
-                if (c != CardColor.NONE && c != CardColor.WILD) {
+                if (c != CardColor.NONE && c != CardColor.WILD && c != CardColor.UTILITY) {
                     colors.add(c);
                 }
             }

@@ -29,13 +29,13 @@ public final class PlayEligibility {
             return false;
         }
         return switch (ac.getActionType()) {
-            case JUST_SAY_NO -> false;
+            case JUST_SAY_NO -> true;
             case PASS_GO, DOUBLE_RENT, ITS_MY_BIRTHDAY -> true;
             case DEBT_COLLECTOR ->
                     resolvedActionTarget(cur, session, opt, ac.getActionType()) != null;
             case SLY_DEAL -> {
                 Player t = resolvedActionTarget(cur, session, opt, ac.getActionType());
-                yield t != null && firstTableProperty(t) != null;
+                yield t != null && firstStealableProperty(t) != null;
             }
             case FORCE_DEAL -> {
                 PropertyCard mine = firstTableProperty(cur);
@@ -64,7 +64,7 @@ public final class PlayEligibility {
             return false;
         }
         Player cur = session.getCurrentPlayer();
-        if (cur == null || requiredOpponents(cur, session).size() <= 1) {
+        if (cur == null) {
             return false;
         }
         return hasAnyEligibleTarget(cur, session, ac.getActionType());
@@ -83,10 +83,10 @@ public final class PlayEligibility {
     private static boolean hasAnyEligibleTarget(
             Player actor, GameSession session, ActionCard.ActionType type) {
         return switch (type) {
-            case DEBT_COLLECTOR -> true;
+            case DEBT_COLLECTOR -> !requiredOpponents(actor, session).isEmpty();
             case SLY_DEAL ->
                     requiredOpponents(actor, session).stream()
-                            .anyMatch(o -> firstTableProperty(o) != null);
+                            .anyMatch(o -> firstStealableProperty(o) != null);
             case FORCE_DEAL -> {
                 if (firstTableProperty(actor) == null) {
                     yield false;
@@ -101,7 +101,7 @@ public final class PlayEligibility {
         };
     }
 
-    /** 显式所选或仅此一名对手时返回对手；多名且未指定时返回 {@code null}。 */
+    /** 显式所选时返回对手；真人玩家必须由 UI 明确选择，AI 才允许自动取唯一目标。 */
     public static Player requiredOpponent(
             Player actor, GameSession session, CardPlayOptions opt) {
         if (actor == null || session == null) {
@@ -112,7 +112,7 @@ public final class PlayEligibility {
         if (pick != null && others.contains(pick)) {
             return pick;
         }
-        if (others.size() == 1) {
+        if (actor.isAI() && others.size() == 1) {
             return others.get(0);
         }
         return null;
@@ -153,7 +153,7 @@ public final class PlayEligibility {
             case SLY_DEAL -> {
                 List<Player> ok = new ArrayList<>();
                 for (Player o : all) {
-                    if (firstTableProperty(o) != null) {
+                    if (firstStealableProperty(o) != null) {
                         ok.add(o);
                     }
                 }
@@ -198,6 +198,18 @@ public final class PlayEligibility {
 
     private static PropertyCard firstTableProperty(Player p) {
         for (Property row : p.getProperties()) {
+            if (!row.getCards().isEmpty()) {
+                return row.getCards().get(0);
+            }
+        }
+        return null;
+    }
+
+    private static PropertyCard firstStealableProperty(Player p) {
+        for (Property row : p.getProperties()) {
+            if (row.isMonopoly()) {
+                continue;
+            }
             if (!row.getCards().isEmpty()) {
                 return row.getCards().get(0);
             }

@@ -4,6 +4,7 @@ import com.example.monopoly_deal_game.controller.AppContext;
 import com.example.monopoly_deal_game.controller.HostLobbyBridge;
 import com.example.monopoly_deal_game.game.engine.GameEngine;
 import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.logic.PaymentService;
 import com.example.monopoly_deal_game.model.Player;
 
 import java.io.ObjectInputStream;
@@ -63,6 +64,7 @@ public class GameServer {
         private volatile GameSession session;
         private volatile ServerSocket serverSocket;
         private volatile int port;
+        private final Map<String, GameSession> pendingRequestSnapshots = new ConcurrentHashMap<>();
 
         private Room(String roomId, String hostName, int maxPlayers) {
             this.roomId = roomId; this.hostName = hostName; this.maxPlayers = maxPlayers; this.players.add(hostName);
@@ -130,6 +132,37 @@ public class GameServer {
             broadcastSessionSnapshot();
         }
 
+        public void broadcastJustSayNoRequest(String requestId, Player respondent, Player activator, GameSession baseSession, String reasonText) {
+            if (respondent == null) return;
+            pendingRequestSnapshots.put(requestId, baseSession != null ? baseSession : session);
+            NetworkMessage msg = NetworkMessage.builder(NetworkMessage.Type.JUST_SAY_NO_REQUEST)
+                    .roomId(roomId)
+                    .requestId(requestId)
+                    .payerName(respondent.getName())
+                    .receiverName(activator != null ? activator.getName() : null)
+                    .session(baseSession != null ? baseSession : session)
+                    .text(reasonText)
+                    .build();
+            broadcast(msg);
+            HostLobbyBridge.emit(msg);
+        }
+
+        public void broadcastPaymentRequest(String requestId, Player payer, Player receiver, int amountM, GameSession baseSession, String reasonText) {
+            if (payer == null || receiver == null) return;
+            pendingRequestSnapshots.put(requestId, baseSession != null ? baseSession : session);
+            NetworkMessage msg = NetworkMessage.builder(NetworkMessage.Type.PAYMENT_REQUEST)
+                    .roomId(roomId)
+                    .requestId(requestId)
+                    .payerName(payer.getName())
+                    .receiverName(receiver.getName())
+                    .amountM(amountM)
+                    .session(baseSession != null ? baseSession : session)
+                    .text(reasonText)
+                    .build();
+            broadcast(msg);
+            HostLobbyBridge.emit(msg);
+        }
+
         private void handleMessage(ClientConnection conn, NetworkMessage msg) {
             if (msg == null) return;
             switch (msg.getType()) {
@@ -160,6 +193,58 @@ public class GameServer {
                 }
                 case READY -> ready = true;
                 case START_GAME -> startGame();
+                case PAYMENT_REQUEST -> {
+                    if (session != null && msg.getPayerName() != null && msg.getReceiverName() != null) {
+                        if (msg.getRequestId() != null) pendingRequestSnapshots.put(msg.getRequestId(), session);
+                        NetworkMessage forward = NetworkMessage.builder(NetworkMessage.Type.PAYMENT_REQUEST)
+                                .roomId(roomId)
+                                .requestId(msg.getRequestId())
+                                .payerName(msg.getPayerName())
+                                .receiverName(msg.getReceiverName())
+                                .amountM(msg.getAmountM())
+                                .session(session)
+                                .text(msg.getText())
+                                .build();
+                        broadcast(forward);
+                        HostLobbyBridge.emit(forward);
+                    }
+                    return;
+                }
+                case JUST_SAY_NO_REQUEST -> {
+                    if (session != null && msg.getPayerName() != null) {
+                        if (msg.getRequestId() != null) pendingRequestSnapshots.put(msg.getRequestId(), session);
+                        NetworkMessage forward = NetworkMessage.builder(NetworkMessage.Type.JUST_SAY_NO_REQUEST)
+                                .roomId(roomId)
+                                .requestId(msg.getRequestId())
+                                .payerName(msg.getPayerName())
+                                .receiverName(msg.getReceiverName())
+                                .session(session)
+                                .text(msg.getText())
+                                .build();
+                        broadcast(forward);
+                        HostLobbyBridge.emit(forward);
+                    }
+                    return;
+                }
+                case JUST_SAY_NO_RESPONSE -> {
+                    return;
+                }
+                case PAYMENT_RESPONSE -> {
+                    if (session != null && msg.isAccepted()) {
+                        GameSession base = msg.getRequestId() != null ? pendingRequestSnapshots.remove(msg.getRequestId()) : null;
+                        if (base != null) {
+                            session = base;
+                        }
+                        Player payer = playerByName(session, msg.getPayerName());
+                        Player receiver = playerByName(session, msg.getReceiverName());
+                        if (payer != null && receiver != null) {
+                            PaymentService.applyChosenPayment(payer, receiver, msg.getSelectedCards(), session);
+                            gameEngine.resumeSession(session);
+                            broadcastSessionSnapshot();
+                        }
+                    }
+                    return;
+                }
                 case PLAYER_ACTION -> {
                     if (msg.getSession() != null && isValidTurnProgression(msg.getPlayerName(), msg.getSession())) {
                         session = msg.getSession();
@@ -187,6 +272,34 @@ public class GameServer {
                 default -> { }
             }
             broadcast(snapshot(this));
+        }
+
+        private static boolean removeJustSayNoFromPlayer(Player player, GameSession session) {
+            for (var c : new ArrayList<>(player.getHand().getCards())) {
+                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCard ac && ac.getActionType() == com.example.monopoly_deal_game.model.cards.ActionCard.ActionType.JUST_SAY_NO) {
+                    if (player.getHand().removeCard(c)) {
+                        session.discardCard(c);
+                        return true;
+                    }
+                }
+            }
+            for (var c : new ArrayList<>(player.getBank().getCards())) {
+                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCard ac && ac.getActionType() == com.example.monopoly_deal_game.model.cards.ActionCard.ActionType.JUST_SAY_NO) {
+                    if (player.getBank().removeCard(c)) {
+                        session.discardCard(c);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static Player playerByName(GameSession session, String name) {
+            if (session == null || name == null) return null;
+            for (Player p : session.getPlayers()) {
+                if (p != null && name.equals(p.getName())) return p;
+            }
+            return null;
         }
 
         private boolean isValidTurnProgression(String playerName, GameSession candidate) {
