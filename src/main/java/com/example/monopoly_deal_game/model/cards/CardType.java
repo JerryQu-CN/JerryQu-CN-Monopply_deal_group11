@@ -2,7 +2,7 @@ package com.example.monopoly_deal_game.model.cards;
 
 /**
  * 卡牌类型枚举，对齐官方 Monopoly Deal 牌种。
- * BUILDING 合并到 ACTION 体系中（House/Hotel 在 ActionCard.ActionType 中表示）。
+ * House 和 Hotel 作为 ActionCard 的子类（ActionCardHouse / ActionCardHotel）实现。
  */
 public enum CardType {
     PROPERTY,   // 物业卡（房产卡）

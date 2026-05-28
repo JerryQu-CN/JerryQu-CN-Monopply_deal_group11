@@ -4,6 +4,8 @@ import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.Property;
 import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.ActionCardHotel;
+import com.example.monopoly_deal_game.model.cards.ActionCardHouse;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
@@ -88,10 +90,10 @@ public final class PropertyPlayHelper {
 
     private static void attachBuildingsFromStolenSet(Player to, List<Card> buildings, GameSession session) {
         if (buildings == null || buildings.isEmpty()) return;
-        buildings.sort(Comparator.comparingInt(b -> (b instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.HOTEL) ? 1 : 0));
+        buildings.sort(Comparator.comparingInt(b -> (b instanceof ActionCardHotel) ? 1 : 0));
         for (Card b : buildings) {
             boolean placed = false;
-            if (b instanceof ActionCard ac && (ac.getActionType() == ActionCard.ActionType.HOUSE || ac.getActionType() == ActionCard.ActionType.HOTEL)) {
+            if (b instanceof ActionCardHouse || b instanceof ActionCardHotel) {
                 for (Property row : to.getProperties()) {
                     if (row.isMonopoly() && row.addBuildingCard(b)) {
                         placed = true;

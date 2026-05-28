@@ -1,6 +1,8 @@
 package com.example.monopoly_deal_game.model;
 
 import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.ActionCardHotel;
+import com.example.monopoly_deal_game.model.cards.ActionCardHouse;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
@@ -69,12 +71,7 @@ public final class Property implements Serializable {
         if (building == null) {
             return false;
         }
-        if (building instanceof ActionCard ac) {
-            if (ac.getActionType() != ActionCard.ActionType.HOUSE
-                    && ac.getActionType() != ActionCard.ActionType.HOTEL) {
-                return false;
-            }
-        } else {
+        if (!(building instanceof ActionCardHouse) && !(building instanceof ActionCardHotel)) {
             return false;
         }
         if (getEffectiveColor() == CardColor.RAILROAD) {
@@ -83,37 +80,31 @@ public final class Property implements Serializable {
         if (!isMonopoly()) {
             return false;
         }
-        if (acn(building) == ActionCard.ActionType.HOUSE && hasHouseBuilding()) {
+        if (building instanceof ActionCardHouse && hasHouseBuilding()) {
             return false;
         }
-        if (acn(building) == ActionCard.ActionType.HOTEL && (!hasHouseBuilding() || hasHotelBuilding())) {
+        if (building instanceof ActionCardHotel && (!hasHouseBuilding() || hasHotelBuilding())) {
             return false;
         }
         buildingCards.add(building);
         return true;
     }
 
-    private static ActionCard.ActionType acn(Card c) {
-        return ((ActionCard) c).getActionType();
-    }
-
     private boolean hasHouseBuilding() {
-        return buildingCards.stream().anyMatch(c -> c instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.HOUSE);
+        return buildingCards.stream().anyMatch(c -> c instanceof ActionCardHouse);
     }
 
     private boolean hasHotelBuilding() {
-        return buildingCards.stream().anyMatch(c -> c instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.HOTEL);
+        return buildingCards.stream().anyMatch(c -> c instanceof ActionCardHotel);
     }
 
     public int getBuildingRentBonus() {
         int b = 0;
         for (Card c : buildingCards) {
-            if (c instanceof ActionCard ac) {
-                if (ac.getActionType() == ActionCard.ActionType.HOUSE) {
-                    b += 3;
-                } else if (ac.getActionType() == ActionCard.ActionType.HOTEL) {
-                    b += 4;
-                }
+            if (c instanceof ActionCardHouse) {
+                b += 3;
+            } else if (c instanceof ActionCardHotel) {
+                b += 4;
             }
         }
         return b;

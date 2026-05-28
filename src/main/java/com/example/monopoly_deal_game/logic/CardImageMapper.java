@@ -1,6 +1,16 @@
 package com.example.monopoly_deal_game.logic;
 
 import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.ActionCardDealBreaker;
+import com.example.monopoly_deal_game.model.cards.ActionCardDebtCollector;
+import com.example.monopoly_deal_game.model.cards.ActionCardDoubleTheRent;
+import com.example.monopoly_deal_game.model.cards.ActionCardForcedDeal;
+import com.example.monopoly_deal_game.model.cards.ActionCardHotel;
+import com.example.monopoly_deal_game.model.cards.ActionCardHouse;
+import com.example.monopoly_deal_game.model.cards.ActionCardItsMyBirthday;
+import com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo;
+import com.example.monopoly_deal_game.model.cards.ActionCardPassGo;
+import com.example.monopoly_deal_game.model.cards.ActionCardSlyDeal;
 import com.example.monopoly_deal_game.model.cards.BankCard;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
@@ -30,18 +40,17 @@ public final class CardImageMapper {
             };
         }
         if (card instanceof ActionCard ac) {
-            return switch (ac.getActionType()) {
-                case DEAL_BREAKER -> "dealBreaker.png";
-                case FORCE_DEAL -> "forcedDeal.png";
-                case SLY_DEAL -> "slyDeal.png";
-                case ITS_MY_BIRTHDAY -> "birthday.png";
-                case DEBT_COLLECTOR -> "debtCollector.png";
-                case JUST_SAY_NO -> "justSayNo.png";
-                case PASS_GO -> "passGo.png";
-                case DOUBLE_RENT -> "doubleTheRent.png";
-                case HOUSE -> "house.png";
-                case HOTEL -> "hotel.png";
-            };
+            if (ac instanceof ActionCardDealBreaker) return "dealBreaker.png";
+            if (ac instanceof ActionCardForcedDeal) return "forcedDeal.png";
+            if (ac instanceof ActionCardSlyDeal) return "slyDeal.png";
+            if (ac instanceof ActionCardItsMyBirthday) return "birthday.png";
+            if (ac instanceof ActionCardDebtCollector) return "debtCollector.png";
+            if (ac instanceof ActionCardJustSayNo) return "justSayNo.png";
+            if (ac instanceof ActionCardPassGo) return "passGo.png";
+            if (ac instanceof ActionCardDoubleTheRent) return "doubleTheRent.png";
+            if (ac instanceof ActionCardHouse) return "house.png";
+            if (ac instanceof ActionCardHotel) return "hotel.png";
+            return "passGo.png";
         }
         if (card instanceof RentCard rc) {
             if (rc.isWildRent()) {

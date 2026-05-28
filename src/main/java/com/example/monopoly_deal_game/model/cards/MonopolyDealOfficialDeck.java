@@ -152,47 +152,41 @@ public final class MonopolyDealOfficialDeck {
     // ---- Action Cards (34 张: 2+3+3+3+3+3+10+3+2+2) ----
     private static int appendActionCards(List<Card> d, int id) {
         // Deal Breaker: 2 张, 5M（抢夺一套完整物业）
-        id = actMany(d, id, 2, "Deal Breaker", 5,
-                ActionCard.ActionType.DEAL_BREAKER, true, false);
+        id = actMany(d, id, 2, "Deal Breaker", 5, ActionCardDealBreaker::new);
         // Sly Deal: 3 张, 3M（偷取一张非完整套的物业）
-        id = actMany(d, id, 3, "Sly Deal", 3,
-                ActionCard.ActionType.SLY_DEAL, true, false);
+        id = actMany(d, id, 3, "Sly Deal", 3, ActionCardSlyDeal::new);
         // Forced Deal: 3 张, 3M（强制交换一张物业）
-        id = actMany(d, id, 3, "Forced Deal", 3,
-                ActionCard.ActionType.FORCE_DEAL, true, false);
+        id = actMany(d, id, 3, "Forced Deal", 3, ActionCardForcedDeal::new);
         // Just Say No: 3 张, 4M（取消一次行动效果，不计入出牌限额）
         for (int i = 0; i < 3; i++) {
-            d.add(new JustSayNoCard(id++));
+            d.add(new ActionCardJustSayNo(id++, "Just Say No", 4));
         }
         // Debt Collector: 3 张, 3M（向指定玩家收取 5M）
-        id = actMany(d, id, 3, "Debt Collector", 3,
-                ActionCard.ActionType.DEBT_COLLECTOR, true, false);
+        id = actMany(d, id, 3, "Debt Collector", 3, ActionCardDebtCollector::new);
         // It's My Birthday: 3 张, 2M（向所有其他玩家收取 2M）
-        id = actMany(d, id, 3, "It's My Birthday", 2,
-                ActionCard.ActionType.ITS_MY_BIRTHDAY, true, false);
+        id = actMany(d, id, 3, "It's My Birthday", 2, ActionCardItsMyBirthday::new);
         // Pass Go: 10 张, 1M（额外抽 2 张牌）
-        id = actMany(d, id, 10, "Pass Go", 1,
-                ActionCard.ActionType.PASS_GO, true, false);
+        id = actMany(d, id, 10, "Pass Go", 1, ActionCardPassGo::new);
         // House: 3 张, 3M（在完整套上放置房屋，租金+3）
-        id = actMany(d, id, 3, "House", 3,
-                ActionCard.ActionType.HOUSE, true, false);
+        id = actMany(d, id, 3, "House", 3, ActionCardHouse::new);
         // Hotel: 2 张, 4M（在有房屋的完整套上再放旅馆，租金+4）
-        id = actMany(d, id, 2, "Hotel", 4,
-                ActionCard.ActionType.HOTEL, true, false);
+        id = actMany(d, id, 2, "Hotel", 4, ActionCardHotel::new);
         // Double the Rent: 2 张, 1M（下一张租金卡金额×2）
-        id = actMany(d, id, 2, "Double the Rent", 1,
-                ActionCard.ActionType.DOUBLE_RENT, true, false);
+        id = actMany(d, id, 2, "Double the Rent", 1, ActionCardDoubleTheRent::new);
         return id;
     }
 
+    @FunctionalInterface
+    private interface ActionCardFactory {
+        ActionCard create(int id, String name, int value);
+    }
+
     private static int actMany(List<Card> d, int start, int n, String name, int value,
-                                ActionCard.ActionType type, boolean countsTowardLimit,
-                                boolean undoable) {
+                                ActionCardFactory factory) {
         int id = start;
         for (int i = 0; i < n; i++) {
-            ActionCard ac = new ActionCard(id++, name, value, type);
-            ac.setCountsTowardLimit(countsTowardLimit);
-            ac.setUndoable(undoable);
+            ActionCard ac = factory.create(id++, name, value);
+            ac.setUndoable(true);
             d.add(ac);
         }
         return id;

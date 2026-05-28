@@ -3,7 +3,7 @@ package com.example.monopoly_deal_game.logic;
 import com.example.monopoly_deal_game.game.model.ActionState;
 import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.model.Player;
-import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo;
 import com.example.monopoly_deal_game.model.cards.Card;
 
 /**
@@ -79,7 +79,6 @@ public final class JustSayNoMediator {
     }
 
     private static boolean isJustSayNo(Card c) {
-        return c instanceof ActionCard ac
-                && ac.getActionType() == ActionCard.ActionType.JUST_SAY_NO;
+        return c instanceof ActionCardJustSayNo;
     }
 }

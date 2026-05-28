@@ -8,6 +8,7 @@ import com.example.monopoly_deal_game.game.rules.GameConfig;
 import com.example.monopoly_deal_game.model.PlayedCardSnapshot;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 import com.example.monopoly_deal_game.model.cards.RentCard;
@@ -84,8 +85,7 @@ public class GameLogic {
         Player currentPlayer = session.getCurrentPlayer();
         boolean isReaction = currentPlayer != null && !owner.equals(currentPlayer);
 
-        boolean isJSN = card instanceof ActionCard ac
-                && ac.getActionType() == ActionCard.ActionType.JUST_SAY_NO;
+        boolean isJSN = card instanceof ActionCardJustSayNo;
 
         // Check if player is allowed to act right now
         if (!isJSN) {

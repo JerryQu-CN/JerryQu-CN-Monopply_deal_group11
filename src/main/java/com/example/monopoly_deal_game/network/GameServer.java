@@ -283,7 +283,7 @@ public class GameServer {
 
         private static boolean removeJustSayNoFromPlayer(Player player, GameSession session) {
             for (var c : new ArrayList<>(player.getHand().getCards())) {
-                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCard ac && ac.getActionType() == com.example.monopoly_deal_game.model.cards.ActionCard.ActionType.JUST_SAY_NO) {
+                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo) {
                     if (player.getHand().removeCard(c)) {
                         session.discardCard(c);
                         return true;
@@ -291,7 +291,7 @@ public class GameServer {
                 }
             }
             for (var c : new ArrayList<>(player.getBank().getCards())) {
-                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCard ac && ac.getActionType() == com.example.monopoly_deal_game.model.cards.ActionCard.ActionType.JUST_SAY_NO) {
+                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo) {
                     if (player.getBank().removeCard(c)) {
                         session.discardCard(c);
                         return true;
