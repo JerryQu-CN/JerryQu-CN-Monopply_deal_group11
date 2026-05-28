@@ -332,8 +332,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
 
         try {
             CardPlayOptions merged = targetSelectionHandler.mergeTargets(
-                    session, card, options, this::setFeedback,
-                    this::refreshGameplayUi, networkSync, handCardPicker);
+                    session, card, options);
             if (merged == null) {
                 setFeedback("已取消选择目标玩家。");
                 refreshGameplayUi();
@@ -468,8 +467,10 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     }
 
     /**
-     * If the local player is a target of the current action state and has a JSN card,
-     * auto-trigger the JSN dialog so they can refuse the action.
+     * Check all pending targets of the current action state.
+     * For each unresponded human target: offer JSN if held, otherwise auto-accept.
+     * For AI targets: auto-accept immediately.
+     * In networked games only the local player is checked; offline covers all.
      */
     private void checkAndPromptJustSayNo(GameSession session) {
         if (session == null || dialogBusy.get()) return;
@@ -478,22 +479,52 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         ActionState as = gs.getActionState();
         if (as == null || as == gs.getTurnState()) return;
 
-        Player local = localPlayer(session);
-        if (local == null) return;
+        // Determine which targets to process
+        String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
+        boolean networked = localName != null && !localName.isBlank();
+        java.util.List<Player> toCheck = new java.util.ArrayList<>();
+        if (networked) {
+            Player local = session.localPlayer(localName);
+            if (local != null && as.isTarget(local)
+                    && !as.isRefused(local) && !as.isAccepted(local)) {
+                toCheck.add(local);
+            }
+        } else {
+            for (Player t : as.getTargetPlayers()) {
+                if (!as.isRefused(t) && !as.isAccepted(t)) {
+                    toCheck.add(t);
+                }
+            }
+        }
+        if (toCheck.isEmpty()) return;
 
-        // Only prompt if the local player is a target and hasn't already responded
-        if (!as.isTarget(local)) return;
-        if (as.isRefused(local) || as.isAccepted(local)) return;
-        if (!JustSayNoHandler.playerHasJustSayNo(local)) return;
+        for (Player target : toCheck) {
+            if (as.isRefused(target) || as.isAccepted(target)) continue;
 
-        String desc = as.getStatus() != null && !as.getStatus().isBlank()
-                ? as.getStatus()
-                : "对方对你使用了行动牌，你可以使用 Just Say No 反对。";
-        boolean used = justSayNoHandler.promptDialog(
-                local, as.getActionOwner(), session, desc);
-        if (used) {
-            networkSync.publishSessionChange(session);
-            refreshGameplayUi();
+            if (target.isAI()) {
+                // AI: auto-accept (JSN logic handled inside JustSayNoMediator if needed)
+                as.setAccepted(target, true);
+                continue;
+            }
+
+            // Human target
+            if (JustSayNoHandler.playerHasJustSayNo(target)) {
+                String desc = as.getStatus() != null && !as.getStatus().isBlank()
+                        ? as.getStatus()
+                        : "对方对你使用了行动牌，你可以使用 Just Say No 反对。";
+                boolean used = justSayNoHandler.promptDialog(
+                        target, as.getActionOwner(), session, desc);
+                if (used) {
+                    networkSync.publishSessionChange(session);
+                    refreshGameplayUi();
+                    return; // state changed, restart from top
+                }
+                // re-check after dialog
+                if (as.isRefused(target) || as.isAccepted(target)) continue;
+            }
+
+            // No JSN or chose not to use it — auto-accept
+            as.setAccepted(target, true);
         }
     }
 
