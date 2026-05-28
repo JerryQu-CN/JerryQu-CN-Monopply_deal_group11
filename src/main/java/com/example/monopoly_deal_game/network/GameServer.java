@@ -70,6 +70,7 @@ public class GameServer {
             this.roomId = roomId; this.hostName = hostName; this.maxPlayers = maxPlayers; this.players.add(hostName);
         }
         public String getRoomId(){return roomId;} public String getHostName(){return hostName;} public int getMaxPlayers(){return maxPlayers;} public int getPort(){return port;} public List<String> getPlayers(){return Collections.unmodifiableList(players);} public boolean isReady(){return ready;} public boolean isStarted(){return started;} public GameSession getSession(){return session;}
+        public boolean hasRemoteClients() { return !clients.isEmpty(); }
         public void broadcastSessionSnapshot() {
             if (session == null) return;
             NetworkMessage msg = NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)

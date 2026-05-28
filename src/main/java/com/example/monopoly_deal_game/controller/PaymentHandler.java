@@ -70,9 +70,20 @@ public class PaymentHandler {
         String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
         String roomId = AppContext.get().networkLobbyState().getRoomId();
 
+        // Only forward to remote clients when there are actual remote clients connected.
+        // In a single-machine game, show the dialog locally regardless of which player is the payer.
+        boolean shouldForward = false;
         if (roomId != null && !roomId.isBlank()
                 && localName != null && !localName.isBlank()
                 && !localName.equals(payer.getName())) {
+            if (AppContext.get().networkLobbyState().isHost()) {
+                GameServer.Room room = AppContext.get().gameServer().getRoom(roomId);
+                shouldForward = room != null && room.hasRemoteClients();
+            } else {
+                shouldForward = true;
+            }
+        }
+        if (shouldForward) {
             if (AppContext.get().networkLobbyState().isHost()) {
                 GameServer.Room room = AppContext.get().gameServer().getRoom(roomId);
                 if (room != null) {

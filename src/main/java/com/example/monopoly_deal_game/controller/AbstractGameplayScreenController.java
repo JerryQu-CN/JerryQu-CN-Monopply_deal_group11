@@ -479,11 +479,26 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         ActionState as = gs.getActionState();
         if (as == null || as == gs.getTurnState()) return;
 
-        // Determine which targets to process
+        // Determine which targets to process.
+        // In a truly networked game (multiple machines), only the local player needs to be
+        // checked here — other clients receive the session snapshot and process their own
+        // targets. In a single-machine game, all targets must be processed locally.
+        String roomId = AppContext.get().networkLobbyState().getRoomId();
+        boolean hasRemote = false;
+        if (roomId != null && !roomId.isBlank() && AppContext.get().networkLobbyState().isHost()) {
+            com.example.monopoly_deal_game.network.GameServer.Room room =
+                    AppContext.get().gameServer().getRoom(roomId);
+            hasRemote = room != null && room.hasRemoteClients();
+        }
+        if (!hasRemote && roomId != null && !roomId.isBlank()
+                && !AppContext.get().networkLobbyState().isHost()) {
+            // Non-host clients are remote by definition
+            hasRemote = true;
+        }
+
         String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
-        boolean networked = localName != null && !localName.isBlank();
         java.util.List<Player> toCheck = new java.util.ArrayList<>();
-        if (networked) {
+        if (hasRemote) {
             Player local = session.localPlayer(localName);
             if (local != null && as.isTarget(local)
                     && !as.isRefused(local) && !as.isAccepted(local)) {
