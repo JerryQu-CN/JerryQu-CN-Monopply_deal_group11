@@ -14,7 +14,7 @@ import javafx.stage.Stage;
 public class StartScreenController implements StageAware {
 
     @FXML
-    private Button botPlayerButton;
+    private Button joinRoomButton;
 
     @FXML
     private Button exitButton;
@@ -38,7 +38,7 @@ public class StartScreenController implements StageAware {
     }
 
     @FXML
-    void onBotPlayer(ActionEvent event) {
+    void onJoinRoom(ActionEvent event) {
         ScreenNavigation.show(stage, "JoinRoomScreen.fxml");
     }
 

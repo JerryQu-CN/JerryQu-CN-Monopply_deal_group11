@@ -67,7 +67,6 @@ public class Player implements Serializable {
         return isAI;
     }
 
-    /** 与同项目 {@link ComputerPlayer#isComputer()} 命名兼容。 */
     public boolean isComputer() {
         return isAI;
     }
@@ -174,43 +173,6 @@ public class Player implements Serializable {
         }
     }
 
-    public Property getPropertyById(String id) {
-        for (Property p : properties) {
-            if (p.getId().equals(id)) {
-                return p;
-            }
-        }
-        return null;
-    }
-
-    public int getTotalPropertyValue() {
-        int total = 0;
-        for (Property ps : properties) {
-            total += ps.getTotalValue();
-        }
-        return total;
-    }
-
-    /** 是否存在可收下该 {@link PropertyCard} 的一组物业。 */
-    public boolean hasCompatibleProperty(PropertyCard card) {
-        for (Property row : properties) {
-            if (row.accepts(card)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** 未满垄断且相容时，仍可往该组合并。 */
-    public boolean hasCompatiblePropertyWithRoom(PropertyCard card) {
-        for (Property row : properties) {
-            if (!row.isMonopoly() && row.accepts(card)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public boolean hasSingleColorProperty(CardColor color) {
         return getSingleColorProperty(color) != null;
     }
@@ -242,19 +204,6 @@ public class Player implements Serializable {
             }
         }
         return false;
-    }
-
-    public int getTotalMonetaryAssets() {
-        int total = 0;
-        for (Card card : bank.getCards()) {
-            total += card.getValue();
-        }
-        for (Property row : properties) {
-            for (PropertyCard pc : row.getCards()) {
-                total += pc.getValue();
-            }
-        }
-        return total;
     }
 
     /**

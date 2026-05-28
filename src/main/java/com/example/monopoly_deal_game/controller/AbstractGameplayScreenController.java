@@ -1,31 +1,23 @@
 package com.example.monopoly_deal_game.controller;
 
 import com.example.monopoly_deal_game.game.engine.GameEngine;
+import com.example.monopoly_deal_game.game.model.ActionState;
 import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.game.model.GameState;
+import com.example.monopoly_deal_game.game.rules.GameConfig;
 import com.example.monopoly_deal_game.logic.*;
-import com.example.monopoly_deal_game.model.cards.ActionCard;
+import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.BankCard;
 import com.example.monopoly_deal_game.model.cards.Card;
-import com.example.monopoly_deal_game.model.cards.CardColor;
-import com.example.monopoly_deal_game.model.cards.PropertyCard;
-import com.example.monopoly_deal_game.model.Player;
-import com.example.monopoly_deal_game.model.Property;
-import com.example.monopoly_deal_game.model.cards.RentCard;
-import com.example.monopoly_deal_game.network.GameServer;
+import com.example.monopoly_deal_game.network.NetworkMessage;
 import com.example.monopoly_deal_game.view.GameplayUiBundle;
 import com.example.monopoly_deal_game.view.GameplayViewCoordinator;
 import com.example.monopoly_deal_game.view.MoneyHudText;
-import javafx.beans.InvalidationListener;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
@@ -33,14 +25,18 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
-public abstract class AbstractGameplayScreenController implements StageAware, Initializable {
+public abstract class
+AbstractGameplayScreenController implements StageAware, Initializable {
+
     private static final double[] UI_SCALE_STEPS = {0.85, 1.0, 1.15, 1.3};
     private final AtomicInteger scaleIndex = new AtomicInteger(1);
+
+    // ---- FXML-injected fields ----
     @FXML protected AnchorPane gameRoot;
     @FXML protected HBox topbar;
     @FXML protected Button menuButton;
@@ -66,58 +62,300 @@ public abstract class AbstractGameplayScreenController implements StageAware, In
     @FXML protected StackPane menuOverlay;
     @FXML protected Button menuReturnButton;
     @FXML protected Button menuLeaveButton;
+
+    // ---- infrastructure ----
     protected Stage stage;
     protected GameplayViewCoordinator viewCoordinator;
-    private Card selectedHandCard;
-    private boolean dialogBusy;
-    private final LinkedHashSet<Card> discardSelections = new LinkedHashSet<>();
-    private InvalidationListener playChromeLayoutListener;
-    private static final double PLAY_CHROME_BOTTOM_INSET = 216;
+    private final AtomicBoolean dialogBusy = new AtomicBoolean(false);
+
+    // ---- extracted helpers ----
+    private NetworkSyncHelper networkSync;
+    private HandCardPicker handCardPicker;
+    private JustSayNoHandler justSayNoHandler;
+    private PaymentHandler paymentHandler;
+    private PlayChromeBuilder playChromeBuilder;
+    private TargetSelectionHandler targetSelectionHandler;
+
+    // ---- StageAware ----
     @Override public void setStage(Stage stage) { this.stage = stage; }
-    @Override public void initialize(URL location, ResourceBundle resources) { versionLabel.setText("dev"); syncScaleLabel(); if (actionLayer != null) actionLayer.setPickOnBounds(false); viewCoordinator = new GameplayViewCoordinator(toUiBundle()); viewCoordinator.setOnHandCardPick(this::handleHandCardPick); installJustSayNoHandler(); installPaymentPicker(); java.util.function.Consumer<com.example.monopoly_deal_game.network.NetworkMessage> snapshotHandler = msg -> { if (msg != null && msg.getType() == com.example.monopoly_deal_game.network.NetworkMessage.Type.PAYMENT_REQUEST) { handlePaymentRequestMessage(msg); return; } if (msg != null && msg.getType() == com.example.monopoly_deal_game.network.NetworkMessage.Type.JUST_SAY_NO_REQUEST) { handleJustSayNoRequestMessage(msg); return; } if (msg != null && msg.getType() == com.example.monopoly_deal_game.network.NetworkMessage.Type.SESSION_SNAPSHOT && msg.getSession() != null) { javafx.application.Platform.runLater(() -> { AppContext.get().networkLobbyState().setSession(msg.getSession()); AppContext.get().gameEngine().resumeSession(msg.getSession()); selectedHandCard = null; discardSelections.clear(); refreshGameplayUi(); }); } }; AppContext.get().networkLobbyState().addListener(snapshotHandler); HostLobbyBridge.setListener(snapshotHandler); if (undoButton != null) { undoButton.setDisable(true); undoButton.setTooltip(new Tooltip("暂未开放：原计划用于撤回上一次打出的牌并恢复棋盘状态。\n当前对局无快照机制，为避免误触已禁用该按钮。")); } if (gameRoot != null) gameRoot.setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent;"); refreshGameplayUi(); }
-    private void handlePaymentRequestMessage(com.example.monopoly_deal_game.network.NetworkMessage msg) { javafx.application.Platform.runLater(() -> { String localName = AppContext.get().networkLobbyState().getLocalPlayerName(); if (localName == null || !localName.equals(msg.getPayerName())) return; GameSession session = msg.getSession() != null ? msg.getSession() : AppContext.get().gameEngine().getCurrentSession(); if (session == null) return; Player payer = null; Player receiver = null; for (Player p : session.getPlayers()) { if (p != null && msg.getPayerName().equals(p.getName())) payer = p; if (p != null && msg.getReceiverName().equals(p.getName())) receiver = p; } if (payer == null || receiver == null) return; if (JustSayNoMediator.tryBlockAgainstPlayer(payer, receiver, session, msg.getText())) { sendPaymentResponse(msg, localName, payer, receiver, java.util.List.of(), false); return; } var picked = PaymentPickDialogs.choosePaymentCards(stage, payer, msg.getAmountM(), receiver, session, msg.getText()); sendPaymentResponse(msg, localName, payer, receiver, picked.orElse(java.util.List.of()), picked.isPresent()); }); }
-    private void sendPaymentResponse(com.example.monopoly_deal_game.network.NetworkMessage msg, String localName, Player payer, Player receiver, java.util.List<Card> cards, boolean accepted) { try { var client = AppContext.get().networkLobbyState().getClient(); if (client != null) { client.send(com.example.monopoly_deal_game.network.NetworkMessage.builder(com.example.monopoly_deal_game.network.NetworkMessage.Type.PAYMENT_RESPONSE).roomId(msg.getRoomId()).requestId(msg.getRequestId()).playerName(localName).payerName(payer.getName()).receiverName(receiver.getName()).selectedCards(cards).accepted(accepted).build()); } } catch (Exception ex) { setFeedback("发送支付响应失败：" + ex.getMessage()); } }
-    private void handleJustSayNoRequestMessage(com.example.monopoly_deal_game.network.NetworkMessage msg) { javafx.application.Platform.runLater(() -> { String localName = AppContext.get().networkLobbyState().getLocalPlayerName(); if (localName == null || !localName.equals(msg.getPayerName())) return; GameSession session = msg.getSession() != null ? msg.getSession() : AppContext.get().gameEngine().getCurrentSession(); if (session == null) return; Player respondent = null; Player activator = null; for (Player p : session.getPlayers()) { if (p != null && msg.getPayerName().equals(p.getName())) respondent = p; if (p != null && msg.getReceiverName() != null && msg.getReceiverName().equals(p.getName())) activator = p; } if (respondent == null) return; boolean accepted = promptJustSayNoDialog(respondent, activator, msg.getText()); try { var client = AppContext.get().networkLobbyState().getClient(); if (client != null) { client.send(com.example.monopoly_deal_game.network.NetworkMessage.builder(com.example.monopoly_deal_game.network.NetworkMessage.Type.JUST_SAY_NO_RESPONSE).roomId(msg.getRoomId()).requestId(msg.getRequestId()).playerName(localName).payerName(respondent.getName()).receiverName(activator != null ? activator.getName() : null).accepted(accepted).build()); } } catch (Exception ex) { setFeedback("发送反对响应失败：" + ex.getMessage()); } }); }
-    private static boolean playerHasJustSayNo(Player player) { if (player == null) return false; for (Card c : player.getHand().getCards()) if (c instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.JUST_SAY_NO) return true; for (Card c : player.getBank().getCards()) if (c instanceof ActionCard ac && ac.getActionType() == ActionCard.ActionType.JUST_SAY_NO) return true; return false; }
-    private void installJustSayNoHandler() { JustSayNoMediator.installUi(this::promptJustSayNoDialog); }
-    private void installPaymentPicker() { PaymentPickerMediator.installUi((payer, amountDueM, receiver, session, reasonText) -> { if (payer == null) return java.util.Optional.empty(); String localName = AppContext.get().networkLobbyState().getLocalPlayerName(); String roomId = AppContext.get().networkLobbyState().getRoomId(); if (roomId != null && !roomId.isBlank() && localName != null && !localName.isBlank() && !localName.equals(payer.getName())) { if (AppContext.get().networkLobbyState().isHost()) { GameServer.Room room = AppContext.get().gameServer().getRoom(roomId); if (room != null) room.broadcastPaymentRequest(java.util.UUID.randomUUID().toString(), payer, receiver, amountDueM, session, reasonText); } else { try { var client = AppContext.get().networkLobbyState().getClient(); if (client != null) client.send(com.example.monopoly_deal_game.network.NetworkMessage.builder(com.example.monopoly_deal_game.network.NetworkMessage.Type.PAYMENT_REQUEST).roomId(roomId).requestId(java.util.UUID.randomUUID().toString()).payerName(payer.getName()).receiverName(receiver != null ? receiver.getName() : null).amountM(amountDueM).session(session).text(reasonText).build()); } catch (Exception ex) { setFeedback("发送支付请求失败：" + ex.getMessage()); } } return java.util.Optional.empty(); } return PaymentPickDialogs.choosePaymentCards(stage, payer, amountDueM, receiver, session, reasonText); }); }
-    private boolean promptJustSayNoDialog(Player respondent, Player activator, String situation) { if (dialogBusy) return false; dialogBusy = true; try { GameSession session = AppContext.get().gameEngine().getCurrentSession(); if (respondent == null || !playerHasJustSayNo(respondent)) return false; String roomId = AppContext.get().networkLobbyState().getRoomId(); if (roomId != null && !roomId.isBlank()) { Player local = localPlayer(session); if (local == null || !local.getName().equals(respondent.getName())) { if (AppContext.get().networkLobbyState().isHost()) { GameServer.Room room = AppContext.get().gameServer().getRoom(roomId); if (room != null) room.broadcastJustSayNoRequest(java.util.UUID.randomUUID().toString(), respondent, activator, session, situation); } else { try { var client = AppContext.get().networkLobbyState().getClient(); if (client != null) client.send(com.example.monopoly_deal_game.network.NetworkMessage.builder(com.example.monopoly_deal_game.network.NetworkMessage.Type.JUST_SAY_NO_REQUEST).roomId(roomId).requestId(java.util.UUID.randomUUID().toString()).payerName(respondent.getName()).receiverName(activator != null ? activator.getName() : null).session(session).text(situation).build()); } catch (Exception ex) { setFeedback("发送 Just Say No 请求失败：" + ex.getMessage()); } } return false; } } var useNo = new ButtonType("使用 Just Say No（反对）", ButtonBar.ButtonData.APPLY); Alert alert = new Alert(Alert.AlertType.CONFIRMATION, situation + "\n\n你的「反对（Just Say No）」在手牌或银行中。\n• 若使用：当场弃掉该张反对，并抵消本条仅对你的效果。\n• 若不使用：结算照常继续。", useNo, new ButtonType("不使用反对（继续结算）", ButtonBar.ButtonData.CANCEL_CLOSE)); alert.setTitle("Just Say No"); if (stage != null) alert.initOwner(stage); String act = activator != null ? activator.getName() : "对方"; alert.setHeaderText(respondent.getName() + " — 是否要反对「" + act + "」的举动？"); boolean use = alert.showAndWait().filter(r -> r == useNo).isPresent();
-if (use) {
-    // 和 playCard 一样：找 JSN → 移除 → 弃牌 → 刷新 UI
-    boolean found = false;
-    for (com.example.monopoly_deal_game.model.cards.Card c : new java.util.ArrayList<>(respondent.getHand().getCards())) {
-        if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCard ac
-                && ac.getActionType() == com.example.monopoly_deal_game.model.cards.ActionCard.ActionType.JUST_SAY_NO) {
-            respondent.getHand().removeCard(c); session.discardCard(c); found = true; break;
+
+    // ---- initialize ----
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        versionLabel.setText("dev");
+        syncScaleLabel();
+        if (actionLayer != null) actionLayer.setPickOnBounds(false);
+
+        // create helpers
+        networkSync = new NetworkSyncHelper(this::setFeedback);
+        justSayNoHandler = new JustSayNoHandler(stage, this::setFeedback,
+                this::refreshGameplayUi, networkSync, dialogBusy);
+        paymentHandler = new PaymentHandler(stage, this::setFeedback, networkSync);
+        handCardPicker = new HandCardPicker(dialogBusy);
+        playChromeBuilder = new PlayChromeBuilder();
+        targetSelectionHandler = new TargetSelectionHandler(stage, dialogBusy);
+
+        // view coordinator
+        viewCoordinator = new GameplayViewCoordinator(toUiBundle());
+        viewCoordinator.setOnHandCardPick(this::handleHandCardPick);
+
+        // register mediator UIs
+        justSayNoHandler.installIntoMediator();
+        paymentHandler.installIntoMediator();
+
+        // network snapshot listener
+        installNetworkSnapshotListener();
+
+        // disable undo (not yet implemented)
+        if (undoButton != null) {
+            undoButton.setDisable(true);
+            undoButton.setTooltip(new Tooltip("暂未开放：原计划用于撤回上一次打出的牌并恢复棋盘状态。"));
+        }
+        if (gameRoot != null) gameRoot.setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+        refreshGameplayUi();
+    }
+
+    private void installNetworkSnapshotListener() {
+        Consumer<NetworkMessage> handler = msg -> {
+            if (msg != null && msg.getType() == NetworkMessage.Type.PAYMENT_REQUEST) {
+                paymentHandler.handleRequestMessage(msg);
+                return;
+            }
+            if (msg != null && msg.getType() == NetworkMessage.Type.JUST_SAY_NO_REQUEST) {
+                justSayNoHandler.handleRequestMessage(msg);
+                return;
+            }
+            if (msg != null && msg.getType() == NetworkMessage.Type.SESSION_SNAPSHOT
+                    && msg.getSession() != null) {
+                Platform.runLater(() -> {
+                    AppContext.get().networkLobbyState().setSession(msg.getSession());
+                    AppContext.get().gameEngine().resumeSession(msg.getSession());
+                    handCardPicker.clearAll();
+                    refreshGameplayUi();
+                });
+            }
+        };
+        AppContext.get().networkLobbyState().addListener(handler);
+        HostLobbyBridge.setListener(handler);
+    }
+
+    // ---- FXML actions ----
+
+    @FXML protected void onMenu(ActionEvent event) {
+        menuOverlay.setVisible(true);
+        menuOverlay.setManaged(true);
+    }
+
+    @FXML protected void onMenuReturn(ActionEvent event) {
+        menuOverlay.setVisible(false);
+        menuOverlay.setManaged(false);
+    }
+
+    @FXML protected void onMenuLeave(ActionEvent event) {
+        handCardPicker.clearAll();
+        justSayNoHandler.uninstallFromMediator();
+        paymentHandler.uninstallFromMediator();
+        AppContext.get().gameEngine().clearSession();
+        if (stage != null) ScreenNavigation.show(stage, "StartScreen.fxml");
+    }
+
+    @FXML protected void onDebug(ActionEvent event) { /* reserved */ }
+
+    @FXML protected void onUiMinus(ActionEvent event) {
+        int i = scaleIndex.get();
+        if (i > 0) { scaleIndex.set(i - 1); syncScaleLabel(); }
+    }
+
+    @FXML protected void onUiPlus(ActionEvent event) {
+        int i = scaleIndex.get();
+        if (i < UI_SCALE_STEPS.length - 1) { scaleIndex.set(i + 1); syncScaleLabel(); }
+    }
+
+    @FXML protected void onPrimaryAction(ActionEvent event) {
+        if (dialogBusy.get()) { setFeedback("请先完成当前弹窗选择。"); return; }
+
+        GameEngine engine = AppContext.get().gameEngine();
+        GameSession session = engine.getCurrentSession();
+        if (session == null) return;
+
+        if (!isLocalPlayersTurn(session)) {
+            setFeedback("当前轮到 " + (session.getCurrentPlayer() != null
+                    ? session.getCurrentPlayer().getName() : "其他玩家") + "，请等待。");
+            refreshGameplayUi();
+            return;
+        }
+
+        GameLogic logic = engine.getGameLogic();
+        GameState state = session.getGameState();
+        if (state.isGameOver()) return;
+
+        switch (state.getPhase()) {
+            case DRAW_PHASE -> handleDrawPhase(logic, session, state);
+            case PLAY_PHASE -> handlePlayPhase(logic, session, state);
+            case DISCARD_PHASE -> handleDiscardPhase(logic, session);
+            case WAITING_FOR_SELECTION -> setFeedback("请等待弹窗选择完成。");
+        }
+
+        networkSync.publishSessionChange(session);
+        refreshGameplayUi();
+    }
+
+    private void handleDrawPhase(GameLogic logic, GameSession session, GameState state) {
+        clearFeedback();
+        if (state.isHasDrawnThisTurn()) {
+            setFeedback("本回合已经摸过牌，请出牌或结束回合。");
+        } else {
+            logic.drawCard(session);
         }
     }
-    if (!found) {
-        for (com.example.monopoly_deal_game.model.cards.Card c : new java.util.ArrayList<>(respondent.getBank().getCards())) {
-            if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCard ac
-                    && ac.getActionType() == com.example.monopoly_deal_game.model.cards.ActionCard.ActionType.JUST_SAY_NO) {
-                respondent.getBank().removeCard(c); session.discardCard(c); break;
+
+    private void handlePlayPhase(GameLogic logic, GameSession session, GameState state) {
+        Card selected = handCardPicker.getSelectedHandCard();
+        if (selected == null) {
+            clearFeedback();
+            logic.endTurn(session);
+            return;
+        }
+        if (PlayChromeBuilder.requiresExplicitPlayMode(selected)) {
+            setFeedback("请使用牌桌上方蓝色条内的按钮：使用效果 / 存入银行（或选租金颜色）。");
+            return;
+        }
+        try {
+            boolean ok = logic.playCard(session, selected);
+            if (ok) {
+                clearFeedback();
+                handCardPicker.setSelectedHandCard(null);
+                if (logic.checkGameOver(session)) state.setGameOver(true);
+            } else {
+                setFeedback("无法出牌：须先摸牌、本回合已满" + GameConfig.MAX_PLAY_PER_TURN + "张，或手牌引用异常。");
+            }
+        } catch (IllegalStateException ex) {
+            setFeedback(ex.getMessage() != null ? ex.getMessage() : "出牌条件不满足");
+        }
+    }
+
+    private void handleDiscardPhase(GameLogic logic, GameSession session) {
+        Player cur = session.getCurrentPlayer();
+        if (cur == null) return;
+        int handSize = cur.getHand().size();
+        int mustDiscard = handSize - GameConfig.MAX_HAND_SIZE_END_TURN;
+        if (mustDiscard <= 0) return;
+
+        int selected = handCardPicker.getDiscardSelections().size();
+        if (selected < mustDiscard) {
+            setFeedback("请至少再选 " + (mustDiscard - selected)
+                    + " 张弃掉（当前 " + handSize + " 张手牌，弃后须 ≤"
+                    + GameConfig.MAX_HAND_SIZE_END_TURN + "）。");
+        } else if (handSize - selected > GameConfig.MAX_HAND_SIZE_END_TURN) {
+            setFeedback("所选张数不够：弃掉这些后手牌仍会超过 "
+                    + GameConfig.MAX_HAND_SIZE_END_TURN + " 张，请多选几张。");
+        } else {
+            logic.discardFromHandChosen(session,
+                    new ArrayList<>(handCardPicker.getDiscardSelections()));
+            handCardPicker.clearAll();
+        }
+    }
+
+    @FXML protected void onUndo(ActionEvent event) { /* reserved */ }
+
+    // ---- hand card pick delegate ----
+
+    private void handleHandCardPick(Card card) {
+        GameSession session = AppContext.get().gameEngine().getCurrentSession();
+        if (handCardPicker.handlePick(card, session, this::setFeedback)) {
+            refreshGameplayUi();
+        }
+    }
+
+    // ---- feedback helpers ----
+
+    private void setFeedback(String msg) {
+        if (feedbackLabel != null) {
+            feedbackLabel.setText(msg == null ? "" : msg);
+            feedbackLabel.setVisible(msg != null && !msg.isBlank());
+            feedbackLabel.setManaged(msg != null && !msg.isBlank());
+        }
+    }
+
+    private void clearFeedback() { setFeedback(""); }
+
+    // ---- UI refresh ----
+
+    public void refreshSessionUi() { refreshGameplayUi(); }
+
+    protected void refreshGameplayUi() {
+        GameSession session = AppContext.get().gameEngine().getCurrentSession();
+        if (session == null) {
+            handCardPicker.clearAll();
+        } else {
+            GameState gs = session.getGameState();
+            if (gs.getPhase() == GameState.Phase.DISCARD_PHASE) {
+                handCardPicker.setSelectedHandCard(null);
+                handCardPicker.pruneDiscardSelections(session.getCurrentPlayer());
+            } else {
+                handCardPicker.clearDiscardSelections();
             }
         }
+        applyHud(session);
+        if (viewCoordinator != null) {
+            viewCoordinator.refreshFromSession(session,
+                    handCardPicker.getSelectedHandCard(),
+                    handCardPicker.getDiscardSelections());
+        }
+        // auto-trigger JSN dialog if local player is targeted by an action
+        checkAndPromptJustSayNo(session);
+        // play chrome
+        Card selected = handCardPicker.getSelectedHandCard();
+        VBox dock = playChromeBuilder.build(session, selected,
+                opts -> tryPlayWithOptions(session, opts), this::refreshGameplayUi);
+        if (dock != null) {
+            playChromeBuilder.attach(actionLayer, dock);
+        } else {
+            playChromeBuilder.detach(actionLayer);
+        }
     }
-    refreshGameplayUi();
-}
-return use; } finally { dialogBusy = false; } }
-    protected GameplayUiBundle toUiBundle() { return new GameplayUiBundle(gameRoot, topbar, leftSidebar, deckPane, discardPane, voidPane, opponentsPane, selfBoardPane, handPane, actionLayer, menuOverlay, chatPaneOrNull()); }
-    protected Pane chatPaneOrNull() { return null; }
-    @FXML protected void onMenu(ActionEvent event) { menuOverlay.setVisible(true); menuOverlay.setManaged(true); }
-    @FXML protected void onMenuReturn(ActionEvent event) { menuOverlay.setVisible(false); menuOverlay.setManaged(false); }
-    @FXML protected void onMenuLeave(ActionEvent event) { selectedHandCard = null; discardSelections.clear(); JustSayNoMediator.clearUi(); PaymentPickerMediator.clearUi(); AppContext.get().gameEngine().clearSession(); if (stage != null) ScreenNavigation.show(stage, "StartScreen.fxml"); }
-    @FXML protected void onDebug(ActionEvent event) { }
-    @FXML protected void onUiMinus(ActionEvent event) { int i = scaleIndex.get(); if (i > 0) { scaleIndex.set(i - 1); syncScaleLabel(); } }
-    @FXML protected void onUiPlus(ActionEvent event) { int i = scaleIndex.get(); if (i < UI_SCALE_STEPS.length - 1) { scaleIndex.set(i + 1); syncScaleLabel(); } }
-    @FXML protected void onPrimaryAction(ActionEvent event) { if (dialogBusy) { setFeedback("请先完成当前弹窗选择。 "); return; } GameEngine engine = AppContext.get().gameEngine(); GameSession session = engine.getCurrentSession(); if (session == null) return; if (!isLocalPlayersTurn(session)) { setFeedback("当前轮到 " + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "其他玩家") + "，请等待。 "); refreshGameplayUi(); return; } GameLogic logic = engine.getGameLogic(); GameState state = session.getGameState(); if (state.isGameOver()) return; if (state.getPhase() == GameState.Phase.WAITING_FOR_SELECTION) { setFeedback("请等待弹窗选择完成。 "); return; } if (state.getPhase() == GameState.Phase.DRAW_PHASE) { clearFeedback(); if (state.isHasDrawnThisTurn()) setFeedback("本回合已经摸过牌，请出牌或结束回合。"); else logic.drawCard(session); } else if (state.getPhase() == GameState.Phase.PLAY_PHASE) { if (selectedHandCard != null) { if (requiresExplicitPlayMode(selectedHandCard)) { setFeedback("请使用牌桌上方蓝色条内的按钮：使用效果 / 存入银行（或选租金颜色）。"); } else { try { boolean ok = logic.playCard(session, selectedHandCard); if (ok) { clearFeedback(); selectedHandCard = null; if (logic.checkGameOver(session)) state.setGameOver(true); } else { setFeedback("无法出牌：须先摸牌、本回合已满3张，或手牌引用异常。"); } } catch (IllegalStateException ex) { setFeedback(ex.getMessage() != null ? ex.getMessage() : "出牌条件不满足"); } } } else { clearFeedback(); logic.endTurn(session); } } else { clearFeedback(); Player cur = session.getCurrentPlayer(); if (cur == null) return; int handSize = cur.getHand().size(); int mustDiscard = handSize - 7; if (mustDiscard <= 0) return; if (discardSelections.size() < mustDiscard) setFeedback("请至少再选 " + (mustDiscard - discardSelections.size()) + " 张弃掉（当前 " + handSize + " 张手牌，弃后须 ≤7）。"); else if (handSize - discardSelections.size() > 7) setFeedback("所选张数不够：弃掉这些后手牌仍会超过 7 张，请多选几张。"); else { logic.discardFromHandChosen(session, new ArrayList<>(discardSelections)); discardSelections.clear(); selectedHandCard = null; } } publishSessionChange(session); refreshGameplayUi(); }
-    private void handleHandCardPick(Card card) { if (dialogBusy) { setFeedback("请先完成当前弹窗选择。 "); return; } if (card == null) return; GameSession session = AppContext.get().gameEngine().getCurrentSession(); if (session == null) return; if (!isLocalPlayersTurn(session)) { setFeedback("当前轮到 " + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "其他玩家") + "，你只能查看自己的手牌。 "); refreshGameplayUi(); return; } GameState.Phase phase = session.getGameState().getPhase(); if (phase == GameState.Phase.DISCARD_PHASE) { selectedHandCard = null; if (discardSelections.contains(card)) discardSelections.remove(card); else discardSelections.add(card); clearFeedback(); refreshGameplayUi(); return; } if (phase != GameState.Phase.PLAY_PHASE) { selectedHandCard = null; if (phase == GameState.Phase.DRAW_PHASE) setFeedback("请先点「摸牌」，再进入出牌阶段选手牌。"); else setFeedback("当前阶段不可选手牌。"); refreshGameplayUi(); return; } discardSelections.clear(); selectedHandCard = selectedHandCard == card ? null : card; clearFeedback(); refreshGameplayUi(); }
-    private void setFeedback(String msg) { if (feedbackLabel != null) { feedbackLabel.setText(msg == null ? "" : msg); feedbackLabel.setVisible(msg != null && !msg.isBlank()); feedbackLabel.setManaged(msg != null && !msg.isBlank()); } }
-    private void clearFeedback() { setFeedback(""); }
-    @FXML protected void onUndo(ActionEvent event) { }
-    private void syncScaleLabel() { double s = UI_SCALE_STEPS[scaleIndex.get()]; uiScaleLabel.setText(String.format("%.2fx", s)); if (gameRoot != null) { gameRoot.setScaleX(s); gameRoot.setScaleY(s); } }
-    public void refreshSessionUi() { refreshGameplayUi(); }
-    protected void refreshGameplayUi() { GameSession session = AppContext.get().gameEngine().getCurrentSession(); if (session == null) discardSelections.clear(); else { GameState gs = session.getGameState(); if (gs.getPhase() == GameState.Phase.DISCARD_PHASE) { selectedHandCard = null; Player cur = session.getCurrentPlayer(); if (cur != null) discardSelections.removeIf(c -> !cur.getHand().getCards().contains(c)); } else discardSelections.clear(); } applyHud(session); if (viewCoordinator != null) viewCoordinator.refreshFromSession(session, selectedHandCard, discardSelections); updatePlayChrome(session); }
+
+    // ---- try-play with options ----
+
+    private void tryPlayWithOptions(GameSession session, CardPlayOptions options) {
+        if (dialogBusy.get()) { setFeedback("请先完成当前弹窗选择。"); return; }
+        if (!isLocalPlayersTurn(session)) {
+            setFeedback("当前轮到 " + (session.getCurrentPlayer() != null
+                    ? session.getCurrentPlayer().getName() : "其他玩家") + "，请等待。");
+            refreshGameplayUi();
+            return;
+        }
+
+        GameLogic logic = AppContext.get().gameEngine().getGameLogic();
+        Card card = handCardPicker.getSelectedHandCard();
+        if (card == null || session == null) return;
+
+        try {
+            CardPlayOptions merged = targetSelectionHandler.mergeTargets(
+                    session, card, options, this::setFeedback,
+                    this::refreshGameplayUi, networkSync, handCardPicker);
+            if (merged == null) {
+                setFeedback("已取消选择目标玩家。");
+                refreshGameplayUi();
+                return;
+            }
+            boolean ok = logic.playCard(session, card, merged);
+            if (ok) {
+                if (!merged.jsnBlocked()) clearFeedback();
+                handCardPicker.setSelectedHandCard(null);
+                if (logic.checkGameOver(session)) session.getGameState().setGameOver(true);
+                networkSync.publishSessionChange(session);
+            } else {
+                setFeedback("无法这样打出，请检查手序、次数或前提条件。");
+            }
+        } catch (IllegalStateException ex) {
+            setFeedback(ex.getMessage() != null ? ex.getMessage() : "出牌条件不满足");
+        }
+        refreshGameplayUi();
+    }
+
+    // ---- HUD ----
+
     private void applyHud(GameSession session) {
         if (session == null) {
             topbarTitle.setText("Monopoly Deal — 未开始对局");
@@ -132,6 +370,7 @@ return use; } finally { dialogBusy = false; } }
         Player local = localPlayer(session);
         String who = current != null ? current.getName() : "?";
         boolean myTurn = isLocalPlayersTurn(session);
+
         if (state.isGameOver()) {
             topbarTitle.setText("对局结束");
             movesLabel.setText("—");
@@ -140,37 +379,48 @@ return use; } finally { dialogBusy = false; } }
             primaryActionButton.setDisable(true);
             return;
         }
-        topbarTitle.setText("当前回合: " + who + (myTurn ? "（你）" : "（等待）") + "  │  " + formatPhase(state.getPhase()));
-        movesLabel.setText("本回合出牌: " + state.getCardsPlayedThisTurn() + " / 3");
-        if (moneyHudLabel != null) moneyHudLabel.setText(MoneyHudText.forPlayer(local != null ? local : current));
+
+        topbarTitle.setText("当前回合: " + who + (myTurn ? "（你）" : "（等待）")
+                + "  │  " + formatPhase(state.getPhase()));
+        movesLabel.setText("本回合出牌: " + state.getCardsPlayedThisTurn()
+                + " / " + GameConfig.MAX_PLAY_PER_TURN);
+        if (moneyHudLabel != null) moneyHudLabel.setText(
+                MoneyHudText.forPlayer(local != null ? local : current));
+
         switch (state.getPhase()) {
             case DRAW_PHASE -> {
                 primaryActionButton.setText(myTurn ? "摸牌" : "等待 " + who + " 摸牌");
                 primaryActionButton.setDisable(!myTurn);
             }
             case PLAY_PHASE -> {
-                if (feedbackLabel != null && feedbackLabel.getText() != null && feedbackLabel.getText().startsWith("提示：")) feedbackLabel.setText("");
-                if (feedbackLabel != null) feedbackLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: #c62828; -fx-padding: 2 0 4 0;");
+                if (feedbackLabel != null && feedbackLabel.getText() != null
+                        && feedbackLabel.getText().startsWith("提示：")) feedbackLabel.setText("");
+                if (feedbackLabel != null)
+                    feedbackLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: #c62828; -fx-padding: 2 0 4 0;");
                 if (!myTurn) {
                     primaryActionButton.setText("等待 " + who + " 出牌");
                     primaryActionButton.setDisable(true);
-                } else if (selectedHandCard == null) {
-                    primaryActionButton.setDisable(false);
-                    primaryActionButton.setText("结束回合");
-                } else if (requiresExplicitPlayMode(selectedHandCard)) {
-                    primaryActionButton.setDisable(true);
-                    primaryActionButton.setText("请用上方按钮出牌");
-                } else if (selectedHandCard instanceof BankCard) {
-                    primaryActionButton.setDisable(false);
-                    primaryActionButton.setText("打出(入银行)");
                 } else {
-                    primaryActionButton.setDisable(false);
-                    primaryActionButton.setText("打出选中牌");
+                    Card sel = handCardPicker.getSelectedHandCard();
+                    if (sel == null) {
+                        primaryActionButton.setDisable(false);
+                        primaryActionButton.setText("结束回合");
+                    } else if (PlayChromeBuilder.requiresExplicitPlayMode(sel)) {
+                        primaryActionButton.setDisable(true);
+                        primaryActionButton.setText("请用上方按钮出牌");
+                    } else if (sel instanceof BankCard) {
+                        primaryActionButton.setDisable(false);
+                        primaryActionButton.setText("打出(入银行)");
+                    } else {
+                        primaryActionButton.setDisable(false);
+                        primaryActionButton.setText("打出选中牌");
+                    }
                 }
             }
             case DISCARD_PHASE -> {
                 int handSize = current != null ? current.getHand().size() : 0;
-                int must = Math.max(0, handSize - 7);
+                int must = Math.max(0, handSize - GameConfig.MAX_HAND_SIZE_END_TURN);
+                int sel = handCardPicker.getDiscardSelections().size();
                 if (!myTurn) {
                     primaryActionButton.setText("等待 " + who + " 弃牌");
                     primaryActionButton.setDisable(true);
@@ -179,8 +429,8 @@ return use; } finally { dialogBusy = false; } }
                     primaryActionButton.setDisable(true);
                 } else {
                     primaryActionButton.setText("确认弃掉所选（至少 " + must + " 张）");
-                    boolean ok = discardSelections.size() >= must && handSize - discardSelections.size() <= 7;
-                    primaryActionButton.setDisable(!ok);
+                    primaryActionButton.setDisable(
+                            sel < must || handSize - sel > GameConfig.MAX_HAND_SIZE_END_TURN);
                 }
             }
             case WAITING_FOR_SELECTION -> {
@@ -189,256 +439,71 @@ return use; } finally { dialogBusy = false; } }
             }
         }
     }
-    private boolean isLocalPlayersTurn(GameSession session) { Player local = localPlayer(session); Player current = session != null ? session.getCurrentPlayer() : null; return local != null && current != null && local.equals(current); }
-    private Player localPlayer(GameSession session) { if (session == null) return null; String localName = AppContext.get().networkLobbyState().getLocalPlayerName(); if (localName == null || localName.isBlank()) return session.getCurrentPlayer(); for (Player p : session.getPlayers()) { if (localName.equals(p.getName())) return p; } return session.getCurrentPlayer(); }
-    private void publishSessionChange(GameSession session) { if (session == null) return; AppContext.get().networkLobbyState().setSession(session); String roomId = AppContext.get().networkLobbyState().getRoomId(); if (roomId == null || roomId.isBlank()) return; if (AppContext.get().networkLobbyState().isHost()) { GameServer.Room room = AppContext.get().gameServer().getRoom(roomId); if (room != null) room.broadcastSessionSnapshot(); return; } var client = AppContext.get().networkLobbyState().getClient(); if (client == null) { setFeedback("同步失败：未连接到房主。请确认从 Join Room 页面加入房间。"); return; } try { client.send(com.example.monopoly_deal_game.network.NetworkMessage.builder(com.example.monopoly_deal_game.network.NetworkMessage.Type.PLAYER_ACTION).roomId(roomId).playerName(AppContext.get().networkLobbyState().getLocalPlayerName()).session(session).build()); setFeedback("操作已提交，等待房主同步..."); } catch (Exception ex) { setFeedback("同步操作失败：" + ex.getMessage()); } }
-    private static boolean requiresExplicitPlayMode(Card c) { return c instanceof ActionCard || c instanceof RentCard || c instanceof PropertyCard; }
-    private void removePlayChromeLayoutListener() { if (playChromeLayoutListener != null) { actionLayer.widthProperty().removeListener(playChromeLayoutListener); actionLayer.heightProperty().removeListener(playChromeLayoutListener); playChromeLayoutListener = null; } }
-    private void layoutPlayChromeDock(VBox dock) { if (dock == null || !actionLayer.getChildren().contains(dock)) return; double pw = actionLayer.getWidth(); double ph = actionLayer.getHeight(); if (pw <= 1 || ph <= 1) return; double maxW = Math.max(200, pw - 40); double dw = dock.prefWidth(maxW); double dh = dock.prefHeight(dw); dock.setMaxWidth(maxW); dock.setLayoutX(Math.max(20, (pw - Math.min(dw, maxW)) / 2)); double y = ph - PLAY_CHROME_BOTTOM_INSET - dh; dock.setLayoutY(Math.max(40, y)); }
-    private void updatePlayChrome(GameSession session) {
-        removePlayChromeLayoutListener();
-        actionLayer.getChildren().clear();
-        if (session == null || selectedHandCard == null) { actionLayer.setMouseTransparent(true); actionLayer.setPickOnBounds(false); return; }
-        GameState st = session.getGameState();
-        if (st.isGameOver() || st.getPhase() != GameState.Phase.PLAY_PHASE || !requiresExplicitPlayMode(selectedHandCard)) { actionLayer.setMouseTransparent(true); actionLayer.setPickOnBounds(false); return; }
-        actionLayer.setMouseTransparent(false);
-        actionLayer.setPickOnBounds(false);
-        GameLogic logic = AppContext.get().gameEngine().getGameLogic();
-        var me = session.getCurrentPlayer();
-        if (me == null) { actionLayer.setMouseTransparent(true); actionLayer.setPickOnBounds(false); return; }
-        VBox dock = new VBox(10);
-        dock.setAlignment(Pos.CENTER);
-        dock.setPadding(new Insets(10, 16, 10, 16));
-        dock.setPickOnBounds(true);
-        dock.setStyle("-fx-background-color: rgba(25,118,210,0.94); -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 12, 0, 0, 2);");
-        Label bar = new Label("出牌选项（可点击其他手牌取消或重选）");
-        bar.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 0 0 2 0;");
-        HBox row = new HBox(12);
-        row.setAlignment(Pos.CENTER);
-        Card sel = selectedHandCard;
-        if (sel instanceof RentCard rc) {
-            Button toBank = new Button("存入银行（现金 " + Math.max(0, rc.getValue()) + "M）");
-            toBank.setStyle("-fx-font-size:12px;");
-            toBank.setOnAction(e -> tryPlayWithOptions(session, CardPlayOptions.bankOnly()));
-            row.getChildren().add(toBank);
-            java.util.List<CardColor> colors = RentRules.eligibleChargeColors(rc, me);
-            FlowPane fp = new FlowPane();
-            fp.setAlignment(Pos.CENTER);
-            fp.setHgap(8);
-            fp.setVgap(8);
-            if (colors.isEmpty()) {
-                Label empty = new Label("当前没有可收租的颜色");
-                empty.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-                fp.getChildren().add(empty);
-            } else {
-                boolean dbl = st.isDoubleNextRent();
-                for (CardColor col : colors) {
-                    int base = RentCalculator.rentOnColor(me, col);
-                    int display = dbl ? base * 2 : base;
-                    Button cb = new Button("收租 " + rentColorShortLabel(col) + " → " + display + "M");
-                    cb.setStyle("-fx-font-size:11px;");
-                    CardColor cap = col;
-                    boolean rentBtnOk = RentRules.canUseRentEffectForUi(rc, me, cap, session);
-                    cb.setDisable(!rentBtnOk);
-                    cb.setOnAction(e -> tryPlayWithOptions(session, CardPlayOptions.rentWithColor(cap)));
-                    fp.getChildren().add(cb);
-                }
-            }
-            dock.getChildren().addAll(bar, row, fp);
-        } else if (sel instanceof PropertyCard pc) {
-            Button toTable = new Button("摆上桌面（当前: " + rentColorShortLabel(pc.getCurrentColor()) + "）");
-            toTable.setStyle("-fx-font-size:12px;");
-            toTable.setOnAction(e -> tryPlayWithOptions(session, CardPlayOptions.auto()));
-            Button toBank = new Button("存入银行（现金 " + Math.max(0, sel.getValue()) + "M）");
-            toBank.setStyle("-fx-font-size:12px;");
-            toBank.setOnAction(e -> tryPlayWithOptions(session, CardPlayOptions.bankOnly()));
-            row.getChildren().addAll(toTable, toBank);
-            dock.getChildren().addAll(bar, row);
-            if (pc.canFlipWildDualColor()) {
-                FlowPane colorChoices = new FlowPane();
-                colorChoices.setAlignment(Pos.CENTER);
-                colorChoices.setHgap(8);
-                colorChoices.setVgap(8);
-                for (CardColor color : pc.getSelectableColors()) {
-                    Button choose = new Button("作为" + rentColorShortLabel(color));
-                    choose.setDisable(color == pc.getCurrentColor());
-                    choose.setStyle("-fx-font-size:12px;");
-                    choose.setOnAction(e -> { pc.alignToDeclaredColor(color); refreshGameplayUi(); });
-                    colorChoices.getChildren().add(choose);
-                }
-                dock.getChildren().add(colorChoices);
-            }
-        } else if (sel instanceof ActionCard ac) {
-            Button use = new Button("使用卡牌效果");
-            use.setStyle("-fx-font-size:12px;");
-            boolean can = logic.getEffectExecutor().canUseActionEffectForUi(ac, session);
-            use.setDisable(!can);
-            if (!can) use.setTooltip(new Tooltip("当前没有可生效的对手或前提不满足；可把牌作现金存入银行。"));
-            use.setOnAction(e -> tryPlayWithOptions(session, CardPlayOptions.auto()));
-            Button toBank = new Button("存入银行（现金 " + Math.max(0, ac.getValue()) + "M）");
-            toBank.setStyle("-fx-font-size:12px;");
-            toBank.setOnAction(e -> tryPlayWithOptions(session, CardPlayOptions.bankOnly()));
-            row.getChildren().addAll(use, toBank);
-            dock.getChildren().addAll(bar, row);
-        }
-        actionLayer.getChildren().add(dock);
-        playChromeLayoutListener = obs -> layoutPlayChromeDock(dock);
-        actionLayer.widthProperty().addListener(playChromeLayoutListener);
-        actionLayer.heightProperty().addListener(playChromeLayoutListener);
-        layoutPlayChromeDock(dock);
-    }
-    private static String rentColorShortLabel(CardColor c) { if (c == null) return "?"; return switch (c) { case BROWN -> "棕"; case LIGHT_BLUE -> "浅蓝"; case PURPLE -> "紫"; case ORANGE -> "橙"; case RED -> "红"; case YELLOW -> "黄"; case GREEN -> "绿"; case BLUE -> "深蓝"; case RAILROAD -> "铁路"; case UTILITY -> "公共"; case WILD, NONE -> "万能"; }; }
-    private CardPlayOptions mergePlayTargets(GameSession session, Card card, CardPlayOptions options) {
-        if (session == null || options == null) return options;
-        Player me = session.getCurrentPlayer();
-        if (me == null || options.asBankMoney()) return options;
 
-        if (card instanceof RentCard rc) {
-            List<Player> renters = RentRules.rentersExcludingLandlord(me, session);
-            if (renters.isEmpty() || !RentRules.canUseRentEffect(rc, me, options.rentColorChoice())) return options;
-            CardColor cap = options.rentColorChoice();
-            if (options.actionTargetPlayer() != null && renters.contains(options.actionTargetPlayer())) {
-                return CardPlayOptions.rentWithColorAndPlayer(cap, options.actionTargetPlayer());
-            }
-            boolean dbl = session.getGameState().isDoubleNextRent();
-            int preview = cap != null ? (dbl ? RentCalculator.rentOnColor(me, cap) * 2 : RentCalculator.rentOnColor(me, cap)) : (rc.isWildRent() ? RentCalculator.bestRentWild(me, dbl) : RentCalculator.bestRentForLandlord(me, rc.getApplicableColors(), dbl));
-            return ActionTargetDialogs.chooseOpponent(stage, "收取租金", "请选择向哪位玩家收取这条租金（预览约 " + preview + "M）。", renters)
-                    .map(p -> CardPlayOptions.rentWithColorAndPlayer(cap, p))
-                    .orElse(null);
-        }
+    // ---- small utilities ----
 
-        if (card instanceof ActionCard ac) {
-            if (!PlayEligibility.needsChosenOpponent(ac)) return options;
-            List<Player> elig = PlayEligibility.eligibleOpponentsForAction(me, session, ac.getActionType());
-            if (elig.isEmpty()) return options;
-            CardPlayOptions out = options;
-            if (out.actionTargetPlayer() == null || !elig.contains(out.actionTargetPlayer())) {
-                out = ActionTargetDialogs.chooseOpponent(stage, "选择对手", "请选择「" + ac.getName() + "」对哪一位对手生效。", elig)
-                        .map(out::withActionTarget)
-                        .orElse(null);
-                if (out == null) return null;
-            }
-            Player target = out.actionTargetPlayer();
-            // JSN 在选定对手后立即检查，不等后续选牌
-            if (target != null && playerHasJustSayNo(target)) {
-                GameState.Phase prev = session.getGameState().getPhase();
-                session.getGameState().setPhase(GameState.Phase.WAITING_FOR_SELECTION);
-                try {
-                    if (JustSayNoMediator.tryBlockAgainstPlayer(target, me, session,
-                            me.getName() + " 尝试对你使用「" + ac.getName() + "」。")) {
-                        if (selectedHandCard != null && me.getHand().getCards().contains(selectedHandCard)) {
-                            me.getHand().removeCard(selectedHandCard);
-                            session.discardCard(selectedHandCard);
-                            AppContext.get().gameEngine().getGameLogic().getTurnManager()
-                                    .onCardPlayed(session, selectedHandCard.isCountsTowardLimit());
-                        }
-                        selectedHandCard = null;
-                        setFeedback(target.getName() + " 使用了 Just Say No，效果已被抵消！");
-                        publishSessionChange(session);
-                        session.getGameState().setPhase(prev);
-                        refreshGameplayUi();
-                        return null;
-                    }
-                    out = out.withJsnAlreadyChecked();
-                } finally {
-                    session.getGameState().setPhase(prev);
-                }
-            }
-            switch (ac.getActionType()) {
-                case SLY_DEAL -> {
-                    List<PropertyCard> cards = stealableSingleProperties(target);
-                    if (cards.isEmpty()) return out;
-                    if (out.targetPropertyCard() == null || !cards.contains(out.targetPropertyCard())) {
-                        GameState.Phase saved = session.getGameState().getPhase();
-                        session.getGameState().setPhase(GameState.Phase.WAITING_FOR_SELECTION);
-                        try {
-                            out = ActionTargetDialogs.choosePropertyCard(stage, "偷偷交易", "请选择要从「" + target.getName() + "」处拿走的一张非满套房产。", cards)
-                                    .map(out::withTargetPropertyCard)
-                                    .orElse(null);
-                        } finally {
-                            session.getGameState().setPhase(saved);
-                        }
-                    }
-                }
-                case FORCE_DEAL -> {
-                    List<PropertyCard> mine = exchangeableProperties(me);
-                    List<PropertyCard> theirs = exchangeableProperties(target);
-                    if (mine.isEmpty() || theirs.isEmpty()) return out;
-                    if (out.sourcePropertyCard() == null || !mine.contains(out.sourcePropertyCard())) {
-                        GameState.Phase saved = session.getGameState().getPhase();
-                        session.getGameState().setPhase(GameState.Phase.WAITING_FOR_SELECTION);
-                        try {
-                            out = ActionTargetDialogs.choosePropertyCard(stage, "被迫交易", "请选择你要交给「" + target.getName() + "」的一张房产。", mine)
-                                    .map(out::withSourcePropertyCard)
-                                    .orElse(null);
-                        } finally {
-                            session.getGameState().setPhase(saved);
-                        }
-                        if (out == null) return null;
-                    }
-                    if (out.targetPropertyCard() == null || !theirs.contains(out.targetPropertyCard())) {
-                        GameState.Phase saved = session.getGameState().getPhase();
-                        session.getGameState().setPhase(GameState.Phase.WAITING_FOR_SELECTION);
-                        try {
-                            out = ActionTargetDialogs.choosePropertyCard(stage, "被迫交易", "请选择要从「" + target.getName() + "」处换来的一张房产。", theirs)
-                                    .map(out::withTargetPropertyCard)
-                                    .orElse(null);
-                        } finally {
-                            session.getGameState().setPhase(saved);
-                        }
-                    }
-                }
-                case DEAL_BREAKER -> {
-                    List<Property> groups = monopolyGroups(target);
-                    if (groups.isEmpty()) return out;
-                    if (out.targetPropertyGroup() == null || !groups.contains(out.targetPropertyGroup())) {
-                        GameState.Phase saved = session.getGameState().getPhase();
-                        session.getGameState().setPhase(GameState.Phase.WAITING_FOR_SELECTION);
-                        try {
-                            out = ActionTargetDialogs.choosePropertyGroup(stage, "夺产", "请选择要从「" + target.getName() + "」处夺走的一整套房产。", groups)
-                                    .map(out::withTargetPropertyGroup)
-                                    .orElse(null);
-                        } finally {
-                            session.getGameState().setPhase(saved);
-                        }
-                    }
-                }
-                default -> { }
-            }
-            return out;
-        }
-        return options;
+    protected GameplayUiBundle toUiBundle() {
+        return new GameplayUiBundle(gameRoot, topbar, leftSidebar,
+                deckPane, discardPane, voidPane, opponentsPane,
+                selfBoardPane, handPane, actionLayer, menuOverlay, chatPaneOrNull());
     }
 
-    private static List<PropertyCard> exchangeableProperties(Player player) {
-        List<PropertyCard> out = new ArrayList<>();
-        if (player == null) return out;
-        for (Property row : player.getProperties()) {
-            for (PropertyCard card : row.getCards()) {
-                out.add(card);
-            }
-        }
-        return out;
+    protected Pane chatPaneOrNull() { return null; }
+
+    private void syncScaleLabel() {
+        double s = UI_SCALE_STEPS[scaleIndex.get()];
+        uiScaleLabel.setText(String.format("%.2fx", s));
+        if (gameRoot != null) { gameRoot.setScaleX(s); gameRoot.setScaleY(s); }
     }
 
-    private static List<PropertyCard> stealableSingleProperties(Player player) {
-        List<PropertyCard> out = new ArrayList<>();
-        if (player == null) return out;
-        for (Property row : player.getProperties()) {
-            if (row.isMonopoly()) continue;
-            out.addAll(row.getCards());
-        }
-        return out;
+    private boolean isLocalPlayersTurn(GameSession session) {
+        Player local = localPlayer(session);
+        Player current = session != null ? session.getCurrentPlayer() : null;
+        return local != null && current != null && local.equals(current);
     }
 
-    private static List<Property> monopolyGroups(Player player) {
-        List<Property> out = new ArrayList<>();
-        if (player == null) return out;
-        for (Property row : player.getProperties()) {
-            if (row.isMonopoly()) out.add(row);
-        }
-        return out;
+    private Player localPlayer(GameSession session) {
+        if (session == null) return null;
+        return session.localPlayer(AppContext.get().networkLobbyState().getLocalPlayerName());
     }
-    private void tryPlayWithOptions(GameSession session, CardPlayOptions options) { if (dialogBusy) { setFeedback("请先完成当前弹窗选择。 "); return; } if (!isLocalPlayersTurn(session)) { setFeedback("当前轮到 " + (session != null && session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "其他玩家") + "，请等待。"); refreshGameplayUi(); return; } GameLogic logic = AppContext.get().gameEngine().getGameLogic(); Card card = selectedHandCard; if (card == null || session == null) return; try { CardPlayOptions merged = mergePlayTargets(session, card, options); if (merged == null) { setFeedback("已取消选择目标玩家。"); refreshGameplayUi(); return; } boolean ok = logic.playCard(session, card, merged); if (ok) { clearFeedback(); selectedHandCard = null; if (logic.checkGameOver(session)) session.getGameState().setGameOver(true); publishSessionChange(session); } else { setFeedback("无法这样打出，请检查手序、次数或前提条件。"); } } catch (IllegalStateException ex) { setFeedback(ex.getMessage() != null ? ex.getMessage() : "出牌条件不满足"); } refreshGameplayUi(); }
-    private static String formatPhase(GameState.Phase phase) { if (phase == null) return "—"; return switch (phase) { case DRAW_PHASE -> "阶段: 摸牌"; case PLAY_PHASE -> "阶段: 出牌"; case DISCARD_PHASE -> "阶段: 弃牌"; case WAITING_FOR_SELECTION -> "阶段: 等待选择…"; }; }
+
+    /**
+     * If the local player is a target of the current action state and has a JSN card,
+     * auto-trigger the JSN dialog so they can refuse the action.
+     */
+    private void checkAndPromptJustSayNo(GameSession session) {
+        if (session == null || dialogBusy.get()) return;
+
+        GameState gs = session.getGameState();
+        ActionState as = gs.getActionState();
+        if (as == null || as == gs.getTurnState()) return;
+
+        Player local = localPlayer(session);
+        if (local == null) return;
+
+        // Only prompt if the local player is a target and hasn't already responded
+        if (!as.isTarget(local)) return;
+        if (as.isRefused(local) || as.isAccepted(local)) return;
+        if (!JustSayNoHandler.playerHasJustSayNo(local)) return;
+
+        String desc = as.getStatus() != null && !as.getStatus().isBlank()
+                ? as.getStatus()
+                : "对方对你使用了行动牌，你可以使用 Just Say No 反对。";
+        boolean used = justSayNoHandler.promptDialog(
+                local, as.getActionOwner(), session, desc);
+        if (used) {
+            networkSync.publishSessionChange(session);
+            refreshGameplayUi();
+        }
+    }
+
+    private static String formatPhase(GameState.Phase phase) {
+        if (phase == null) return "—";
+        return switch (phase) {
+            case DRAW_PHASE -> "阶段: 摸牌";
+            case PLAY_PHASE -> "阶段: 出牌";
+            case DISCARD_PHASE -> "阶段: 弃牌";
+            case WAITING_FOR_SELECTION -> "阶段: 等待选择…";
+        };
+    }
 }

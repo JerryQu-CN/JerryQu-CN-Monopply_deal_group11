@@ -15,7 +15,7 @@ public record CardPlayOptions(
         PropertyCard sourcePropertyCard,
         PropertyCard targetPropertyCard,
         Property targetPropertyGroup,
-        boolean jsnAlreadyChecked) {
+        boolean jsnBlocked) {
 
     public static CardPlayOptions auto() {
         return new CardPlayOptions(false, null, null, null, null, null, false);
@@ -35,26 +35,27 @@ public record CardPlayOptions(
 
     public CardPlayOptions withActionTarget(Player player) {
         return new CardPlayOptions(
-                asBankMoney, rentColorChoice, player, sourcePropertyCard, targetPropertyCard, targetPropertyGroup, jsnAlreadyChecked);
+                asBankMoney, rentColorChoice, player, sourcePropertyCard, targetPropertyCard, targetPropertyGroup, jsnBlocked);
     }
 
     public CardPlayOptions withSourcePropertyCard(PropertyCard card) {
         return new CardPlayOptions(
-                asBankMoney, rentColorChoice, actionTargetPlayer, card, targetPropertyCard, targetPropertyGroup, jsnAlreadyChecked);
+                asBankMoney, rentColorChoice, actionTargetPlayer, card, targetPropertyCard, targetPropertyGroup, jsnBlocked);
     }
 
     public CardPlayOptions withTargetPropertyCard(PropertyCard card) {
         return new CardPlayOptions(
-                asBankMoney, rentColorChoice, actionTargetPlayer, sourcePropertyCard, card, targetPropertyGroup, jsnAlreadyChecked);
+                asBankMoney, rentColorChoice, actionTargetPlayer, sourcePropertyCard, card, targetPropertyGroup, jsnBlocked);
     }
 
     public CardPlayOptions withTargetPropertyGroup(Property group) {
         return new CardPlayOptions(
-                asBankMoney, rentColorChoice, actionTargetPlayer, sourcePropertyCard, targetPropertyCard, group, jsnAlreadyChecked);
+                asBankMoney, rentColorChoice, actionTargetPlayer, sourcePropertyCard, targetPropertyCard, group, jsnBlocked);
     }
 
-    public CardPlayOptions withJsnAlreadyChecked() {
+    public CardPlayOptions withJsnBlocked() {
         return new CardPlayOptions(
                 asBankMoney, rentColorChoice, actionTargetPlayer, sourcePropertyCard, targetPropertyCard, targetPropertyGroup, true);
     }
+
 }

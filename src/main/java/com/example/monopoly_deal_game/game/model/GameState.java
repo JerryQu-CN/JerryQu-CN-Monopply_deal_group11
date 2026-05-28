@@ -1,31 +1,34 @@
 package com.example.monopoly_deal_game.game.model;
 
+import com.example.monopoly_deal_game.model.Player;
+
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
- * 全局进行标记：当前玩家索引、阶段枚举、回合内出牌计数等。
+ * 全局游戏状态：当前玩家索引、回合内出牌计数、ActionState 栈。
+ * 对齐 Monopoly-Deal-main 中 GameState 的设计 — 通过 ActionState 栈控制相位与阻塞。
  */
 public class GameState implements Serializable {
     @Serial
-    private static final long serialVersionUID = 1L;
-
-    public enum Phase {
-        DRAW_PHASE,
-        PLAY_PHASE,
-        DISCARD_PHASE,
-        /** 等待玩家在弹窗中做出选择（如 Just Say No、支付选牌、目标选择等）。 */
-        WAITING_FOR_SELECTION
-    }
+    private static final long serialVersionUID = 2L;
 
     private int currentPlayerIndex;
     private int cardsPlayedThisTurn;
-    private boolean hasDrawnThisTurn;
-    private Phase phase = Phase.DRAW_PHASE;
     private boolean gameOver;
 
-    /** 打出「加倍租金」后，下一次租金结算翻倍并清空。 */
+    /** 加倍租金计数 */
     private boolean doubleNextRent;
+    private int doubleRentCount;
+
+    // ---- ActionState stack ----
+
+    private ActionStatePlayerTurn turnState;
+    private final LinkedList<ActionState> states = new LinkedList<>();
+
+    // ---- Accessors ----
 
     public int getCurrentPlayerIndex() {
         return currentPlayerIndex;
@@ -43,22 +46,6 @@ public class GameState implements Serializable {
         this.cardsPlayedThisTurn = count;
     }
 
-    public boolean isHasDrawnThisTurn() {
-        return hasDrawnThisTurn;
-    }
-
-    public void setHasDrawnThisTurn(boolean hasDrawn) {
-        this.hasDrawnThisTurn = hasDrawn;
-    }
-
-    public Phase getPhase() {
-        return phase;
-    }
-
-    public void setPhase(Phase phase) {
-        this.phase = phase;
-    }
-
     public boolean isGameOver() {
         return gameOver;
     }
@@ -73,5 +60,168 @@ public class GameState implements Serializable {
 
     public void setDoubleNextRent(boolean doubleNextRent) {
         this.doubleNextRent = doubleNextRent;
+    }
+
+    public int getDoubleRentCount() {
+        return doubleRentCount;
+    }
+
+    public void setDoubleRentCount(int count) {
+        this.doubleRentCount = count;
+    }
+
+    // ---- ActionState stack ----
+
+    /**
+     * Returns the current active action state — the top of the stack,
+     * or the turn state if the stack is empty.
+     */
+    public ActionState getActionState() {
+        return states.isEmpty() ? turnState : states.getFirst();
+    }
+
+    public ActionStatePlayerTurn getTurnState() {
+        return turnState;
+    }
+
+    public void setTurnState(ActionStatePlayerTurn ts) {
+        this.turnState = ts;
+        if (ts != null) {
+            ts.setGameState(this);
+        }
+    }
+
+    public boolean hasTurnState() {
+        return turnState != null;
+    }
+
+    public int getMovesRemaining() {
+        return turnState != null ? turnState.getMoves() : 0;
+    }
+
+    /**
+     * Adds an action state to the front of the queue.
+     * Non-important states already present are removed first.
+     */
+    public void addActionState(ActionState state) {
+        if (state == null || states.contains(state) || state.isFinished()) {
+            return;
+        }
+        states.removeIf(s -> !s.isImportant());
+        states.addFirst(state);
+        state.setGameState(this);
+        state.onAdd();
+    }
+
+    /**
+     * Removes a specific action state from the queue.
+     */
+    public void removeActionState(ActionState state) {
+        if (states.remove(state)) {
+            state.onRemove();
+        }
+    }
+
+    /**
+     * Clears all action states from the queue (except turn state).
+     */
+    public void clearActionStates() {
+        for (ActionState s : new ArrayList<>(states)) {
+            states.remove(s);
+            s.onRemove();
+        }
+    }
+
+    /**
+     * Replaces oldState with newState at the same position.
+     */
+    public void swapActionState(ActionState oldState, ActionState newState) {
+        int idx = states.indexOf(oldState);
+        if (idx < 0) {
+            throw new IllegalArgumentException("Old state not in stack");
+        }
+        states.remove(idx);
+        oldState.onRemove();
+        states.add(idx, newState);
+        newState.setGameState(this);
+        newState.onAdd();
+    }
+
+    // ---- Backward-compatible Phase enum (derived from ActionState stack) ----
+
+    public enum Phase {
+        DRAW_PHASE,
+        PLAY_PHASE,
+        DISCARD_PHASE,
+        WAITING_FOR_SELECTION
+    }
+
+    /**
+     * Derives the current phase from the action state stack.
+     */
+    public Phase getPhase() {
+        if (turnState == null) return Phase.PLAY_PHASE;
+        ActionState as = getActionState();
+        if (as == turnState) {
+            if (turnState.isDrawing()) return Phase.DRAW_PHASE;
+            if (turnState.isDiscarding()) return Phase.DISCARD_PHASE;
+            return Phase.PLAY_PHASE;
+        }
+        return Phase.WAITING_FOR_SELECTION;
+    }
+
+    /**
+     * Compatibility: delegates to turnState.hasDrawn().
+     */
+    public boolean isHasDrawnThisTurn() {
+        return turnState != null && turnState.hasDrawn();
+    }
+
+    /**
+     * Compatibility: no-op. Phase is now derived from the action state stack.
+     */
+    public void setPhase(Phase phase) {
+        // Phase is now derived from the ActionState stack. This setter exists
+        // for backward compatibility with UI controllers that used to call it.
+    }
+
+    /**
+     * Compatibility: delegates to turnState.setDrawn().
+     */
+    public void setHasDrawnThisTurn(boolean v) {
+        if (turnState != null) turnState.setDrawn(v);
+    }
+
+    // ---- Convenience queries ----
+
+    /**
+     * Whether the given player is currently focused (it's their turn and no
+     * action state is overriding the turn state).
+     */
+    public boolean isPlayerFocused(Player player) {
+        return hasTurnState()
+                && getActionState() == turnState
+                && turnState.getActionOwner() == player;
+    }
+
+    /**
+     * Whether the given player owns the current turn (regardless of action state override).
+     */
+    public boolean isPlayerTurn(Player player) {
+        return hasTurnState() && turnState.getActionOwner() == player;
+    }
+
+    /**
+     * Whether it is currently this player's turn and they can play cards.
+     */
+    public boolean canPlayerPlayCards(Player player) {
+        return isPlayerFocused(player) && turnState.canPlayCards();
+    }
+
+    /**
+     * Whether the given player can draw cards right now.
+     */
+    public boolean canPlayerDraw(Player player) {
+        return isPlayerFocused(player) && turnState.isDrawing();
     }
 }

@@ -31,12 +31,6 @@ public final class Property implements Serializable {
         return id;
     }
 
-    /** @deprecated 使用 {@link #getId()}；兼容旧命名的调用。 */
-    @Deprecated(forRemoval = false)
-    public String getSetId() {
-        return id;
-    }
-
     public Player getOwner() {
         return owner;
     }
@@ -49,11 +43,6 @@ public final class Property implements Serializable {
         return Collections.unmodifiableList(cards);
     }
 
-    /** 与卡牌类型 {@link PropertyCard} 对齐的语义别名。 */
-    public List<PropertyCard> getPropertyCards() {
-        return getCards();
-    }
-
     /** 账面：该成套内所有物业牌的金额之和。 */
     public int getTotalValue() {
         int total = 0;
@@ -64,12 +53,7 @@ public final class Property implements Serializable {
     }
 
     public void addCard(PropertyCard card) {
-        if (card == null) {
-            return;
-        }
-        if (!(card instanceof PropertyCard)) {
-            throw new IllegalArgumentException("Only PropertyCard can be added to property sets");
-        }
+        if (card == null) return;
         cards.add(card);
     }
 

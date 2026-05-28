@@ -16,7 +16,8 @@ public class NetworkClient implements AutoCloseable {
     private final Consumer<NetworkMessage> listener;
 
     public NetworkClient(String host, int port, Consumer<NetworkMessage> listener) throws Exception {
-        socket = new Socket(Objects.requireNonNull(host), port);
+        socket = new Socket();
+        socket.connect(new java.net.InetSocketAddress(Objects.requireNonNull(host), port), 10000);
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
         this.listener = listener;

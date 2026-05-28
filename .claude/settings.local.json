@@ -4,7 +4,9 @@
       "Read(//c/Program Files/**)",
       "Read(//d//**)",
       "Bash(where java *)",
-      "Bash(/c/Windows/System32/where java *)"
+      "Bash(/c/Windows/System32/where java *)",
+      "Bash(sed -i 's/if \\(jsn != null\\) {/System.out.println\\(\"[JSN-DEBUG] 找到 JSN 牌: \" + \\(jsn != null ? jsn.getName\\(\\) : \"null\"\\)\\);\\\\n        if \\(jsn != null\\) {/' src/main/java/com/example/monopoly_deal_game/controller/AbstractGameplayScreenController.java)",
+      "Bash(sed -i 's/logic\\\\.playCard\\(session, jsn\\);/boolean jsnOk = logic.playCard\\(session, jsn\\);\\\\n            System.out.println\\(\"[JSN-DEBUG] playCard 返回: \" + jsnOk\\);/' src/main/java/com/example/monopoly_deal_game/controller/AbstractGameplayScreenController.java)"
     ]
   }
 }

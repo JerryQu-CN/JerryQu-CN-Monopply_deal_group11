@@ -1,17 +1,14 @@
 package com.example.monopoly_deal_game.logic;
 
+import com.example.monopoly_deal_game.game.model.ActionState;
 import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.ActionCard;
 import com.example.monopoly_deal_game.model.cards.Card;
 
-import javafx.application.Platform;
-
-import java.util.concurrent.CountDownLatch;
-
 /**
- * 拦截「直指某位玩家的不利影响」时使用 Just Say No。由控制器在初始化时挂载 UI 对话框；
- * AI 玩家在持有 JSN 时按简易策略自动反对；未挂载或非 FX 线程时安全切回 FX 线程再弹窗。
+ * Just Say No 中介：提供 UI 桥接和查询工具。
+ * 实际 JSN 打出流程由 GameLogic.playCard() 驱动，调用 ActionState.refuse()。
  */
 public final class JustSayNoMediator {
 
@@ -21,8 +18,8 @@ public final class JustSayNoMediator {
 
     @FunctionalInterface
     public interface JustSayNoUi {
-        /** @return 玩家同意消耗一张 JSN（手牌优先，其次银行） */
-        boolean confirmUseJustSayNo(Player respondent, Player activator, String situationText);
+        /** @return 玩家同意消耗一张 JSN 反对当前行动 */
+        boolean confirmUseJustSayNo(Player respondent, Player activator, GameSession session, String situationText);
     }
 
     public static void installUi(JustSayNoUi bridge) {
@@ -38,93 +35,45 @@ public final class JustSayNoMediator {
     }
 
     /**
-     * 仅当 {@code respondent} 在手牌或银行中持有 JSN 时才询问；同意后该牌移入弃牌堆。
-     *
-     * @return true 已用 JSN 抵消本条对自身的效果
+     * @deprecated JSN is now handled through the ActionState system.
+     * This stub exists for backward compatibility; always returns false.
      */
+    @Deprecated
     public static boolean tryBlockAgainstPlayer(
             Player respondent, Player activator, GameSession session, String situationText) {
-        if (respondent == null || session == null) {
-            return false;
-        }
-        if (respondent.equals(activator)) {
-            return false;
-        }
-        if (findJustSayNoRespondentHeld(respondent) == null) {
-            return false;
-        }
-        if (respondent.isAI()) {
-            if (aiShouldUseJsN(situationText)) {
-                Card jsHeld = findJustSayNoRespondentHeld(respondent);
-                if (jsHeld != null) {
-                    if (respondent.getHand().removeCard(jsHeld)
-                            || respondent.getBank().removeCard(jsHeld)) {
-                        session.discardCard(jsHeld);
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        JustSayNoUi bridge = ui;
-        if (bridge == null) {
-            return false;
-        }
-        String text = situationText != null ? situationText : "";
-        // 桥接（promptJustSayNoDialog）负责：询问 + 移除 + 弃牌 + 刷新 UI
-        return invokeUiOnFxThread(() -> bridge.confirmUseJustSayNo(respondent, activator, text));
+        // JSN flow is now handled by the ActionState stack:
+        // CardEffectExecutor pushes an ActionState with targets,
+        // targeted players get JSN dialog, JSN is played via GameLogic.playCard().
+        return false;
     }
 
-    /** 简易 AI：被偷物业 / 被破坏整套 / 被指名支付 ≥4M 时较高概率打出反对 */
-    private static boolean aiShouldUseJsN(String situationText) {
-        if (situationText == null) {
-            return false;
-        }
-        boolean high =
-                situationText.contains("夺产")
-                        || situationText.contains("偷偷")
-                        || situationText.contains("被迫交易")
-                        || situationText.contains("$5")
-                        || situationText.contains("5M");
-        if (high) {
-            return Math.random() < 0.55;
-        }
-        return situationText.contains("生日") ? Math.random() < 0.25 : Math.random() < 0.30;
+    /**
+     * Check if the given player should be offered a JSN dialog.
+     * Returns true when there's a pending action state that can be refused by this player.
+     */
+    public static boolean shouldOfferJustSayNo(Player player, GameSession session) {
+        if (player == null || session == null) return false;
+        ActionState as = session.getGameState().getActionState();
+        if (as == null || as == session.getGameState().getTurnState()) return false;
+        return as.canRefuseAny(player) && findJustSayNoInHand(player) != null;
     }
 
-    private static boolean invokeUiOnFxThread(java.util.function.Supplier<Boolean> run) {
-        if (Platform.isFxApplicationThread()) {
-            return Boolean.TRUE.equals(run.get());
-        }
-        CountDownLatch latch = new CountDownLatch(1);
-        boolean[] out = new boolean[1];
-        Platform.runLater(
-                () -> {
-                    try {
-                        out[0] = Boolean.TRUE.equals(run.get());
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-        try {
-            latch.await();
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
-        return out[0];
+    public static Card findJustSayNoRespondentHeld(Player p) {
+        Card c = findJustSayNoInHand(p);
+        if (c != null) return c;
+        return findJustSayNoInBank(p);
     }
 
-    private static Card findJustSayNoRespondentHeld(Player p) {
+    private static Card findJustSayNoInHand(Player p) {
         for (Card c : p.getHand().getCards()) {
-            if (isJustSayNo(c)) {
-                return c;
-            }
+            if (isJustSayNo(c)) return c;
         }
+        return null;
+    }
+
+    private static Card findJustSayNoInBank(Player p) {
         for (Card c : p.getBank().getCards()) {
-            if (isJustSayNo(c)) {
-                return c;
-            }
+            if (isJustSayNo(c)) return c;
         }
         return null;
     }

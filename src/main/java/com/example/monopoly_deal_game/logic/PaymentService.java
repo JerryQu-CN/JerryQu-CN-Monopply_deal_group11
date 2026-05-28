@@ -114,9 +114,8 @@ public final class PaymentService {
 
     private static boolean payerOwnsExactlyThesePayableCards(Player payer, List<Card> choice) {
         for (Card c : choice) {
-            if (!isPayableHeldByPlayer(payer, c)) {
-                return false;
-            }
+            if (!isPayableHeldByPlayer(payer, c)) return false;
+            if (c.getValue() <= 0) return false;
         }
         return true;
     }

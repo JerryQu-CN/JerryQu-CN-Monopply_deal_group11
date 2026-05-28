@@ -1,7 +1,5 @@
 package com.example.monopoly_deal_game.model.cards;
 
-import com.example.monopoly_deal_game.model.Player;
-
 /**
  * 钞票类卡牌（M 面值等）。
  *
@@ -27,8 +25,4 @@ public class BankCard extends Card {
         return CardType.CURRENCY;
     }
 
-    @Override
-    public void use(Player user, Player target) {
-        throw new UnsupportedOperationException("TODO(model+logic): 作为现金入账或支付");
-    }
 }

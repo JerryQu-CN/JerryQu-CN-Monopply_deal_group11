@@ -38,7 +38,7 @@ public final class CardImageMapper {
                 case DEBT_COLLECTOR -> "debtCollector.png";
                 case JUST_SAY_NO -> "justSayNo.png";
                 case PASS_GO -> "passGo.png";
-                case DOUBLE_RENT -> "double the ren.png.png";
+                case DOUBLE_RENT -> "doubleTheRent.png";
                 case HOUSE -> "house.png";
                 case HOTEL -> "hotel.png";
             };

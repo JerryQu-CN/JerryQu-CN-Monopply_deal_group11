@@ -1,7 +1,5 @@
 package com.example.monopoly_deal_game.model.cards;
 
-import com.example.monopoly_deal_game.model.Player;
-
 /**
  * 行动牌：Deal Breaker、Sly Deal、生日、收债、Just Say No、Pass Go 等。
  *
@@ -54,11 +52,6 @@ public class ActionCard extends Card {
     @Override
     public CardType getCardType() {
         return CardType.ACTION;
-    }
-
-    @Override
-    public void use(Player user, Player target) {
-        throw new UnsupportedOperationException("TODO(logic): 由 CardEffectExecutor 根据 actionType 触发对应效果");
     }
 
     public ActionType getActionType() {

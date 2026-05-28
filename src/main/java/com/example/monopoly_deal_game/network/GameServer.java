@@ -84,7 +84,14 @@ public class GameServer {
         }
 
         private void startAcceptLoop() {
-            try { serverSocket = new ServerSocket(0); port = serverSocket.getLocalPort(); } catch (Exception ignored) { return; }
+            try {
+                serverSocket = new ServerSocket(0);
+                port = serverSocket.getLocalPort();
+            } catch (Exception e) {
+                System.err.println("[GameServer] Failed to create ServerSocket: " + e.getMessage());
+                e.printStackTrace(System.err);
+                return;
+            }
             Thread accept = new Thread(() -> {
                 while (!serverSocket.isClosed()) {
                     try {
@@ -94,10 +101,10 @@ public class GameServer {
                         conn.send(snapshot(this));
                         conn.start();
                     } catch (Exception ex) {
-                System.err.println("[GameServer] accept failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
-                ex.printStackTrace(System.err);
-                break;
-            }
+                        if (serverSocket.isClosed()) break;
+                        System.err.println("[GameServer] accept error: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+                        ex.printStackTrace(System.err);
+                    }
                 }
             }, "room-accept-" + roomId);
             accept.setDaemon(true); accept.start();

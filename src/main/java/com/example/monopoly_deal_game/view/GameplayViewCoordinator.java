@@ -5,6 +5,7 @@ import com.example.monopoly_deal_game.game.model.GameState;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.Property;
 import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.logic.CardColorLabel;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 import com.example.monopoly_deal_game.view.animation.MotionContext;
@@ -216,8 +217,8 @@ public class GameplayViewCoordinator {
 
                 String colName =
                         isOpponent
-                                ? shortColorLabel(group.getEffectiveColor())
-                                : shortColorLabel(group.getEffectiveColor())
+                                ? CardColorLabel.shortLabel(group.getEffectiveColor())
+                                : CardColorLabel.shortLabel(group.getEffectiveColor())
                                         + "  "
                                         + group.getCards().size()
                                         + "/"
@@ -333,25 +334,6 @@ public class GameplayViewCoordinator {
         return null;
     }
 
-    private static String shortColorLabel(CardColor c) {
-        if (c == null) {
-            return "?";
-        }
-        return switch (c) {
-            case BROWN -> "棕";
-            case LIGHT_BLUE -> "浅蓝";
-            case PURPLE -> "紫";
-            case ORANGE -> "橙";
-            case RED -> "红";
-            case YELLOW -> "黄";
-            case GREEN -> "绿";
-            case BLUE -> "深蓝";
-            case RAILROAD -> "铁路";
-            case UTILITY -> "公共";
-            case WILD -> "混色";
-            case NONE -> "—";
-        };
-    }
 
     private static ScrollPane wrapVerticalScroll(VBox content) {
         content.setFocusTraversable(false);

@@ -51,4 +51,18 @@ public class GameSession implements Serializable {
             discardPile.add(c);
         }
     }
+
+    public Player findPlayerByName(String name) {
+        if (name == null) return null;
+        for (Player p : players) {
+            if (name.equals(p.getName())) return p;
+        }
+        return null;
+    }
+
+    public Player localPlayer(String localName) {
+        if (localName == null || localName.isBlank()) return getCurrentPlayer();
+        Player found = findPlayerByName(localName);
+        return found != null ? found : getCurrentPlayer();
+    }
 }

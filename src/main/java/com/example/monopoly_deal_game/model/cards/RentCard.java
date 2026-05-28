@@ -1,7 +1,5 @@
 package com.example.monopoly_deal_game.model.cards;
 
-import com.example.monopoly_deal_game.model.Player;
-
 import java.util.List;
 
 /**
@@ -28,11 +26,6 @@ public class RentCard extends Card {
     @Override
     public CardType getCardType() {
         return CardType.RENT;
-    }
-
-    @Override
-    public void use(Player user, Player target) {
-        throw new UnsupportedOperationException("TODO(logic): 判定地产颜色组并计算租金");
     }
 
     public List<CardColor> getApplicableColors() {

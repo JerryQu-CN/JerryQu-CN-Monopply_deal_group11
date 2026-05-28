@@ -1,7 +1,10 @@
 package com.example.monopoly_deal_game.logic;
 
+import com.example.monopoly_deal_game.game.model.ActionState;
+import com.example.monopoly_deal_game.game.model.ActionStatePlayerTurn;
 import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.game.model.GameState;
+import com.example.monopoly_deal_game.game.rules.GameConfig;
 import com.example.monopoly_deal_game.model.PlayedCardSnapshot;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.ActionCard;
@@ -14,7 +17,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 规则中枢：初始化、摸牌、出牌主流程及胜负判定（ZouChenyu / astralcattttt 分支逻辑并入）。
+ * 游戏规则中枢：初始化、摸牌、出牌主流程及胜负判定。
+ * 对齐 Monopoly-Deal-main 中 GameState / MDServer 的游戏生命周期。
  */
 public class GameLogic {
 
@@ -26,21 +30,19 @@ public class GameLogic {
         this.effectExecutor = new CardEffectExecutor(cardManager);
     }
 
-    /** 需求 1: 初始化游戏 */
+    /** 初始化游戏：洗牌、发牌、设定首轮玩家。 */
     public void initGame(GameSession session) {
         CardFactory factory = new CardFactory();
         List<Card> deck = new java.util.ArrayList<>(factory.createFullDeck());
-        deck.removeIf(c -> c instanceof com.example.monopoly_deal_game.model.cards.RuleCard);
+        deck.removeIf(c -> c instanceof RuleCard);
         cardManager.initDeck(session, deck);
 
         List<Player> players = session.getPlayers();
         for (Player p : players) {
             p.clearPlayedCardsDisplay();
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < GameConfig.INITIAL_HAND_SIZE; i++) {
                 Card c = cardManager.drawOne(session);
-                if (c != null) {
-                    p.getHand().add(c);
-                }
+                if (c != null) p.getHand().add(c);
             }
         }
 
@@ -48,136 +50,153 @@ public class GameLogic {
         turnManager.beginTurn(session);
     }
 
-    /** 需求 2: 回合开始摸牌（空手 5 张，否则 2 张）；每回合仅允许摸一次。 */
+    /** 回合开始摸牌：空手 5 张，否则 2 张；每回合仅允许摸一次。 */
     public void drawCard(GameSession session) {
         Player current = session.getCurrentPlayer();
         GameState state = session.getGameState();
-        if (state.getPhase() != GameState.Phase.DRAW_PHASE || current == null) {
-            return;
-        }
-        if (state.isHasDrawnThisTurn()) {
-            return;
-        }
+        ActionStatePlayerTurn ts = state.getTurnState();
+        if (ts == null || !ts.isDrawing() || current == null) return;
 
-        int count = current.getHand().isEmpty() ? 5 : 2;
+        int count = current.getHand().isEmpty()
+                ? GameConfig.DRAW_WHEN_HAND_EMPTY
+                : GameConfig.DRAW_WHEN_HAND_NON_EMPTY;
         for (int i = 0; i < count; i++) {
             Card c = cardManager.drawOne(session);
-            if (c != null) {
-                current.getHand().add(c);
-            }
+            if (c != null) current.getHand().add(c);
         }
-        state.setHasDrawnThisTurn(true);
-        state.setPhase(GameState.Phase.PLAY_PHASE);
+        ts.setDrawn();
     }
 
     /**
-     * 需求 3–6: 出牌主入口（默认：钞票/物业按规则落位；租金卡按可收最高租自动选色）。
-     *
-     * @return {@code false} 时常见原因：尚未摸牌、本回合已打满 3 张、手牌中无此牌引用、效果前提不满足
+     * 出牌主入口。
+     * @return false 时常见原因：尚未摸牌、本回合已打满、手牌中无此牌引用、效果前提不满足
      */
     public boolean playCard(GameSession session, Card card) {
         return playCard(session, card, CardPlayOptions.auto());
     }
 
     public boolean playCard(GameSession session, Card card, CardPlayOptions options) {
-        if (!turnManager.canPlayMore(session)) {
-            return false;
-        }
-        Player current = session.getCurrentPlayer();
-        if (current == null) {
-            return false;
-        }
-        if (!current.getHand().getCards().contains(card)) {
-            return false;
-        }
+        if (options == null) options = CardPlayOptions.auto();
 
-        if (options == null) {
-            options = CardPlayOptions.auto();
-        }
+        Player owner = findCardOwner(session, card);
+        if (owner == null) return false;
 
-        if (options.asBankMoney()) {
-            if (card instanceof RuleCard) {
+        Player currentPlayer = session.getCurrentPlayer();
+        boolean isReaction = currentPlayer != null && !owner.equals(currentPlayer);
+
+        boolean isJSN = card instanceof ActionCard ac
+                && ac.getActionType() == ActionCard.ActionType.JUST_SAY_NO;
+
+        // Check if player is allowed to act right now
+        if (!isJSN) {
+            GameState gs = session.getGameState();
+            // Non-JSN cards can only be played when focused (your turn, no action state override)
+            if (!gs.isPlayerFocused(owner) && !options.asBankMoney()) {
+                if (!isReaction) return false;
+            }
+            if (!isReaction && !turnManager.canPlayMore(session)) return false;
+        } else {
+            // JSN can only be played when there's a pending action state that targets this player
+            GameState gs = session.getGameState();
+            ActionState as = gs.getActionState();
+            if (as == null || as == gs.getTurnState() || !as.canRefuseAny(owner)) {
                 return false;
             }
-        } else {
+        }
+
+        // 前置校验
+        if (options.asBankMoney()) {
+            if (card instanceof RuleCard) return false;
+            if (card instanceof PropertyCard && !GameConfig.CAN_BANK_PROPERTY_CARDS) return false;
+            if (card instanceof ActionCard && !GameConfig.CAN_BANK_ACTION_CARDS) return false;
+        } else if (!options.jsnBlocked() && !isJSN) {
             if (card instanceof ActionCard ac) {
-                if (!effectExecutor.canUseActionEffect(ac, session, options)) {
-                    return false;
-                }
+                if (!effectExecutor.canUseActionEffect(ac, session, options)) return false;
             }
             if (card instanceof RentCard rc) {
-                Player pay = RentRules.resolvedRentPayer(current, session, options);
-                if (!RentRules.canUseRentEffect(
-                        rc, current, options.rentColorChoice(), pay, session)) {
+                Player pay = RentRules.resolvedRentPayer(owner, session, options);
+                if (!RentRules.canUseRentEffect(rc, owner, options.rentColorChoice(), pay, session))
                     return false;
-                }
             }
         }
 
-        if (!current.getHand().removeCard(card)) {
-            return false;
-        }
+        // 从手中移出
+        if (!owner.getHand().removeCard(card) && !owner.getBank().removeCard(card)) return false;
         try {
             if (options.asBankMoney()) {
-                current.getBank().addCard(card);
+                owner.getBank().addCard(card);
+            } else if (options.jsnBlocked()) {
+                session.discardCard(card);
+            } else if (isJSN) {
+                // JSN: call refuse on the current action state, then discard
+                GameState gs = session.getGameState();
+                ActionState as = gs.getActionState();
+                if (as != null && as != gs.getTurnState()) {
+                    // The JSN player refuses the action owner
+                    Player refuser = owner;
+                    Player target = as.getActionOwner();
+                    as.refuse(refuser, target);
+                }
+                session.discardCard(card);
             } else {
                 effectExecutor.execute(card, session, options);
             }
-            if (shouldRecordOnPlayTable(card)) {
-                current.recordPlayedCardForDisplay(
+            if (shouldRecordOnPlayTable(card) && !isReaction) {
+                owner.recordPlayedCardForDisplay(
                         new PlayedCardSnapshot(card.getName(), CardImageMapper.imageFileFor(card)));
             }
-            turnManager.onCardPlayed(session, card.isCountsTowardLimit());
+            turnManager.onCardPlayed(session, card.isCountsTowardLimit() && !isReaction && !isJSN);
             return true;
         } catch (RuntimeException ex) {
-            current.getHand().add(card);
+            owner.getHand().addCard(card);
             throw ex;
         }
     }
 
-    /**
-     * 牌桌「打出展示条」仅记录<strong>房产</strong>（物业牌）与<strong>财产</strong>（钞票入银行）；
-     * 行动牌、租金等功能牌不展示于此。
-     */
+    private Player findCardOwner(GameSession session, Card card) {
+        for (Player p : session.getPlayers()) {
+            if (p.getHand().getCards().contains(card)) return p;
+            if (p.getBank().getCards().contains(card)) return p;
+        }
+        return null;
+    }
+
     private static boolean shouldRecordOnPlayTable(Card card) {
         return card instanceof com.example.monopoly_deal_game.model.cards.BankCard
                 || card instanceof PropertyCard;
     }
 
-    /** 需求 3: 结束回合 — 若手牌超 7 张则进入弃牌阶段而不推进回合。 */
+    /** 结束回合：手牌 > 7 则进入弃牌阶段。 */
     public void endTurn(GameSession session) {
         Player current = session.getCurrentPlayer();
-        if (current == null) {
-            return;
+        GameState state = session.getGameState();
+        if (current == null) return;
+
+        ActionStatePlayerTurn ts = state.getTurnState();
+        if (ts != null) {
+            // Force moves to 0 so updatePhase will transition to DISCARD if needed
+            ts.setMoves(0);
         }
 
-        if (current.getHand().size() > 7) {
-            session.getGameState().setPhase(GameState.Phase.DISCARD_PHASE);
-            return;
+        if (current.getHand().size() > GameConfig.MAX_HAND_SIZE_END_TURN) {
+            return; // Already in DISCARD phase from setMoves(0)
         }
-
         advanceToNextPlayer(session);
     }
 
-    /** 弃牌阶段：丢弃选中的手牌（须均为当前回合玩家手牌），≤7 张后轮到下家。 */
+    /** 弃牌阶段：丢弃选中的手牌，≤7 张后轮到下家。 */
     public void discardFromHandChosen(GameSession session, Collection<Card> chosen) {
-        if (chosen == null || chosen.isEmpty()) {
-            return;
-        }
+        if (chosen == null || chosen.isEmpty()) return;
         Player cur = session.getCurrentPlayer();
         GameState state = session.getGameState();
-        if (cur == null || state.getPhase() != GameState.Phase.DISCARD_PHASE) {
-            return;
-        }
+        ActionStatePlayerTurn ts = state.getTurnState();
+        if (cur == null || ts == null || !ts.isDiscarding()) return;
         for (Card c : chosen) {
-            if (c == null || !cur.getHand().getCards().contains(c)) {
-                continue;
-            }
-            if (cur.getHand().removeCard(c)) {
-                session.discardCard(c);
-            }
+            if (c == null || !cur.getHand().getCards().contains(c)) continue;
+            if (cur.getHand().removeCard(c)) session.discardCard(c);
         }
-        if (cur.getHand().size() <= 7) {
+        ts.updatePhase(); // Re-evaluate: if no longer too many cards, goes back to PLAY
+        if (!ts.isDiscarding()) {
             advanceToNextPlayer(session);
         }
     }
@@ -188,20 +207,16 @@ public class GameLogic {
             return;
         }
         List<Player> players = session.getPlayers();
-        if (players.isEmpty()) {
-            return;
-        }
-        int nextIndex =
-                (session.getGameState().getCurrentPlayerIndex() + 1) % players.size();
+        if (players.isEmpty()) return;
+        int nextIndex = (session.getGameState().getCurrentPlayerIndex() + 1) % players.size();
         session.getGameState().setCurrentPlayerIndex(nextIndex);
         turnManager.beginTurn(session);
     }
 
-    /** 需求 16: 三套完整物业胜负判定 */
+    /** 胜负判定：任意玩家达到 {@link GameConfig#FULL_SETS_TO_WIN} 套完整物业。 */
     public boolean checkGameOver(GameSession session) {
         for (Player p : session.getPlayers()) {
-            if (p.getFullSetCount() >= 3) {
-                System.out.println("Game Over! Winner: " + p.getName());
+            if (p.getFullSetCount() >= GameConfig.FULL_SETS_TO_WIN) {
                 session.getGameState().setGameOver(true);
                 return true;
             }
@@ -209,15 +224,7 @@ public class GameLogic {
         return false;
     }
 
-    public CardManager getCardManager() {
-        return cardManager;
-    }
-
-    public TurnManager getTurnManager() {
-        return turnManager;
-    }
-
-    public CardEffectExecutor getEffectExecutor() {
-        return effectExecutor;
-    }
+    public CardManager getCardManager() { return cardManager; }
+    public TurnManager getTurnManager() { return turnManager; }
+    public CardEffectExecutor getEffectExecutor() { return effectExecutor; }
 }
