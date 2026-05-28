@@ -296,14 +296,14 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 handCardPicker.clearDiscardSelections();
             }
         }
+        // auto-trigger JSN dialog if local player is targeted by an action
+        checkAndPromptJustSayNo(session);
         applyHud(session);
         if (viewCoordinator != null) {
             viewCoordinator.refreshFromSession(session,
                     handCardPicker.getSelectedHandCard(),
                     handCardPicker.getDiscardSelections());
         }
-        // auto-trigger JSN dialog if local player is targeted by an action
-        checkAndPromptJustSayNo(session);
         // play chrome
         Card selected = handCardPicker.getSelectedHandCard();
         VBox dock = playChromeBuilder.build(session, selected,

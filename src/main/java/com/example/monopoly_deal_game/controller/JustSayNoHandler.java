@@ -2,7 +2,6 @@ package com.example.monopoly_deal_game.controller;
 
 import com.example.monopoly_deal_game.game.model.ActionState;
 import com.example.monopoly_deal_game.game.model.GameSession;
-import com.example.monopoly_deal_game.logic.GameLogic;
 import com.example.monopoly_deal_game.logic.JustSayNoMediator;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo;
@@ -76,8 +75,7 @@ JustSayNoHandler {
 
     /**
      * Show Just Say No dialog to the TARGETED player (respondent).
-     * The dialog asks if they want to use JSN against the activator's action.
-     * If confirmed, JSN is played from hand via GameLogic.playCard().
+     * If confirmed, JSN is removed directly and the action is refused.
      */
     public boolean promptDialog(Player respondent, Player activator,
                                  GameSession session, String situation) {
@@ -122,12 +120,17 @@ JustSayNoHandler {
 
             boolean use = alert.showAndWait().filter(r -> r == useNo).isPresent();
             if (use) {
-                GameLogic logic = AppContext.get().gameEngine().getGameLogic();
                 Card jsn = JustSayNoMediator.findJustSayNoRespondentHeld(respondent);
                 if (jsn != null) {
-                    logic.playCard(session, jsn);
+                    if (!respondent.getHand().removeCard(jsn)) {
+                        respondent.getBank().removeCard(jsn);
+                    }
+                    session.discardCard(jsn);
                 }
-                refreshUi.run();
+                ActionState as = session.getGameState().getActionState();
+                if (as != null && as != session.getGameState().getTurnState()) {
+                    as.refuse(respondent, as.getActionOwner());
+                }
             } else {
                 // Target didn't use JSN — accept the action
                 ActionState as = session.getGameState().getActionState();
