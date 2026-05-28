@@ -87,11 +87,22 @@ JustSayNoHandler {
             }
 
             // Networked game: forward JSN request to the targeted player's client
+            // Only forward when there are actual remote clients connected;
+            // in a single-machine game, show the dialog locally instead.
             Player local = session.localPlayer(
                     AppContext.get().networkLobbyState().getLocalPlayerName());
             String roomId = AppContext.get().networkLobbyState().getRoomId();
+            boolean shouldForward = false;
             if (roomId != null && !roomId.isBlank()
                     && local != null && !local.getName().equals(respondent.getName())) {
+                if (AppContext.get().networkLobbyState().isHost()) {
+                    GameServer.Room room = AppContext.get().gameServer().getRoom(roomId);
+                    shouldForward = room != null && room.hasRemoteClients();
+                } else {
+                    shouldForward = true;
+                }
+            }
+            if (shouldForward) {
                 if (AppContext.get().networkLobbyState().isHost()) {
                     GameServer.Room room = AppContext.get().gameServer().getRoom(roomId);
                     if (room != null) {

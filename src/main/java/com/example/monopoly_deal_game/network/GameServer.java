@@ -70,6 +70,7 @@ public class GameServer {
             this.roomId = roomId; this.hostName = hostName; this.maxPlayers = maxPlayers; this.players.add(hostName);
         }
         public String getRoomId(){return roomId;} public String getHostName(){return hostName;} public int getMaxPlayers(){return maxPlayers;} public int getPort(){return port;} public List<String> getPlayers(){return Collections.unmodifiableList(players);} public boolean isReady(){return ready;} public boolean isStarted(){return started;} public GameSession getSession(){return session;}
+        public boolean hasRemoteClients() { return !clients.isEmpty(); }
         public void broadcastSessionSnapshot() {
             if (session == null) return;
             NetworkMessage msg = NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
@@ -313,9 +314,20 @@ public class GameServer {
             if (playerName == null || playerName.isBlank() || session == null || candidate == null) {
                 return false;
             }
-            Player authoritativeCurrent = session.getCurrentPlayer();
-            if (authoritativeCurrent == null || !playerName.equals(authoritativeCurrent.getName())) {
-                return false;
+            // Allow a player who is a target of the current action state to push
+            // session updates (e.g. payment response from a remote client).
+            com.example.monopoly_deal_game.game.model.ActionState as =
+                    session.getGameState().getActionState();
+            boolean isActionRespondent = as != null
+                    && as != session.getGameState().getTurnState()
+                    && as.isTarget(playerByName(session, playerName));
+
+            if (!isActionRespondent) {
+                Player authoritativeCurrent = session.getCurrentPlayer();
+                if (authoritativeCurrent == null
+                        || !playerName.equals(authoritativeCurrent.getName())) {
+                    return false;
+                }
             }
             if (candidate.getPlayers().size() != session.getPlayers().size()) {
                 return false;

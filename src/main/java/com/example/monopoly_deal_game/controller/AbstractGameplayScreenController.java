@@ -127,6 +127,23 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             }
             if (msg != null && msg.getType() == NetworkMessage.Type.SESSION_SNAPSHOT
                     && msg.getSession() != null) {
+                // Only restore session from network snapshot when there are remote
+                // clients. In a single-machine game the local session is already
+                // authoritative — replacing it asynchronously causes stale-state races.
+                String roomId = AppContext.get().networkLobbyState().getRoomId();
+                boolean hasRemote = false;
+                if (roomId != null && !roomId.isBlank()
+                        && AppContext.get().networkLobbyState().isHost()) {
+                    com.example.monopoly_deal_game.network.GameServer.Room room =
+                            AppContext.get().gameServer().getRoom(roomId);
+                    hasRemote = room != null && room.hasRemoteClients();
+                }
+                if (!hasRemote && roomId != null && !roomId.isBlank()
+                        && !AppContext.get().networkLobbyState().isHost()) {
+                    hasRemote = true;
+                }
+                if (!hasRemote) return; // single-machine: ignore self-broadcast
+
                 Platform.runLater(() -> {
                     AppContext.get().networkLobbyState().setSession(msg.getSession());
                     AppContext.get().gameEngine().resumeSession(msg.getSession());
@@ -196,8 +213,8 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             case WAITING_FOR_SELECTION -> setFeedback("请等待弹窗选择完成。");
         }
 
-        networkSync.publishSessionChange(session);
         refreshGameplayUi();
+        networkSync.publishSessionChange(session);
     }
 
     private void handleDrawPhase(GameLogic logic, GameSession session, GameState state) {
@@ -298,6 +315,19 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         }
         // auto-trigger JSN dialog if local player is targeted by an action
         checkAndPromptJustSayNo(session);
+
+        // Safety: clean up any finished action states that weren't removed.
+        // When all targets have responded (accepted/refused), the action state
+        // should be popped so getPhase() returns PLAY_PHASE instead of stuck at
+        // WAITING_FOR_SELECTION.
+        if (session != null) {
+            GameState gs = session.getGameState();
+            ActionState as = gs.getActionState();
+            if (as != null && as != gs.getTurnState() && as.isFinished()) {
+                gs.removeActionState(as);
+            }
+        }
+
         applyHud(session);
         if (viewCoordinator != null) {
             viewCoordinator.refreshFromSession(session,
@@ -343,14 +373,16 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 if (!merged.jsnBlocked()) clearFeedback();
                 handCardPicker.setSelectedHandCard(null);
                 if (logic.checkGameOver(session)) session.getGameState().setGameOver(true);
+                refreshGameplayUi();
                 networkSync.publishSessionChange(session);
             } else {
                 setFeedback("无法这样打出，请检查手序、次数或前提条件。");
+                refreshGameplayUi();
             }
         } catch (IllegalStateException ex) {
             setFeedback(ex.getMessage() != null ? ex.getMessage() : "出牌条件不满足");
+            refreshGameplayUi();
         }
-        refreshGameplayUi();
     }
 
     // ---- HUD ----
@@ -479,11 +511,26 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         ActionState as = gs.getActionState();
         if (as == null || as == gs.getTurnState()) return;
 
-        // Determine which targets to process
+        // Determine which targets to process.
+        // In a truly networked game (multiple machines), only the local player needs to be
+        // checked here — other clients receive the session snapshot and process their own
+        // targets. In a single-machine game, all targets must be processed locally.
+        String roomId = AppContext.get().networkLobbyState().getRoomId();
+        boolean hasRemote = false;
+        if (roomId != null && !roomId.isBlank() && AppContext.get().networkLobbyState().isHost()) {
+            com.example.monopoly_deal_game.network.GameServer.Room room =
+                    AppContext.get().gameServer().getRoom(roomId);
+            hasRemote = room != null && room.hasRemoteClients();
+        }
+        if (!hasRemote && roomId != null && !roomId.isBlank()
+                && !AppContext.get().networkLobbyState().isHost()) {
+            // Non-host clients are remote by definition
+            hasRemote = true;
+        }
+
         String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
-        boolean networked = localName != null && !localName.isBlank();
         java.util.List<Player> toCheck = new java.util.ArrayList<>();
-        if (networked) {
+        if (hasRemote) {
             Player local = session.localPlayer(localName);
             if (local != null && as.isTarget(local)
                     && !as.isRefused(local) && !as.isAccepted(local)) {
@@ -515,8 +562,8 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 boolean used = justSayNoHandler.promptDialog(
                         target, as.getActionOwner(), session, desc);
                 if (used) {
-                    networkSync.publishSessionChange(session);
                     refreshGameplayUi();
+                    networkSync.publishSessionChange(session);
                     return; // state changed, restart from top
                 }
                 // re-check after dialog
@@ -525,6 +572,11 @@ AbstractGameplayScreenController implements StageAware, Initializable {
 
             // No JSN or chose not to use it — auto-accept
             as.setAccepted(target, true);
+            // If we are a remote client, push the updated session back to Host
+            // so the ActionState resolution propagates.
+            if (hasRemote && !AppContext.get().networkLobbyState().isHost()) {
+                networkSync.publishSessionChange(session);
+            }
         }
     }
 
