@@ -80,14 +80,14 @@ public final class MonopolyDealOfficialDeck {
         // Dark Blue: 2 cards, rent [3, 8]
         id = prop(d, id, "Dark Blue A", 3, CardColor.BLUE, new int[]{3, 8});
         id = prop(d, id, "Dark Blue B", 3, CardColor.BLUE, new int[]{3, 8});
-        // Railroad: 4 cards, rent [1, 2, 3, 4]
-        id = prop(d, id, "Railroad A", 2, CardColor.RAILROAD, new int[]{1, 2, 3, 4});
-        id = prop(d, id, "Railroad B", 2, CardColor.RAILROAD, new int[]{1, 2, 3, 4});
-        id = prop(d, id, "Railroad C", 2, CardColor.RAILROAD, new int[]{1, 2, 3, 4});
-        id = prop(d, id, "Railroad D", 2, CardColor.RAILROAD, new int[]{1, 2, 3, 4});
-        // Utility: 2 cards, rent [1, 2]
-        id = prop(d, id, "Utility A", 2, CardColor.UTILITY, new int[]{1, 2});
-        id = prop(d, id, "Utility B", 2, CardColor.UTILITY, new int[]{1, 2});
+        // Black: 4 cards, rent [1, 2, 3, 4]
+        id = prop(d, id, "Black A", 2, CardColor.BLACK, new int[]{1, 2, 3, 4});
+        id = prop(d, id, "Black B", 2, CardColor.BLACK, new int[]{1, 2, 3, 4});
+        id = prop(d, id, "Black C", 2, CardColor.BLACK, new int[]{1, 2, 3, 4});
+        id = prop(d, id, "Black D", 2, CardColor.BLACK, new int[]{1, 2, 3, 4});
+        // Light Green: 2 cards, rent [1, 2]
+        id = prop(d, id, "Light Green A", 2, CardColor.LIGHT_GREEN, new int[]{1, 2});
+        id = prop(d, id, "Light Green B", 2, CardColor.LIGHT_GREEN, new int[]{1, 2});
         return id;
     }
 
@@ -101,30 +101,30 @@ public final class MonopolyDealOfficialDeck {
     // ---- Wild Property Cards (11 张) ----
     private static int appendWildProperties(List<Card> d, int id) {
         // 双色万能房产：2 张 Purple-Orange
-        d.add(new PropertyCard(id++, "Wild (Pur-Org)", 0,
+        d.add(new PropertyCard(id++, "Wild (Pur-Org)", 2,
                 CardColor.PURPLE, CardColor.ORANGE, new int[]{1, 2, 3}, true));
-        d.add(new PropertyCard(id++, "Wild (Pur-Org)", 0,
+        d.add(new PropertyCard(id++, "Wild (Pur-Org)", 2,
                 CardColor.PURPLE, CardColor.ORANGE, new int[]{1, 2, 3}, true));
         // 双色万能：Light Blue - Brown
-        d.add(new PropertyCard(id++, "Wild (LB-Bro)", 0,
+        d.add(new PropertyCard(id++, "Wild (LB-Bro)", 1,
                 CardColor.LIGHT_BLUE, CardColor.BROWN, new int[]{1, 2, 3}, true));
-        // 双色万能：Light Blue - Railroad
-        d.add(new PropertyCard(id++, "Wild (LB-RR)", 0,
-                CardColor.LIGHT_BLUE, CardColor.RAILROAD, new int[]{1, 2, 3}, true));
+        // 双色万能：Light Blue - Black
+        d.add(new PropertyCard(id++, "Wild (LB-Blk)", 4,
+                CardColor.LIGHT_BLUE, CardColor.BLACK, new int[]{1, 2, 3}, true));
         // 双色万能：Dark Blue - Green
-        d.add(new PropertyCard(id++, "Wild (DB-G)", 0,
+        d.add(new PropertyCard(id++, "Wild (DB-G)", 4,
                 CardColor.BLUE, CardColor.GREEN, new int[]{1, 2, 3}, true));
-        // 双色万能：Railroad - Green
-        d.add(new PropertyCard(id++, "Wild (RR-G)", 0,
-                CardColor.RAILROAD, CardColor.GREEN, new int[]{1, 2, 3}, true));
+        // 双色万能：Black - Green
+        d.add(new PropertyCard(id++, "Wild (Blk-G)", 4,
+                CardColor.BLACK, CardColor.GREEN, new int[]{1, 2, 3}, true));
         // 双色万能：Red - Yellow (×2)
-        d.add(new PropertyCard(id++, "Wild (Red-Yel)", 0,
+        d.add(new PropertyCard(id++, "Wild (Red-Yel)", 3,
                 CardColor.RED, CardColor.YELLOW, new int[]{1, 2, 3}, true));
-        d.add(new PropertyCard(id++, "Wild (Red-Yel)", 0,
+        d.add(new PropertyCard(id++, "Wild (Red-Yel)", 3,
                 CardColor.RED, CardColor.YELLOW, new int[]{1, 2, 3}, true));
-        // 双色万能：Utility - Railroad
-        d.add(new PropertyCard(id++, "Wild (Util-RR)", 0,
-                CardColor.UTILITY, CardColor.RAILROAD, new int[]{1, 2, 3}, true));
+        // 双色万能：Light Green - Black
+        d.add(new PropertyCard(id++, "Wild (LG-Blk)", 2,
+                CardColor.LIGHT_GREEN, CardColor.BLACK, new int[]{1, 2, 3}, true));
         // 彩虹万能（所有颜色可用）：2 张（不为基础，不可被偷）
         d.add(new PropertyCard(id++, "Rainbow Wild", 0, new int[]{1, 1, 1}, true, false, false));
         d.add(new PropertyCard(id++, "Rainbow Wild", 0, new int[]{1, 1, 1}, true, false, false));
@@ -135,8 +135,8 @@ public final class MonopolyDealOfficialDeck {
     private static int appendRentCards(List<Card> d, int id) {
         d.add(new RentCard(id++, "Rent Pur-Org", 1, List.of(CardColor.PURPLE, CardColor.ORANGE), false));
         d.add(new RentCard(id++, "Rent Pur-Org", 1, List.of(CardColor.PURPLE, CardColor.ORANGE), false));
-        d.add(new RentCard(id++, "Rent RR-Util", 1, List.of(CardColor.RAILROAD, CardColor.UTILITY), false));
-        d.add(new RentCard(id++, "Rent RR-Util", 1, List.of(CardColor.RAILROAD, CardColor.UTILITY), false));
+        d.add(new RentCard(id++, "Rent Blk-LG", 1, List.of(CardColor.BLACK, CardColor.LIGHT_GREEN), false));
+        d.add(new RentCard(id++, "Rent Blk-LG", 1, List.of(CardColor.BLACK, CardColor.LIGHT_GREEN), false));
         d.add(new RentCard(id++, "Rent Gr-DB", 1, List.of(CardColor.GREEN, CardColor.BLUE), false));
         d.add(new RentCard(id++, "Rent Gr-DB", 1, List.of(CardColor.GREEN, CardColor.BLUE), false));
         d.add(new RentCard(id++, "Rent Bro-LB", 1, List.of(CardColor.BROWN, CardColor.LIGHT_BLUE), false));

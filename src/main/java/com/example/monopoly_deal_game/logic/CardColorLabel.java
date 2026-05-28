@@ -16,9 +16,8 @@ public final class CardColorLabel {
             case YELLOW -> "黄";
             case GREEN -> "绿";
             case BLUE -> "深蓝";
-            case RAILROAD -> "铁路";
-            case UTILITY -> "公共";
-            case WILD -> "混色";
+            case BLACK -> "黑";
+            case LIGHT_GREEN -> "浅绿";
             case NONE -> "—";
         };
     }

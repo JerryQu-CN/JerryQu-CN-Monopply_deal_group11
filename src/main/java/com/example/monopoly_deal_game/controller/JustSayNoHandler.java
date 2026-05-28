@@ -142,13 +142,8 @@ JustSayNoHandler {
                 if (as != null && as != session.getGameState().getTurnState()) {
                     as.refuse(respondent, as.getActionOwner());
                 }
-            } else {
-                // Target didn't use JSN — accept the action
-                ActionState as = session.getGameState().getActionState();
-                if (as != null && as != session.getGameState().getTurnState()) {
-                    as.setAccepted(respondent, true);
-                }
             }
+            // If JSN not used, caller handles setAccepted + side effects + sync
             return use;
         } finally {
             dialogBusy.set(false);

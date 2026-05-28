@@ -69,8 +69,8 @@ public class PropertyCard extends Card {
             case YELLOW     -> 0xF9EF04;
             case GREEN      -> 0x50B42F;
             case BLUE       -> 0x405CA5;
-            case RAILROAD   -> 0x11110E;
-            case UTILITY    -> 0xCEE5B7;
+            case BLACK       -> 0x11110E;
+            case LIGHT_GREEN -> 0xCEE5B7;
             default         -> 0x808080;
         };
     }

@@ -20,7 +20,7 @@ public final class PropertyPlayHelper {
     private static final List<CardColor> BOARD_COLOR_RANK =
             List.of(CardColor.BROWN, CardColor.LIGHT_BLUE, CardColor.PURPLE, CardColor.ORANGE,
                     CardColor.RED, CardColor.YELLOW, CardColor.GREEN, CardColor.BLUE,
-                    CardColor.RAILROAD, CardColor.UTILITY, CardColor.WILD, CardColor.NONE);
+                    CardColor.BLACK, CardColor.LIGHT_GREEN, CardColor.NONE);
     private static final Comparator<Property> PROPERTY_BOARD_ORDER =
             Comparator.comparingInt(PropertyPlayHelper::displayRank);
 
@@ -111,7 +111,7 @@ public final class PropertyPlayHelper {
         CardColor chosen = incoming.getCurrentColor();
         if (chosen == null || chosen == CardColor.NONE || chosen == CardColor.WILD) return true;
         CardColor rowColor = row.getEffectiveColor();
-        if (rowColor == CardColor.NONE || rowColor == CardColor.WILD) return true;
+        if (rowColor == CardColor.NONE) return true;
         return rowColor == chosen;
     }
 
@@ -119,13 +119,13 @@ public final class PropertyPlayHelper {
         if (incoming == null || row == null || !incoming.isWild()) return;
         if (row.getCards().isEmpty()) return;
         CardColor anchor = row.getEffectiveColor();
-        if (anchor == CardColor.NONE || anchor == CardColor.WILD) {
+        if (anchor == CardColor.NONE) {
             for (PropertyCard pc : row.getCards()) {
                 CardColor c = pc.getCurrentColor();
-                if (c != null && c != CardColor.NONE && c != CardColor.WILD) { anchor = c; break; }
+                if (c != null && c != CardColor.NONE) { anchor = c; break; }
             }
         }
-        if (anchor != null && anchor != CardColor.NONE && anchor != CardColor.WILD) {
+        if (anchor != null && anchor != CardColor.NONE) {
             incoming.alignToDeclaredColor(anchor);
         }
     }

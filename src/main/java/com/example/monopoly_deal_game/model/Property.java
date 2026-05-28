@@ -74,9 +74,6 @@ public final class Property implements Serializable {
         if (!(building instanceof ActionCardHouse) && !(building instanceof ActionCardHotel)) {
             return false;
         }
-        if (getEffectiveColor() == CardColor.RAILROAD) {
-            return false;
-        }
         if (!isMonopoly()) {
             return false;
         }
@@ -124,6 +121,7 @@ public final class Property implements Serializable {
     public boolean hasSingleColorProperty() {
         if (cards.isEmpty()) return false;
         CardColor anchor = null;
+        boolean anchorFromWild = false;
         boolean hasNonMultiColorAnchor = false;
         for (PropertyCard pc : cards) {
             if (pc.isMultiColorWild()) {
@@ -136,29 +134,50 @@ public final class Property implements Serializable {
             hasNonMultiColorAnchor = true;
             if (anchor == null) {
                 anchor = current;
+                anchorFromWild = pc.isWild();
             } else if (anchor != current) {
+                if (pc.isWild() && pc.getApplicableColors().contains(anchor)) {
+                    continue;
+                }
+                if (anchorFromWild && !pc.isWild()) {
+                    PropertyCard anchorCard = findFirstNonRainbowCard();
+                    if (anchorCard != null && anchorCard.getApplicableColors().contains(current)) {
+                        anchor = current;
+                        anchorFromWild = false;
+                        continue;
+                    }
+                }
                 return false;
             }
         }
         return hasNonMultiColorAnchor;
     }
 
-    /** 同色且不混杂时为锚定颜色；否则视为杂色/万能语义。 */
+    private PropertyCard findFirstNonRainbowCard() {
+        for (PropertyCard pc : cards) {
+            if (!pc.isMultiColorWild()) return pc;
+        }
+        return null;
+    }
+
     public CardColor getEffectiveColor() {
         if (cards.isEmpty()) return CardColor.NONE;
-        if (!hasSingleColorProperty()) return CardColor.WILD;
+        if (!hasSingleColorProperty()) return CardColor.NONE;
+        // 优先取非万能普通卡的颜色作为锚定色
+        for (PropertyCard pc : cards) {
+            if (!pc.isMultiColorWild() && !pc.isWild()) {
+                return pc.getCurrentColor();
+            }
+        }
+        // 全是双色万能时，取第一个的 currentColor
         for (PropertyCard pc : cards) {
             if (!pc.isMultiColorWild()) {
                 return pc.getCurrentColor();
             }
         }
-        return CardColor.WILD;
+        return CardColor.NONE;
     }
 
-    /**
-     * 成套垄断：同色（含对齐后的万能）且达到该颜色要求的张数。
-     * 混血行或尚未声明为单色系的万能行不构成垄断。
-     */
     public boolean isMonopoly() {
         if (cards.isEmpty()) {
             return false;
@@ -167,7 +186,7 @@ public final class Property implements Serializable {
             return false;
         }
         CardColor eff = getEffectiveColor();
-        if (eff == null || eff == CardColor.NONE || eff == CardColor.WILD) {
+        if (eff == null || eff == CardColor.NONE) {
             return false;
         }
         int need = requiredSetSize();
@@ -188,7 +207,7 @@ public final class Property implements Serializable {
         if (incoming == null) return false;
         if (cards.isEmpty()) return true;
         CardColor anchor = getEffectiveColor();
-        if (anchor == CardColor.NONE || anchor == CardColor.WILD) {
+        if (anchor == CardColor.NONE) {
             return incoming.isMultiColorWild() || hasCompatibleColorPair(incoming);
         }
         if (cards.size() >= requiredSetSize()) {

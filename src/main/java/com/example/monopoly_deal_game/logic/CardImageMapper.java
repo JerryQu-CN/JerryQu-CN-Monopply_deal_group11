@@ -16,12 +16,13 @@ import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 import com.example.monopoly_deal_game.model.cards.RentCard;
+import com.example.monopoly_deal_game.view.CardFaceResolver;
 
 import java.util.List;
 
 /**
  * 将 {@link Card} 映射到资源目录 {@code images/cards} 下的 PNG 文件名。
- * 与 {@link com.example.monopoly_deal_game.view.CardFaceResolver} 保持一致，供逻辑层记录出牌展示等使用。
+ * 与 {@link CardFaceResolver} 保持一致，供逻辑层记录出牌展示等使用。
  */
 public final class CardImageMapper {
 
@@ -77,13 +78,13 @@ public final class CardImageMapper {
     private static String wildPropertyFileByExactColors(PropertyCard pc) {
         CardColor a = pc.getPrimaryColor();
         CardColor b = pc.getSecondaryColor();
-        if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) return "propertyWildCard.png";
+        if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) return "brown-lightblueCard.png";
         if (pairEquals(a, b, CardColor.RED, CardColor.YELLOW)) return "red-yellowCard.png";
         if (pairEquals(a, b, CardColor.PURPLE, CardColor.ORANGE)) return "pink-orangeCard.png";
-        if (pairEquals(a, b, CardColor.BLUE, CardColor.GREEN)) return "green-blackCard.png";
-        if (pairEquals(a, b, CardColor.RAILROAD, CardColor.GREEN)) return "green-blackCard.png";
-        if (pairEquals(a, b, CardColor.LIGHT_BLUE, CardColor.RAILROAD)) return "lightBlue-blackCard.png";
-        if (pairEquals(a, b, CardColor.RAILROAD, CardColor.UTILITY)) return "black-lightGreenCard.png";
+        if (pairEquals(a, b, CardColor.BLUE, CardColor.GREEN)) return "green-blueCard.png";
+        if (pairEquals(a, b, CardColor.BLACK, CardColor.GREEN)) return "green-blackCard.png";
+        if (pairEquals(a, b, CardColor.LIGHT_BLUE, CardColor.BLACK)) return "lightBlue-blackCard.png";
+        if (pairEquals(a, b, CardColor.BLACK, CardColor.LIGHT_GREEN)) return "black-lightGreenCard.png";
         return "propertyWildCard.png";
     }
 
@@ -100,9 +101,9 @@ public final class CardImageMapper {
             case PURPLE -> "pinkCard.png";
             case LIGHT_BLUE -> "lightBlueCard.png";
             case BROWN -> "brownCard.png";
-            case RAILROAD, UTILITY -> "blackCard.png";
+            case BLACK, LIGHT_GREEN -> "blackCard.png";
             case WILD -> "propertyWildCard.png";
-            case NONE -> "propertyWildCard.png";
+            default -> throw new IllegalStateException("Unexpected value: " + c);
         };
     }
 
@@ -119,11 +120,11 @@ public final class CardImageMapper {
         if (pairEquals(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) {
             return "brown-lightBlue.png";
         }
-        if (pairEquals(a, b, CardColor.GREEN, CardColor.RAILROAD)
-                || pairEquals(a, b, CardColor.GREEN, CardColor.UTILITY)) {
+        if (pairEquals(a, b, CardColor.GREEN, CardColor.BLACK)
+                || pairEquals(a, b, CardColor.GREEN, CardColor.LIGHT_GREEN)) {
             return "black-lightGreenRent.png";
         }
-        if (pairEquals(a, b, CardColor.RAILROAD, CardColor.UTILITY)) {
+        if (pairEquals(a, b, CardColor.BLACK, CardColor.LIGHT_GREEN)) {
             return "black-lightGreenRent.png";
         }
         return "rainbowRent.png";

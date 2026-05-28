@@ -2,6 +2,8 @@ package com.example.monopoly_deal_game.controller;
 
 import com.example.monopoly_deal_game.game.engine.GameEngine;
 import com.example.monopoly_deal_game.game.model.ActionState;
+import com.example.monopoly_deal_game.game.model.ActionStatePlayerTargeted;
+import com.example.monopoly_deal_game.game.model.ActionStateRent;
 import com.example.monopoly_deal_game.game.model.GameSession;
 import com.example.monopoly_deal_game.game.model.GameState;
 import com.example.monopoly_deal_game.game.rules.GameConfig;
@@ -503,6 +505,9 @@ AbstractGameplayScreenController implements StageAware, Initializable {
      * For each unresponded human target: offer JSN if held, otherwise auto-accept.
      * For AI targets: auto-accept immediately.
      * In networked games only the local player is checked; offline covers all.
+     * <p>
+     * State change (setAccepted) and side effects (payment/transfer) are separate steps.
+     * Network sync happens once after all targets in the loop are resolved.
      */
     private void checkAndPromptJustSayNo(GameSession session) {
         if (session == null || dialogBusy.get()) return;
@@ -512,9 +517,6 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         if (as == null || as == gs.getTurnState()) return;
 
         // Determine which targets to process.
-        // In a truly networked game (multiple machines), only the local player needs to be
-        // checked here — other clients receive the session snapshot and process their own
-        // targets. In a single-machine game, all targets must be processed locally.
         String roomId = AppContext.get().networkLobbyState().getRoomId();
         boolean hasRemote = false;
         if (roomId != null && !roomId.isBlank() && AppContext.get().networkLobbyState().isHost()) {
@@ -524,7 +526,6 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         }
         if (!hasRemote && roomId != null && !roomId.isBlank()
                 && !AppContext.get().networkLobbyState().isHost()) {
-            // Non-host clients are remote by definition
             hasRemote = true;
         }
 
@@ -545,16 +546,18 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         }
         if (toCheck.isEmpty()) return;
 
+        boolean stateChanged = false;
         for (Player target : toCheck) {
             if (as.isRefused(target) || as.isAccepted(target)) continue;
 
             if (target.isAI()) {
-                // AI: auto-accept (JSN logic handled inside JustSayNoMediator if needed)
                 as.setAccepted(target, true);
+                applyAcceptedSideEffects(as, target);
+                stateChanged = true;
                 continue;
             }
 
-            // Human target
+            // Human target: offer JSN if they hold one
             if (JustSayNoHandler.playerHasJustSayNo(target)) {
                 String desc = as.getStatus() != null && !as.getStatus().isBlank()
                         ? as.getStatus()
@@ -566,17 +569,28 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                     networkSync.publishSessionChange(session);
                     return; // state changed, restart from top
                 }
-                // re-check after dialog
                 if (as.isRefused(target) || as.isAccepted(target)) continue;
             }
 
-            // No JSN or chose not to use it — auto-accept
+            // No JSN (or chose not to use it) — accept with side effects
             as.setAccepted(target, true);
-            // If we are a remote client, push the updated session back to Host
-            // so the ActionState resolution propagates.
-            if (hasRemote && !AppContext.get().networkLobbyState().isHost()) {
-                networkSync.publishSessionChange(session);
-            }
+            applyAcceptedSideEffects(as, target);
+            stateChanged = true;
+        }
+
+        // Push updated state once after all targets processed.
+        // Host broadcasts to all clients; non-host clients send PLAYER_ACTION to host.
+        if (stateChanged && hasRemote) {
+            networkSync.publishSessionChange(session);
+        }
+    }
+
+    /** Execute business logic (payment, property transfer) after a target accepts. */
+    private static void applyAcceptedSideEffects(ActionState as, Player target) {
+        if (as instanceof ActionStatePlayerTargeted pts && pts.hasOnAccepted()) {
+            pts.executeOnAccepted(target);
+        } else if (as instanceof ActionStateRent rent && rent.hasOnAccepted()) {
+            rent.executeOnAccepted(target);
         }
     }
 

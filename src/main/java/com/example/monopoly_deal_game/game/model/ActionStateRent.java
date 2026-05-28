@@ -50,23 +50,25 @@ public class ActionStateRent extends ActionState {
         return charges;
     }
 
-    /**
-     * Called when a player has paid their rent. Transfers cards to the renter.
-     */
     private SerializablePlayerAction onAccepted;
 
     public void setOnAccepted(SerializablePlayerAction action) {
         this.onAccepted = action;
     }
 
-    @Override
-    public void setAccepted(Player player, boolean accepted) {
-        if (accepted && onAccepted != null) {
-            onAccepted.execute(player);
-        }
-        super.setAccepted(player, accepted);
+    public boolean hasOnAccepted() {
+        return onAccepted != null;
     }
 
+    /** 执行接受后的业务逻辑（支付等）。多目标时每个目标各调用一次。 */
+    public void executeOnAccepted(Player player) {
+        if (onAccepted != null) {
+            onAccepted.execute(player);
+        }
+    }
+
+    /** @deprecated 使用 {@link #setAccepted(Player, boolean)} + {@link #executeOnAccepted(Player)} */
+    @Deprecated
     public void playerPaid(Player player) {
         setAccepted(player, true);
     }

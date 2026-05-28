@@ -9,16 +9,16 @@ import java.util.EnumSet;
  * 每种颜色携带标准租金档位、最大成套张数、是否可建造信息。
  */
 public enum CardColor {
-    BROWN       ("Brown",      new int[] {1, 2},       true),
-    LIGHT_BLUE  ("Light Blue", new int[] {1, 2, 3},    true),
-    PURPLE      ("Purple",     new int[] {1, 2, 4},    true),
-    ORANGE      ("Orange",     new int[] {1, 3, 5},    true),
-    RED         ("Red",        new int[] {2, 3, 6},    true),
-    YELLOW      ("Yellow",     new int[] {2, 4, 6},    true),
-    GREEN       ("Green",      new int[] {2, 4, 7},    true),
-    BLUE        ("Dark Blue",  new int[] {3, 8},       true),
-    RAILROAD    ("Railroad",   new int[] {1, 2, 3, 4}, false),
-    UTILITY     ("Utility",    new int[] {1, 2},       false),
+    BROWN       ("Brown",       new int[] {1, 2},       true),
+    LIGHT_BLUE  ("Light Blue",  new int[] {1, 2, 3},    true),
+    PURPLE      ("Purple",      new int[] {1, 2, 4},    true),
+    ORANGE      ("Orange",      new int[] {1, 3, 5},    true),
+    RED         ("Red",         new int[] {2, 3, 6},    true),
+    YELLOW      ("Yellow",      new int[] {2, 4, 6},    true),
+    GREEN       ("Green",       new int[] {2, 4, 7},    true),
+    BLUE        ("Dark Blue",   new int[] {3, 8},       true),
+    BLACK       ("Black",       new int[] {1, 2, 3, 4}, true),
+    LIGHT_GREEN ("Light Green", new int[] {1, 2},       true),
     WILD,
     NONE;
 
@@ -56,11 +56,11 @@ public enum CardColor {
     /** 所有"桌面颜色"（可营收租金的 10 种） */
     public static final Set<CardColor> TABLE_COLORS = EnumSet.of(
             BROWN, LIGHT_BLUE, PURPLE, ORANGE, RED,
-            YELLOW, GREEN, BLUE, RAILROAD, UTILITY);
+            YELLOW, GREEN, BLUE, BLACK, LIGHT_GREEN);
 
     /** 标准物业颜色（不含 WILD / NONE） */
     public static List<CardColor> standardColors() {
         return List.of(BROWN, LIGHT_BLUE, PURPLE, ORANGE, RED,
-                       YELLOW, GREEN, BLUE, RAILROAD, UTILITY);
+                       YELLOW, GREEN, BLUE, BLACK, LIGHT_GREEN);
     }
 }
