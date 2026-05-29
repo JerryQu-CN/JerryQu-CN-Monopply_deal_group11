@@ -17,29 +17,42 @@ public class NetworkSyncHelper {
     }
 
     public void publishSessionChange(GameSession session) {
+        publishSessionChange(session, null);
+    }
+
+    public void publishSessionChange(GameSession session, String logText) {
         if (session == null) return;
         AppContext.get().networkLobbyState().setSession(session);
         String roomId = AppContext.get().networkLobbyState().getRoomId();
         if (roomId == null || roomId.isBlank()) return;
         if (AppContext.get().networkLobbyState().isHost()) {
             GameServer.Room room = AppContext.get().gameServer().getRoom(roomId);
-            if (room != null) room.broadcastSessionSnapshot();
+            if (room != null) {
+                if (logText != null && !logText.isBlank()) {
+                    room.broadcastSessionSnapshot(logText);
+                } else {
+                    room.broadcastSessionSnapshot();
+                }
+            }
             return;
         }
         var client = AppContext.get().networkLobbyState().getClient();
         if (client == null) {
-            feedback.accept("同步失败：未连接到房主。请确认从 Join Room 页面加入房间。");
+            feedback.accept("Sync failed: not connected to the host. Please join the room from the Join Room page.");
             return;
         }
         try {
-            client.send(NetworkMessage.builder(NetworkMessage.Type.PLAYER_ACTION)
+            var builder = NetworkMessage.builder(NetworkMessage.Type.PLAYER_ACTION)
                     .roomId(roomId)
                     .playerName(AppContext.get().networkLobbyState().getLocalPlayerName())
-                    .session(session)
-                    .build());
-            feedback.accept("操作已提交，等待房主同步...");
+                    .session(session);
+            if (logText != null && !logText.isBlank()) {
+                builder.logText(logText);
+            }
+            client.send(builder.build());
+            feedback.accept("Action submitted, waiting for host sync...");
         } catch (Exception ex) {
-            feedback.accept("同步操作失败：" + ex.getMessage());
+            feedback.accept("Sync operation failed: " + ex.getMessage());
         }
     }
 
@@ -54,7 +67,7 @@ public class NetworkSyncHelper {
                 .receiverName(receiver.getName())
                 .selectedCards(cards)
                 .accepted(accepted)
-                .build(), "发送支付响应失败");
+                .build(), "Failed to send payment response");
     }
 
     public void sendPaymentRequest(String roomId, String requestId,
@@ -68,7 +81,7 @@ public class NetworkSyncHelper {
                 .amountM(amountM)
                 .session(session)
                 .text(reason)
-                .build(), "发送支付请求失败");
+                .build(), "Failed to send payment request");
     }
 
     public void sendJustSayNoRequest(String roomId, String requestId,
@@ -81,7 +94,7 @@ public class NetworkSyncHelper {
                 .receiverName(activator != null ? activator.getName() : null)
                 .session(session)
                 .text(situation)
-                .build(), "发送 Just Say No 请求失败");
+                .build(), "Failed to send Just Say No request");
     }
 
     public void sendJustSayNoResponse(NetworkMessage msg, String localName,
@@ -93,7 +106,7 @@ public class NetworkSyncHelper {
                 .payerName(respondent.getName())
                 .receiverName(activator != null ? activator.getName() : null)
                 .accepted(accepted)
-                .build(), "发送反对响应失败");
+                .build(), "Failed to send decline response");
     }
 
     private void send(NetworkMessage msg, String errorPrefix) {
@@ -101,7 +114,7 @@ public class NetworkSyncHelper {
             var client = AppContext.get().networkLobbyState().getClient();
             if (client != null) client.send(msg);
         } catch (Exception ex) {
-            feedback.accept(errorPrefix + "：" + ex.getMessage());
+            feedback.accept(errorPrefix + ": " + ex.getMessage());
         }
     }
 }

@@ -1,19 +1,20 @@
 /**
- * <h2>应用入口层（App）</h2>
+ * <h2>Application Entry Layer (App)</h2>
  * <p>
- * 职责：启动 JavaFX、创建主 {@link javafx.stage.Stage}、加载首屏 FXML。
+ * Responsibility: Launch JavaFX, create the main {@link javafx.stage.Stage}, load the first screen FXML.
  * </p>
  *
- * <h3>与其它包的关系</h3>
+ * <h3>Relationships with other packages</h3>
  * <ul>
- *   <li>仅依赖 {@link com.example.monopoly_deal_game.controller} 中的 {@code ScreenNavigation} 做首屏加载；不编写游戏规则。</li>
- *   <li>全局异常处理、图标、窗口大小策略可在此包扩展。</li>
+ *   <li>Only depends on {@code ScreenNavigation} in {@link com.example.monopoly_deal_game.controller}
+ *   for first screen loading; does not write game rules.</li>
+ *   <li>Global exception handling, icon, window size strategy can be expanded in this package.</li>
  * </ul>
  *
- * <h3>TODO（在哪写）</h3>
+ * <h3>TODO (where to write)</h3>
  * <ul>
- *   <li>{@code MonopolyDealApplication}：启动参数、默认分辨率、异常兜底。</li>
- *   <li>{@code Launcher}：{@code main}入口；课设提交时与 JavaFX 运行配置一致即可。</li>
+ *   <li>{@code MonopolyDealApplication}: Launch parameters, default resolution, exception fallback.</li>
+ *   <li>{@code Launcher}: {@code main} entry; just needs to be consistent with the JavaFX run configuration for course project submission.</li>
  * </ul>
  */
 package com.example.monopoly_deal_game.app;

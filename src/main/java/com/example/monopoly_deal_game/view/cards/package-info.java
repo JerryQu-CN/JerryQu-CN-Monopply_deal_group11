@@ -1,28 +1,31 @@
 /**
- * <h2>卡牌 GUI（与 {@link com.example.monopoly_deal_game.model.cards.Card} 家族平行）</h2>
+ * <h2>Card GUI (parallel to the {@link com.example.monopoly_deal_game.model.cards.Card} family)</h2>
  * <p>
- * 建议：<b>牌面长什么样、Tooltip、点击反馈</b> 放在本包；<b>从牌堆飞到手牌</b> 等轨迹动画放在
- * {@link com.example.monopoly_deal_game.view.animation}，通过 {@link javafx.scene.Node#setTranslateX(double)} 等
- * 由动效类驱动，避免在 Card 模型里写 JavaFX。
+ * Suggestion: <b>what the card face looks like, Tooltip, click feedback</b> belong in this package;
+ * <b>trajectory animations like flying from pile to hand</b> belong in
+ * {@link com.example.monopoly_deal_game.view.animation}, driven by animation classes
+ * through {@link javafx.scene.Node#setTranslateX(double)} etc.,
+ * avoiding writing JavaFX in the Card model.
  * </p>
  *
- * <h3>继承关系（实现顺序可参考）</h3>
+ * <h3>Inheritance (implementation order reference)</h3>
  * <pre>
  * {@link com.example.monopoly_deal_game.model.cards.Card} (model)
  *     ├── PropertyCard  →  {@link com.example.monopoly_deal_game.view.cards.PropertyCardNode}
  *     ├── ActionCard    →  {@link com.example.monopoly_deal_game.view.cards.ActionCardNode}
  *     └── BankCard      →  {@link com.example.monopoly_deal_game.view.cards.BankCardNode}
  *
- * {@link com.example.monopoly_deal_game.view.cards.AbstractCardNode} (JavaFX Region，所有牌面共性)
+ * {@link com.example.monopoly_deal_game.view.cards.AbstractCardNode} (JavaFX Region, common card face traits)
  *     ├── PropertyCardNode
  *     ├── ActionCardNode
  *     └── BankCardNode
  * </pre>
  *
  * <p>
- * 工厂：{@link com.example.monopoly_deal_game.view.cards.CardNodeFactory#from(com.example.monopoly_deal_game.model.cards.Card)}，
- * Controller 或 {@link com.example.monopoly_deal_game.view.GameplayViewCoordinator} 只依赖 {@link com.example.monopoly_deal_game.model.cards.Card}，
- * 不直接 new 具体 Node 子类。
+ * Factory: {@link com.example.monopoly_deal_game.view.cards.CardNodeFactory#from(com.example.monopoly_deal_game.model.cards.Card)},
+ * Controller or {@link com.example.monopoly_deal_game.view.GameplayViewCoordinator} depends only on
+ * {@link com.example.monopoly_deal_game.model.cards.Card},
+ * not directly instantiating specific Node subclasses.
  * </p>
  */
 package com.example.monopoly_deal_game.view.cards;

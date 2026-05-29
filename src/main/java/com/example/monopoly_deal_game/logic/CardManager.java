@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 抽牌堆 / 弃牌堆 / 洗牌回补（需求 1.5、2.4）。
+ * Draw pile / discard pile / reshuffle refill (requirements 1.5, 2.4).
  */
 public class CardManager {
 
-    /** 将全量卡牌洗牌后放入 session 的摸牌堆。 */
+    /** Shuffle all cards and place them into the session's draw pile. */
     public void initDeck(GameSession session, List<Card> cards) {
         List<Card> draw = session.getDrawPile();
         draw.clear();
@@ -24,7 +24,8 @@ public class CardManager {
     }
 
     /**
-     * 摸一张：牌堆空则先将弃牌洗回，再摸；仍无牌则返回 {@code null}。
+     * Draw one card: if the draw pile is empty, first shuffle the discard pile back in;
+     * if still empty, return {@code null}.
      */
     public Card drawOne(GameSession session) {
         List<Card> draw = session.getDrawPile();

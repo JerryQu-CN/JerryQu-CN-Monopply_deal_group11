@@ -7,8 +7,8 @@ import com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo;
 import com.example.monopoly_deal_game.model.cards.Card;
 
 /**
- * Just Say No 中介：提供 UI 桥接和查询工具。
- * 实际 JSN 打出流程由 GameLogic.playCard() 驱动，调用 ActionState.refuse()。
+ * Just Say No mediator: provides UI bridging and query utilities.
+ * The actual JSN play flow is driven by GameLogic.playCard(), which calls ActionState.refuse().
  */
 public final class JustSayNoMediator {
 
@@ -18,7 +18,7 @@ public final class JustSayNoMediator {
 
     @FunctionalInterface
     public interface JustSayNoUi {
-        /** @return 玩家同意消耗一张 JSN 反对当前行动 */
+        /** @return true if the player agrees to consume a JSN to oppose the current action */
         boolean confirmUseJustSayNo(Player respondent, Player activator, GameSession session, String situationText);
     }
 

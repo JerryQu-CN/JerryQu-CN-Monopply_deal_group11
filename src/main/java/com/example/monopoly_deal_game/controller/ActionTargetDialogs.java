@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** 多人对局时由出牌者选择「针对哪一位对手」结算。 */
+/** In multiplayer games, the card player selects which opponent to target for resolution. */
 final class ActionTargetDialogs {
 
     private ActionTargetDialogs() {}
@@ -23,9 +23,9 @@ final class ActionTargetDialogs {
         }
         List<Player> copy = new ArrayList<>(eligible);
         ChoiceDialog<Player> dlg = new ChoiceDialog<>(copy.get(0), copy);
-        dlg.setTitle(title != null ? title : "选择玩家");
-        dlg.setHeaderText(header != null ? header : "请选择本轮效果作用的目标玩家");
-        dlg.setContentText("目标玩家：");
+        dlg.setTitle(title != null ? title : "Select Player");
+        dlg.setHeaderText(header != null ? header : "Please select the target player for this round's effect");
+        dlg.setContentText("Target Player:");
         Window activeOwner = owner;
         if (activeOwner == null && !Window.getWindows().isEmpty()) {
             activeOwner = Window.getWindows().stream().filter(Window::isShowing).findFirst().orElse(null);
@@ -43,9 +43,9 @@ final class ActionTargetDialogs {
         }
         List<PropertyCard> copy = new ArrayList<>(eligible);
         ChoiceDialog<PropertyCard> dlg = new ChoiceDialog<>(copy.get(0), copy);
-        dlg.setTitle(title != null ? title : "选择房产");
-        dlg.setHeaderText(header != null ? header : "请选择一张房产牌");
-        dlg.setContentText("房产：");
+        dlg.setTitle(title != null ? title : "Select Property");
+        dlg.setHeaderText(header != null ? header : "Please select a property card");
+        dlg.setContentText("Property:");
         Window activeOwner = owner;
         if (activeOwner == null && !Window.getWindows().isEmpty()) {
             activeOwner = Window.getWindows().stream().filter(Window::isShowing).findFirst().orElse(null);
@@ -63,9 +63,9 @@ final class ActionTargetDialogs {
         }
         List<Property> copy = new ArrayList<>(eligible);
         ChoiceDialog<Property> dlg = new ChoiceDialog<>(copy.get(0), copy);
-        dlg.setTitle(title != null ? title : "选择地产组");
-        dlg.setHeaderText(header != null ? header : "请选择要夺取的完整成套");
-        dlg.setContentText("地产组：");
+        dlg.setTitle(title != null ? title : "Select Property Group");
+        dlg.setHeaderText(header != null ? header : "Please select the complete set to take");
+        dlg.setContentText("Property Group:");
         Window activeOwner = owner;
         if (activeOwner == null && !Window.getWindows().isEmpty()) {
             activeOwner = Window.getWindows().stream().filter(Window::isShowing).findFirst().orElse(null);

@@ -1,21 +1,21 @@
-包名：com.example.monopoly_deal_game.view
+Package: com.example.monopoly_deal_game.view
 ================================================================================
-【包含的类 / 子包】
-  - GameObserver、GameplayUiBundle、GameplayViewCoordinator（根包）
-  - view.cards：AbstractCardNode 与 Property/Action/Bank 牌面子类、CardNodeFactory
-  - view.animation：UiMotion、AbstractUiMotion、Shuffle/Draw/Place/MoveMotion、MotionContext
-  - view.scene：UiSceneLayer、ScenePaneResolver（对局内图层 → Pane）
-  （另有各子包 package-info.java。）
+[Included classes / subpackages]
+  - GameObserver, GameplayUiBundle, GameplayViewCoordinator (root package)
+  - view.cards: AbstractCardNode and Property/Action/Bank card face subclasses, CardNodeFactory
+  - view.animation: UiMotion, AbstractUiMotion, Shuffle/Draw/Place/MoveMotion, MotionContext
+  - view.scene: UiSceneLayer, ScenePaneResolver (in-game layer -> Pane)
+  (Also see each subpackage's package-info.java.)
 
-【接口】
-  - GameObserver：onSessionUpdated(GameSession)。
+[Interfaces]
+  - GameObserver: onSessionUpdated(GameSession).
 
-【需要实现什么】
-  - 按需求 17 拆分自定义控件：卡牌 Tooltip、玩家资产缩略区、中央手牌区等。
-  - 可在此包实现 GameObserver 的具体类，或在 controller 中匿名实现。
-  - 与 JavaFX Property 绑定二选一：观察者或双向绑定只读 VM。
+[What needs to be implemented]
+  - Per Requirement 17, split custom controls: card Tooltip, player asset thumbnail area, central hand area, etc.
+  - Concrete classes implementing GameObserver can be in this package, or implemented anonymously in controller.
+  - Choose one: observer pattern or bidirectional binding to a read-only VM with JavaFX Property.
 
-【与其它包的关系】
-  - → model：只读 GameSession / DTO，不直接改模型。
-  - ← logic：引擎状态变更后触发 onSessionUpdated（由 controller 或引擎回调注册）。
-  - controller：FXML 的 fx:controller 仍放在 controller 包；本包放可复用 Node/控件。
+[Relationships with other packages]
+  - → model: Read-only GameSession / DTO, do not directly modify the model.
+  - ← logic: After engine state change, trigger onSessionUpdated (registered by controller or engine callback).
+  - controller: FXML fx:controller remains in the controller package; this package holds reusable Node/controls.

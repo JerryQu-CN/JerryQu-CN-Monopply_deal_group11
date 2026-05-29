@@ -5,7 +5,7 @@ import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
- * 移动：同一桌面上已有 {@link javafx.scene.Node} 的平移、换父（Sly Deal、强制收租等）。
+ * Move: translation and reparenting of existing {@link javafx.scene.Node} nodes on the same table (Sly Deal, forced rent collection, etc.).
  */
 public class MoveMotion extends AbstractUiMotion {
 
@@ -19,7 +19,7 @@ public class MoveMotion extends AbstractUiMotion {
 
     @Override
     protected Animation buildAnimation(MotionContext ctx) {
-        // TODO(view): 计算源/目标在 Scene 坐标系中的 bounds，再 TranslateTransition
+        // TODO(view): Compute source/target bounds in Scene coordinate space, then TranslateTransition
         return new PauseTransition(duration());
     }
 }

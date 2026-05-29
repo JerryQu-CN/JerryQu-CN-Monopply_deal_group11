@@ -45,6 +45,7 @@ public final class NetworkMessage implements Serializable {
     private final int amountM;
     private final List<Card> selectedCards;
     private final boolean accepted;
+    private final String logText;
 
     private NetworkMessage(Builder b) {
         type = b.type;
@@ -62,6 +63,7 @@ public final class NetworkMessage implements Serializable {
         amountM = b.amountM;
         selectedCards = b.selectedCards == null ? List.of() : List.copyOf(b.selectedCards);
         accepted = b.accepted;
+        logText = b.logText;
     }
 
     public static Builder builder(Type type) { return new Builder(type); }
@@ -80,6 +82,7 @@ public final class NetworkMessage implements Serializable {
     public int getAmountM() { return amountM; }
     public List<Card> getSelectedCards() { return selectedCards; }
     public boolean isAccepted() { return accepted; }
+    public String getLogText() { return logText; }
 
     public static final class Builder {
         private final Type type;
@@ -97,6 +100,7 @@ public final class NetworkMessage implements Serializable {
         private int amountM;
         private List<Card> selectedCards;
         private boolean accepted;
+        private String logText;
 
         private Builder(Type type) { this.type = type; }
         public Builder roomId(String v) { roomId = v; return this; }
@@ -113,6 +117,7 @@ public final class NetworkMessage implements Serializable {
         public Builder amountM(int v) { amountM = v; return this; }
         public Builder selectedCards(List<Card> v) { selectedCards = v; return this; }
         public Builder accepted(boolean v) { accepted = v; return this; }
+        public Builder logText(String v) { logText = v; return this; }
         public NetworkMessage build() { return new NetworkMessage(this); }
     }
 

@@ -1,107 +1,129 @@
-包根：com.example.monopoly_deal_game.view
+Root package: com.example.monopoly_deal_game.view
 ================================================================================
-本文件说明 view 包内「每个类 / 接口 / 枚举应负责什么」；具体 API 以源码为准。
+This file describes "what each class / interface / enum in the view package should be responsible for";
+specific APIs are subject to the source code.
 
 --------------------------------------------------------------------------------
-一、根包 com.example.monopoly_deal_game.view
+I. Root package com.example.monopoly_deal_game.view
 --------------------------------------------------------------------------------
 
-GameObserver（接口）
-  - 功能：观察者回调。当逻辑层/引擎里的对局状态（GameSession）发生变化时，通知实现类去刷新界面。
-  - 不应做：不在这里写FXML加载、不直接改 model 里集合；实现类里通常调 Coordinator 或只读更新控件。
+GameObserver (interface)
+  - Function: Observer callback. When the game state (GameSession) in the logic layer/engine changes,
+    notify implementing classes to refresh the interface.
+  - Should NOT do: Do not write FXML loading here, do not directly modify model collections;
+    implementing classes typically call Coordinator or update controls read-only.
 
-GameplayUiBundle（record）
-  - 功能：把对局 FXML 里已划分好的各块容器（gameRoot、手牌区、牌堆、弃牌、actionLayer、菜单遮罩等）打成一组引用。
-  - 不应做：不绘制具体卡牌、不播动画；只「持有 Pane 引用」供别处挂子 Node。
+GameplayUiBundle (record)
+  - Function: Group the pre-divided container blocks in the game FXML (gameRoot, hand area, card piles,
+    discard, actionLayer, menu overlay, etc.) into a set of references.
+  - Should NOT do: Do not draw specific cards, do not play animations;
+    only "holds Pane references" for other places to attach child Nodes.
 
-GameplayViewCoordinator（类）
-  - 功能：对局一屏的视图协调。持有 GameplayUiBundle；提供 motionContext() 给动效；提供 sceneResolver() 给图层解析；
-    refreshFromSession(GameSession) 中根据会话重绘手牌/对手/侧栏等（与 logic 约定好再填实现）。
-  - 不应做：不处理按钮 @FXML 事件（那在 controller）；不写游戏规则。
+GameplayViewCoordinator (class)
+  - Function: View coordination for a game screen. Holds GameplayUiBundle; provides motionContext() for animations;
+    provides sceneResolver() for layer resolution;
+    refreshFromSession(GameSession) redraws hands/opponents/sidebar etc. based on the session
+    (fill in implementation once agreed with logic).
+  - Should NOT do: Do not handle button @FXML events (those are in controller); do not write game rules.
 
 package-info.java
-  - 功能：本包在 MVC 中职责、与 controller/model/logic 的关系说明（Javadoc 模块页）。
+  - Function: This package's MVC responsibility and relationship with controller/model/logic (Javadoc module page).
 
-package-info 之外的 PACKAGE.txt
-  - 功能：同目录下的人类可读包说明（与 package-info 互补）。
+PACKAGE.txt (other than package-info)
+  - Function: Human-readable package description in the same directory (complements package-info).
 
 
 --------------------------------------------------------------------------------
-二、子包 com.example.monopoly_deal_game.view.cards（卡牌「长什么样」）
+II. Subpackage com.example.monopoly_deal_game.view.cards (what cards "look like")
 --------------------------------------------------------------------------------
 
-AbstractCardNode（类，继承 Region）
-  - 功能：单张牌在界面上的根节点。统一样式类名、最小尺寸；子类实现 renderFrom(Card) 根据模型画牌面；
-    showBack(boolean) 用于牌背/牌面切换。
-  - 不应做：不写洗牌/摸牌路径动画（在 view.animation）；不调用 GameEngine。
+AbstractCardNode (class, extends Region)
+  - Function: Root node for a single card in the UI. Unified style class name, minimum size;
+    subclasses implement renderFrom(Card) to draw the card face based on the model;
+    showBack(boolean) for card back/face toggle.
+  - Should NOT do: Do not write shuffle/draw path animations (those are in view.animation); do not call GameEngine.
 
-PropertyCardNode（类）
-  - 功能：物业牌（含双色系、Wild）的视觉：颜色条、租金档位、整套标识等，数据来自 PropertyCard 字段。
-  - 与 model 对应：com.example.monopoly_deal_game.model.PropertyCard
+PropertyCardNode (class)
+  - Function: Visual for property cards (including dual-color, Wild): color bar, rent tier, full set indicator, etc.,
+    data from PropertyCard fields.
+  - Model correspondence: com.example.monopoly_deal_game.model.cards.PropertyCard
 
-ActionCardNode（类）
-  - 功能：行动牌视觉：按行动类型（Rent、Sly Deal 等）显示标题、说明缩略；数据来自 ActionCard 及后续细分字段/枚举。
+ActionCardNode (class)
+  - Function: Visual for action cards: display title and description thumbnail by action type (Rent, Sly Deal, etc.);
+    data from ActionCard and subsequent sub-fields/enums.
 
-BankCardNode（类）
-  - 功能：钞票类牌面：面额、配色、布局；数据来自 BankCard。
+BankCardNode (class)
+  - Function: Visual for money cards: denomination, color scheme, layout; data from BankCard.
 
-CardNodeFactory（类，仅静态工厂）
-  - 功能：入参 model.Card，根据类型 new 对应 *CardNode 并 renderFrom，集中 instanceof/switch，避免 controller 里到处分支。
+CardNodeFactory (class, static factory only)
+  - Function: Accept model.Card as input, create the corresponding *CardNode by type and call renderFrom,
+    centralizing instanceof/switch to avoid branching throughout the controller.
 
 package-info.java
-  - 功能：本包与 model Card 族平行关系、与 animation 分层的说明。
+  - Function: Description of this package's parallel relationship with the model Card family and layering with animation.
 
 
 --------------------------------------------------------------------------------
-三、子包 com.example.monopoly_deal_game.view.animation（动效「怎么动」）
+III. Subpackage com.example.monopoly_deal_game.view.animation ("how things move")
 --------------------------------------------------------------------------------
 
-UiMotion（接口）
-  - 功能：一段可播放 UI 动效的抽象。play(MotionContext, onFinished) 在动画正常结束后执行回调（如刷新手牌列表）。
+UiMotion (interface)
+  - Function: Abstraction for a playable UI animation segment. play(MotionContext, onFinished) executes the callback
+    after the animation ends normally (e.g., refresh hand card list).
 
-MotionContext（record）
-  - 功能：动效要用的牌堆/手牌/弃牌/遮罩等 Pane 引用 + 默认时长，避免每个动效类构造参数过长。
+MotionContext (record)
+  - Function: Pane references (card piles, hand, discard, overlay, etc.) + default duration needed by animations,
+    avoiding excessively long constructor parameters for each animation class.
 
-AbstractUiMotion（类，实现 UiMotion）
-  - 功能：模板方法。子类实现 buildAnimation(MotionContext)；基类 play 里包一层结束回调并 play。
+AbstractUiMotion (class, implements UiMotion)
+  - Function: Template method. Subclasses implement buildAnimation(MotionContext);
+    the base class play wraps the completion callback and plays.
 
-ShuffleMotion（类）
-  - 功能：洗牌动画（仅视觉；真实牌序以 logic 为准）。buildAnimation 里对牌堆子节点做抖动/重排等。
+ShuffleMotion (class)
+  - Function: Shuffle animation (visual only; actual card order is determined by logic).
+    buildAnimation performs shake/rearrange on child nodes of the card pile area.
 
-DrawMotion（类）
-  - 功能：从牌堆区域「摸牌」飞到手牌区的动画；可含换父、路径或平移。
+DrawMotion (class)
+  - Function: Animation of "drawing a card" flying from the card pile area to the hand area;
+    may include reparenting, path, or translation.
 
-PlaceMotion（类）
-  - 功能：牌落到某目标区（银行条、物业区、弃牌堆等）的放置/落下动画；目标 Pane 可后续扩展进 MotionContext 或调用方闭包。
+PlaceMotion (class)
+  - Function: Place/land animation for a card landing in a target area (bank bar, property area, discard pile, etc.);
+    the target Pane can later be extended into MotionContext or a caller closure.
 
-MoveMotion（类）
-  - 功能：桌面上已有卡牌的平移/换父（如抢牌、支付时卡移动），区别于从牌堆新摸的 DrawMotion。
+MoveMotion (class)
+  - Function: Translation/reparenting of already-existing cards on the tabletop (e.g., stealing a card, moving when paying),
+    distinct from DrawMotion which draws a new card from a pile.
 
 package-info.java
-  - 功能：动效与 CardNode 解耦、与 Transition 组合方式的说明。
+  - Function: Description of how animation is decoupled from CardNode and composed with Transition.
 
 
 --------------------------------------------------------------------------------
-四、子包 com.example.monopoly_deal_game.view.scene（对局内「哪一层」）
+IV. Subpackage com.example.monopoly_deal_game.view.scene ("which layer" in-game)
 --------------------------------------------------------------------------------
 
-UiSceneLayer（枚举）
-  - 功能：对局界面内的逻辑分层枚举：主牌桌 TABLE、选目标/选牌遮罩 ACTION_MODAL、暂停菜单 MENU_OVERLAY。
-  - 说明：不是 JavaFX 整个 Application 的「Scene」替换，只是同一屏里的图层概念。
+UiSceneLayer (enum)
+  - Function: Logical layer enum within the game interface: main table TABLE, target selection / card selection overlay
+    ACTION_MODAL, pause menu MENU_OVERLAY.
+  - Note: This is not a replacement for the entire JavaFX Application "Scene";
+    it is only a layer concept within the same screen.
 
-ScenePaneResolver（类）
-  - 功能：把 UiSceneLayer 映射到 GameplayUiBundle 里具体哪个 Pane，便于弹窗/全屏动效往正确容器上挂子节点。
+ScenePaneResolver (class)
+  - Function: Map UiSceneLayer to a specific Pane in GameplayUiBundle,
+    making it easy to attach child nodes for popups/full-screen animations onto the correct container.
 
 package-info.java
-  - 功能：对局内图层与 FXML 区域对应关系说明。
+  - Function: Description of the mapping between in-game layers and FXML regions.
 
 
 ================================================================================
-与 controller 的边界（避免重复造轮子）
+Boundary with controller (avoid reinventing the wheel)
 ================================================================================
-  - 用户点击、场景整体切换、AppContext 获取引擎：在 controller 包。
-  - 牌面 Node、轨迹动画、按会话刷新各 Pane 内容：在 view 包（由 GameplayViewCoordinator 或 GameObserver 实现类驱动）。
+  - User clicks, overall scene switching, AppContext engine retrieval: in the controller package.
+  - Card face Nodes, trajectory animations, refreshing Pane contents per session: in the view package
+    (driven by GameplayViewCoordinator or GameObserver implementing classes).
 
 ================================================================================
-文件维护：当新增/重命名 view 下类时，请同步更新本文件对应小节。
+File maintenance: When adding/renaming classes under view, please update the corresponding section in this file.
 ================================================================================

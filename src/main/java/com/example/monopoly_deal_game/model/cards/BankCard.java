@@ -1,20 +1,20 @@
 package com.example.monopoly_deal_game.model.cards;
 
 /**
- * 钞票类卡牌（M 面值等）。
+ * Currency cards (M-denomination, etc.).
  *
- * <p>职责：
+ * <p>Responsibilities:
  * <ol>
- *   <li>存储货币面值。</li>
- *   <li>仅能存入银行区或作为费用支付，不具备任何行动效果。</li>
+ *   <li>Store the currency denomination.</li>
+ *   <li>Can only be deposited into the bank area or used as payment; has no action effects.</li>
  * </ol>
  */
 public class BankCard extends Card {
 
     /**
-     * @param id    卡牌唯一编号
-     * @param name  名称（例如 "1M", "5M"）
-     * @param value 面额（实际在支付时计算的数值）
+     * @param id    Unique card identifier
+     * @param name  Name (e.g. "1M", "5M")
+     * @param value Denomination (the amount used in payment calculations)
      */
     public BankCard(int id, String name, int value) {
         super(id, name, value, "Currency used for paying debts and rent.");

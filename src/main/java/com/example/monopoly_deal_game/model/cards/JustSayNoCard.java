@@ -1,8 +1,8 @@
 package com.example.monopoly_deal_game.model.cards;
 
 /**
- * Just Say No 牌：被动响应牌，当对手对你打出行动牌时可选择使用，抵消该行动牌效果。
- * 使用后本牌进入弃牌堆。主动回合只能存入银行。
+ * Just Say No card: a reactive response card that can be optionally played to cancel an action card effect when an opponent plays an action card against you.
+ * After use, this card goes to the discard pile. On your own turn, it can only be deposited into the bank.
  * @deprecated Use {@link ActionCardJustSayNo} directly instead.
  */
 @Deprecated

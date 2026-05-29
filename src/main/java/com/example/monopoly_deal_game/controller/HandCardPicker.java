@@ -33,7 +33,7 @@ public class HandCardPicker {
 
     public boolean handlePick(Card card, GameSession session, Consumer<String> feedback) {
         if (dialogBusy.get()) {
-            feedback.accept("请先完成当前弹窗选择。");
+            feedback.accept("Please complete the current dialog selection first.");
             return false;
         }
         if (card == null || session == null) return false;
@@ -44,7 +44,7 @@ public class HandCardPicker {
         GameState gs = session.getGameState();
 
         if (!myTurn) {
-            feedback.accept("当前轮到 " + (current != null ? current.getName() : "其他玩家") + "，你只能查看自己的手牌。");
+            feedback.accept("It is " + (current != null ? current.getName() : "another player") + "'s turn. You can only view your own hand.");
             return true;
         }
 
@@ -54,9 +54,9 @@ public class HandCardPicker {
         if (!gs.isPlayerFocused(local)) {
             ActionState as = gs.getActionState();
             if (as != null && as.isTarget(local)) {
-                feedback.accept("请通过弹窗回应对方的行动。");
+                feedback.accept("Please respond to the opponent's action through the dialog.");
             } else {
-                feedback.accept("请等待当前行动结算完成。");
+                feedback.accept("Please wait for the current action to resolve.");
             }
             return true;
         }
@@ -77,9 +77,9 @@ public class HandCardPicker {
         if (phase != GameState.Phase.PLAY_PHASE) {
             selectedHandCard = null;
             if (phase == GameState.Phase.DRAW_PHASE) {
-                feedback.accept("请先点「摸牌」，再进入出牌阶段选手牌。");
+                feedback.accept("Please click \"Draw Cards\" first, then enter the play phase to select cards.");
             } else {
-                feedback.accept("当前阶段不可选手牌。");
+                feedback.accept("Cannot select hand cards in the current phase.");
             }
             return true;
         }

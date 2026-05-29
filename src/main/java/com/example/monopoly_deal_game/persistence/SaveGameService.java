@@ -5,9 +5,9 @@ import com.example.monopoly_deal_game.game.model.GameSession;
 import java.nio.file.Path;
 
 /**
- * 存档读写门面。
+ * Save/load read-write facade.
  *
- * TODO(persistence): load/save 实现；校验魔数与版本号。
+ * TODO(persistence): implement load/save; verify magic number and version number.
  */
 public class SaveGameService {
 

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 一局游戏的聚合根：玩家列表、抽/弃牌堆与 {@link GameState}。
+ * Aggregate root for a game session: player list, draw/discard piles, and {@link GameState}.
  */
 public class GameSession implements Serializable {
     @Serial
@@ -28,7 +28,7 @@ public class GameSession implements Serializable {
         return gameState;
     }
 
-    /** 摸牌堆（栈顶为列表尾部，可约定）。 */
+    /** Draw pile (the top of the stack is the tail of the list; can be customized by convention). */
     public List<Card> getDrawPile() {
         return drawPile;
     }
@@ -45,7 +45,7 @@ public class GameSession implements Serializable {
         return players.get(idx);
     }
 
-    /** 弃牌堆（出牌结算后的行动牌、租金卡等）。 */
+    /** Discard pile (action cards, rent cards, etc. after card play resolution). */
     public void discardCard(Card c) {
         if (c != null) {
             discardPile.add(c);

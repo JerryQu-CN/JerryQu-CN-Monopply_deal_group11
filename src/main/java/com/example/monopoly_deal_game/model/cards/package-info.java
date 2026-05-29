@@ -1,8 +1,10 @@
 /**
- * <h2>卡牌家族（卡牌领域模型）</h2>
+ * <h2>Card Family (Card Domain Model)</h2>
  * <p>
- * {@link com.example.monopoly_deal_game.model.cards.Card} 及子类、{@link CardColor}、{@link CardType} 独立于「一局对局」聚合根，
- * 会话与进行时状态（聚合根）见 {@link com.example.monopoly_deal_game.game.model.GameSession} 与 {@link com.example.monopoly_deal_game.game.model.GameState}。
+ * {@link com.example.monopoly_deal_game.model.cards.Card} and its subclasses, {@link CardColor}, {@link CardType}
+ * are independent of the "game session" aggregate root.
+ * Session and runtime state (aggregate root) are in {@link com.example.monopoly_deal_game.game.model.GameSession}
+ * and {@link com.example.monopoly_deal_game.game.model.GameState}.
  * </p>
  */
 package com.example.monopoly_deal_game.model.cards;

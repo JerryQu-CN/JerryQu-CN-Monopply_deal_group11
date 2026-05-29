@@ -1,25 +1,27 @@
 /**
- * <h2>持久化层（Persistence）</h2>
+ * <h2>Persistence Layer</h2>
  * <p>
- * 职责：把 {@link com.example.monopoly_deal_game.game.model.GameSession}（及必要版本号）写入磁盘，并在读档时恢复，
- * 供 {@link com.example.monopoly_deal_game.controller.LoadGameScreenController} 与 {@link com.example.monopoly_deal_game.game.engine.GameEngine} 使用。
+ * Responsibility: Write {@link com.example.monopoly_deal_game.game.model.GameSession} (and the necessary version number)
+ * to disk, and restore it when loading a save,
+ * for use by {@link com.example.monopoly_deal_game.controller.LoadGameScreenController}
+ * and {@link com.example.monopoly_deal_game.game.engine.GameEngine}.
  * </p>
  *
- * <h3>需要实现的功能</h3>
+ * <h3>Features to implement</h3>
  * <ul>
- *   <li>原子写盘（临时文件 + rename）避免损坏存档（非功能：可靠性）。</li>
- *   <li>版本字段：以后改模型可做迁移。</li>
+ *   <li>Atomic write (temp file + rename) to avoid save corruption (non-functional: reliability).</li>
+ *   <li>Version field: for future model migration.</li>
  * </ul>
  *
- * <h3>与其它包的关系</h3>
+ * <h3>Relationships with other packages</h3>
  * <ul>
- *   <li><b>→ model</b>：只序列化模型对象，不序列化 JavaFX Node。</li>
- *   <li><b>← controller</b>：读档界面调 {@link com.example.monopoly_deal_game.persistence.SaveGameService#load(java.nio.file.Path)}。</li>
+ *   <li><b>→ model</b>: Only serialize model objects, do not serialize JavaFX Node.</li>
+ *   <li><b>← controller</b>: The load save screen calls {@link com.example.monopoly_deal_game.persistence.SaveGameService#load(java.nio.file.Path)}.</li>
  * </ul>
  *
  * <h3>TODO</h3>
  * <ul>
- *   <li>选定 JSON（推荐）或二进制格式；实现 {@link com.example.monopoly_deal_game.persistence.SaveGameService}。</li>
+ *   <li>Choose JSON (recommended) or binary format; implement {@link com.example.monopoly_deal_game.persistence.SaveGameService}.</li>
  * </ul>
  */
 package com.example.monopoly_deal_game.persistence;

@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 卡牌 UI 节点：显示卡图、悬停放大、点击选中；图片来自
- * {@code /com/example/monopoly_deal_game/images/cards/}。
+ * Card UI node: displays card image, hover zoom, click to select; images from
+ * {@code /com/example/monopoly_deal_game/images/cards/}.
  */
 public class CardView extends StackPane {
 
@@ -27,15 +27,16 @@ public class CardView extends StackPane {
 
     private boolean selected = false;
     private boolean strongSelection = false;
-    /** 为 false 时不绘制蓝框发光（对局手牌仅逻辑选中、不强调视觉）。 */
+    /** When false, no blue glow border is drawn (hand cards are only logically selected, no visual emphasis). */
     private boolean selectionOutlineEnabled = true;
     private final ImageView cardImage;
-    /** 非 null 时（对局手牌）：点击只回调，由外部刷新选中样式。 */
+    /** When non-null (in-game hand cards): click only triggers callback, selection styling is refreshed externally. */
     private Runnable handInteraction;
-    /** 牌桌只读展示时为 false，避免悬停缩放干扰排版。 */
+    /** False when in table read-only display mode, to prevent hover zoom from disrupting layout. */
     private boolean hoverZoomEnabled = true;
     private double baseScaleX = 1.0;
     private double baseScaleY = 1.0;
+    private boolean readOnly = false;
 
     public CardView(String imageName, String cardName, String cardDesc) {
         setPrefSize(CARD_W, CARD_H);
@@ -54,7 +55,7 @@ public class CardView extends StackPane {
                         IMAGE_CACHE.computeIfAbsent(
                                 url.toExternalForm(), Image::new));
             } else {
-                System.err.println("图片未找到：" + imageName);
+                System.err.println("Image not found: " + imageName);
             }
         }
 
@@ -103,7 +104,7 @@ public class CardView extends StackPane {
         Tooltip.install(this, tip);
     }
 
-    /** 对局手牌：点击时调用，不传则保留独立演示用的切换选中行为。 */
+    /** In-game hand cards: called on click; if not set, retains the standalone demo toggle-selection behavior. */
     public void setHandInteraction(Runnable onClick) {
         this.handInteraction = onClick;
     }
@@ -118,7 +119,7 @@ public class CardView extends StackPane {
         }
     }
 
-    /** 由外部设置是否为当前选中、待打出的牌。 */
+    /** Externally sets whether this is the currently selected card to be played. */
     public void setHandSelected(boolean sel) {
         this.selected = sel;
         applySelectionStyle();
@@ -133,32 +134,39 @@ public class CardView extends StackPane {
         this.hoverZoomEnabled = hoverZoomEnabled;
     }
 
-    private static final DropShadow SELECT_GLOW =
-            new DropShadow(14, Color.color(0.15, 0.35, 0.85, 0.55));
-    private static final DropShadow STRONG_SELECT_GLOW =
-            new DropShadow(22, Color.color(0.95, 0.45, 0.05, 0.82));
+    /** Table read-only mode: disables hover zoom, click toggle, hand cursor; completely unresponsive to mouse. */
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+        if (readOnly) {
+            setCursor(Cursor.DEFAULT);
+            setOnMouseEntered(null);
+            setOnMouseExited(null);
+            setOnMouseClicked(null);
+            setFocusTraversable(false);
+            setMouseTransparent(true);
+        }
+    }
+
+    private static final DropShadow SELECT_GLOW = Styles.SELECT_GLOW;
+    private static final DropShadow STRONG_SELECT_GLOW = Styles.STRONG_SELECT_GLOW;
 
     private void applySelectionStyle() {
         if (!selectionOutlineEnabled) {
             setEffect(null);
-            setStyle("-fx-border-color:transparent;-fx-border-width:0");
+            setStyle(Styles.UNSELECT_CSS);
             return;
         }
         if (!selected && !strongSelection) {
             setEffect(null);
-            setStyle("-fx-border-color:transparent;-fx-border-width:0");
+            setStyle(Styles.UNSELECT_CSS);
             return;
         }
         if (strongSelection) {
-            setStyle(
-                    "-fx-border-color:#ef6c00;-fx-border-width:5;-fx-border-style:solid solid solid solid;"
-                            + "-fx-border-radius:11;-fx-background-radius:11;"
-                            + "-fx-background-color: rgba(255,243,224,0.45);");
+            setStyle(Styles.STRONG_SELECT_CSS);
             setEffect(STRONG_SELECT_GLOW);
             return;
         }
-        setStyle(
-                "-fx-border-color:#1565c0;-fx-border-width:3;-fx-border-radius:10;-fx-background-radius:10");
+        setStyle(Styles.SELECT_CSS);
         setEffect(selected ? SELECT_GLOW : null);
     }
 }

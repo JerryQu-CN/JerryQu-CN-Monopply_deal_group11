@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * 全局游戏状态：当前玩家索引、回合内出牌计数、ActionState 栈。
- * 对齐 Monopoly-Deal-main 中 GameState 的设计 — 通过 ActionState 栈控制相位与阻塞。
+ * Global game state: current player index, per-turn card play count, ActionState stack.
+ * Aligned with the design of GameState in Monopoly-Deal-main -- controls phases and blocking via the ActionState stack.
  */
 public class GameState implements Serializable {
     @Serial
@@ -19,7 +19,7 @@ public class GameState implements Serializable {
     private int cardsPlayedThisTurn;
     private boolean gameOver;
 
-    /** 加倍租金计数 */
+    /** Double rent counter */
     private boolean doubleNextRent;
     private int doubleRentCount;
 

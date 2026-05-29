@@ -44,11 +44,10 @@ public class PlayChromeBuilder {
         dock.setAlignment(Pos.CENTER);
         dock.setPadding(new Insets(10, 16, 10, 16));
         dock.setPickOnBounds(true);
-        dock.setStyle("-fx-background-color: rgba(25,118,210,0.94); -fx-background-radius: 10; "
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 12, 0, 0, 2);");
+        dock.getStyleClass().add("action-dock");
 
-        Label bar = new Label("出牌选项（可点击其他手牌取消或重选）");
-        bar.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 0 0 2 0;");
+        Label bar = new Label("Play Options (click another hand card to cancel or reselect)");
+        bar.getStyleClass().add("action-dock-label");
 
         HBox row = new HBox(12);
         row.setAlignment(Pos.CENTER);
@@ -100,8 +99,8 @@ public class PlayChromeBuilder {
     private void buildRentChrome(VBox dock, Label bar, HBox row, RentCard rc,
                                   Player me, GameSession session, GameState st,
                                   Consumer<CardPlayOptions> onPlay) {
-        Button toBank = new Button("存入银行（现金 " + Math.max(0, rc.getValue()) + "M）");
-        toBank.setStyle("-fx-font-size:12px;");
+        Button toBank = new Button("Deposit to Bank (value: " + Math.max(0, rc.getValue()) + "M)");
+        toBank.getStyleClass().add("button-chrome-action");
         toBank.setOnAction(e -> onPlay.accept(CardPlayOptions.bankOnly()));
         row.getChildren().add(toBank);
 
@@ -112,16 +111,16 @@ public class PlayChromeBuilder {
         fp.setVgap(8);
 
         if (colors.isEmpty()) {
-            Label empty = new Label("当前没有可收租的颜色");
-            empty.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
+            Label empty = new Label("No colors available for rent collection right now");
+            empty.setStyle("-fx-text-fill: #FFF8E1;");
             fp.getChildren().add(empty);
         } else {
             boolean dbl = st.isDoubleNextRent();
             for (CardColor col : colors) {
                 int base = RentCalculator.rentOnColor(me, col);
                 int display = dbl ? base * 2 : base;
-                Button cb = new Button("收租 " + CardColorLabel.shortLabel(col) + " → " + display + "M");
-                cb.setStyle("-fx-font-size:11px;");
+                Button cb = new Button("Rent " + CardColorLabel.shortLabel(col) + " -> " + display + "M");
+                cb.getStyleClass().add("button-chrome-action");
                 cb.setDisable(!RentRules.canUseRentEffectForUi(rc, me, col, session));
                 CardColor cap = col;
                 cb.setOnAction(e -> onPlay.accept(CardPlayOptions.rentWithColor(cap)));
@@ -134,12 +133,12 @@ public class PlayChromeBuilder {
     private void buildPropertyChrome(VBox dock, Label bar, HBox row,
                                       PropertyCard pc, Card sel,
                                       Consumer<CardPlayOptions> onPlay, Runnable refreshUi) {
-        Button toTable = new Button("摆上桌面（当前: " + CardColorLabel.shortLabel(pc.getCurrentColor()) + "）");
-        toTable.setStyle("-fx-font-size:12px;");
+        Button toTable = new Button("Place on Table (current: " + CardColorLabel.shortLabel(pc.getCurrentColor()) + ")");
+        toTable.getStyleClass().add("button-chrome-action");
         toTable.setOnAction(e -> onPlay.accept(CardPlayOptions.auto()));
 
-        Button toBank = new Button("存入银行（现金 " + Math.max(0, sel.getValue()) + "M）");
-        toBank.setStyle("-fx-font-size:12px;");
+        Button toBank = new Button("Deposit to Bank (value: " + Math.max(0, sel.getValue()) + "M)");
+        toBank.getStyleClass().add("button-chrome-action");
         toBank.setOnAction(e -> onPlay.accept(CardPlayOptions.bankOnly()));
 
         row.getChildren().addAll(toTable, toBank);
@@ -151,9 +150,9 @@ public class PlayChromeBuilder {
             colorChoices.setHgap(8);
             colorChoices.setVgap(8);
             for (CardColor color : pc.getSelectableColors()) {
-                Button choose = new Button("作为" + CardColorLabel.shortLabel(color));
+                Button choose = new Button("As " + CardColorLabel.shortLabel(color));
                 choose.setDisable(color == pc.getCurrentColor());
-                choose.setStyle("-fx-font-size:12px;");
+                choose.getStyleClass().add("button-chrome-action");
                 choose.setOnAction(e -> { pc.alignToDeclaredColor(color); refreshUi.run(); });
                 colorChoices.getChildren().add(choose);
             }
@@ -165,21 +164,21 @@ public class PlayChromeBuilder {
                                     ActionCard ac, GameSession session,
                                     GameLogic logic, Consumer<CardPlayOptions> onPlay) {
         if (ac instanceof ActionCardJustSayNo) {
-            Button toBank = new Button("存入银行（现金 " + Math.max(0, ac.getValue()) + "M）");
-            toBank.setStyle("-fx-font-size:12px;");
-            toBank.setTooltip(new Tooltip("Just Say No 是响应牌，当有人对你使用行动牌时自动弹出询问；主动只能存入银行。"));
+            Button toBank = new Button("Deposit to Bank (value: " + Math.max(0, ac.getValue()) + "M)");
+            toBank.getStyleClass().add("button-chrome-action");
+            toBank.setTooltip(new Tooltip("Just Say No is a response card; it will prompt automatically when someone uses an action card against you. When played actively, it can only be deposited to the bank."));
             toBank.setOnAction(e -> onPlay.accept(CardPlayOptions.bankOnly()));
             row.getChildren().add(toBank);
         } else {
-            Button use = new Button("使用卡牌效果");
-            use.setStyle("-fx-font-size:12px;");
+            Button use = new Button("Use Card Effect");
+            use.getStyleClass().add("button-chrome-action");
             boolean can = logic.getEffectExecutor().canUseActionEffectForUi(ac, session);
             use.setDisable(!can);
-            if (!can) use.setTooltip(new Tooltip("当前没有可生效的对手或前提不满足；可把牌作现金存入银行。"));
+            if (!can) use.setTooltip(new Tooltip("No valid targets or prerequisites not met; you can deposit this card as cash to the bank."));
             use.setOnAction(e -> onPlay.accept(CardPlayOptions.auto()));
 
-            Button toBank = new Button("存入银行（现金 " + Math.max(0, ac.getValue()) + "M）");
-            toBank.setStyle("-fx-font-size:12px;");
+            Button toBank = new Button("Deposit to Bank (value: " + Math.max(0, ac.getValue()) + "M)");
+            toBank.getStyleClass().add("button-chrome-action");
             toBank.setOnAction(e -> onPlay.accept(CardPlayOptions.bankOnly()));
 
             row.getChildren().addAll(use, toBank);

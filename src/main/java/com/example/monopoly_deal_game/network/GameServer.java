@@ -72,14 +72,21 @@ public class GameServer {
         public String getRoomId(){return roomId;} public String getHostName(){return hostName;} public int getMaxPlayers(){return maxPlayers;} public int getPort(){return port;} public List<String> getPlayers(){return Collections.unmodifiableList(players);} public boolean isReady(){return ready;} public boolean isStarted(){return started;} public GameSession getSession(){return session;}
         public boolean hasRemoteClients() { return !clients.isEmpty(); }
         public void broadcastSessionSnapshot() {
+            broadcastSessionSnapshot(null);
+        }
+
+        public void broadcastSessionSnapshot(String logText) {
             if (session == null) return;
-            NetworkMessage msg = NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
+            var builder = NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
                     .roomId(roomId)
                     .text("SESSION_SNAPSHOT")
                     .players(players)
                     .port(port)
-                    .session(session)
-                    .build();
+                    .session(session);
+            if (logText != null && !logText.isBlank()) {
+                builder.logText(logText);
+            }
+            NetworkMessage msg = builder.build();
             broadcast(msg);
             HostLobbyBridge.emit(msg);
         }
@@ -248,7 +255,7 @@ public class GameServer {
                         if (payer != null && receiver != null) {
                             PaymentService.applyChosenPayment(payer, receiver, msg.getSelectedCards(), session);
                             gameEngine.resumeSession(session);
-                            broadcastSessionSnapshot();
+                            broadcastSessionSnapshot(msg.getLogText());
                         }
                     }
                     return;
@@ -260,7 +267,7 @@ public class GameServer {
                         System.out.println("[GameServer] accepted PLAYER_ACTION from " + msg.getPlayerName()
                                 + ", current=" + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "?")
                                 + ", phase=" + session.getGameState().getPhase());
-                        broadcastSessionSnapshot();
+                        broadcastSessionSnapshot(msg.getLogText());
                         return;
                     }
                     if (session != null) {

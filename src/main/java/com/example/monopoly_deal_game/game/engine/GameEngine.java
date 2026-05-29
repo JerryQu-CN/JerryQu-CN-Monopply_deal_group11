@@ -8,7 +8,7 @@ import com.example.monopoly_deal_game.model.Player;
 import java.util.Objects;
 
 /**
- * 进程级门面：创建/恢复 {@link GameSession}，持有与 UI 共享的一局状态，委托 {@link GameLogic} 执行规则。
+ * Process-level facade: creates/restores {@link GameSession}, holds a game state shared with the UI, delegates to {@link GameLogic} for rule execution.
  */
 public class GameEngine {
 
@@ -21,14 +21,14 @@ public class GameEngine {
     private StateListener stateListener;
 
     /**
-     * 可选启动钩子（首屏资源加载等）；当前无强制逻辑。
+     * Optional launch hook (e.g., initial screen resource loading); currently no mandatory logic.
      */
     public void launchGame() {
-        // 预留：全局预热、配置读取
+        // Reserved: global warm-up, config loading
     }
 
     /**
-     * 联机局：创建全真人席位；网络层会把大厅中的房主/玩家名称同步到这些座位上。
+     * LAN game: creates all-human seats; the network layer will sync host/player names from the lobby to these seats.
      */
     public GameSession startLanGame(int humanPlayerCount) {
         if (humanPlayerCount < 2 || humanPlayerCount > 5) {
@@ -45,7 +45,7 @@ public class GameEngine {
         return session;
     }
 
-    /** 读档或其它途径注入已恢复的会话。 */
+    /** Inject a restored session from a saved game or other source. */
     public void resumeSession(GameSession session) {
         this.currentSession = Objects.requireNonNull(session);
         notifyStateChanged();

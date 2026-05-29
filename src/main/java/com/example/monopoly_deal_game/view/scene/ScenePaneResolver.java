@@ -6,7 +6,7 @@ import javafx.scene.layout.Pane;
 import java.util.Objects;
 
 /**
- * 将 {@link UiSceneLayer} 映射到 {@link GameplayUiBundle} 中的容器，供动效与弹窗挂载。
+ * Maps {@link UiSceneLayer} to containers within {@link GameplayUiBundle} for mounting animations and popups.
  */
 public final class ScenePaneResolver {
 

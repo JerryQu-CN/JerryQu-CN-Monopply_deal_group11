@@ -28,11 +28,11 @@ public class Player implements Serializable {
 
     private Hand hand;
     private Bank bank;
-    /** 物业区：多组 {@link Property}，每组内含若干 {@link PropertyCard} */
+    /** Property area: multiple {@link Property} groups, each containing several {@link PropertyCard} instances */
     private final List<Property> properties;
 
     /**
-     * 本局「从手牌打出」的卡牌快照序列，仅供 UI 牌桌区展示（与银行/物业中的实体牌解耦）。
+     * Sequence of card snapshots representing cards "played from hand" in this session, used only for UI table display (decoupled from the physical cards in the bank/property area).
      */
     private final List<PlayedCardSnapshot> playedCardsDisplay = new ArrayList<>();
 
@@ -207,7 +207,7 @@ public class Player implements Serializable {
     }
 
     /**
-     * 已达「成套垄断」的物业组数量，用于胜负（三套即胜等规则）。
+     * Number of property groups that have achieved "monopoly" (complete set), used for victory determination (e.g. three complete sets to win rule).
      */
     public int getFullSetCount() {
         int n = 0;

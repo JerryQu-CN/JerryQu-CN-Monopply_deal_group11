@@ -9,11 +9,13 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.URL;
 
 /**
- * JavaFX 应用入口（原 HelloApplication 已按课设命名规范更名）。
+ * JavaFX application entry point (formerly HelloApplication, renamed per course project naming conventions).
  *
- * TODO(app): 如需启动前加载配置、单例 {@link com.example.monopoly_deal_game.game.engine.GameEngine} 预热，可在此扩展。
+ * TODO(app): If pre-launch config loading or singleton {@link com.example.monopoly_deal_game.game.engine.GameEngine}
+ *            warm-up is needed, it can be extended here.
  */
 public class MonopolyDealApplication extends Application {
 
@@ -26,6 +28,10 @@ public class MonopolyDealApplication extends Application {
         Object controller = fxmlLoader.getController();
         if (controller instanceof StageAware stageAware) {
             stageAware.setStage(stage);
+        }
+        URL css = ScreenNavigation.class.getResource("/com/example/monopoly_deal_game/game-style.css");
+        if (css != null) {
+            scene.getStylesheets().add(css.toExternalForm());
         }
         stage.setTitle("Monopoly Deal");
         stage.setScene(scene);

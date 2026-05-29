@@ -5,8 +5,8 @@ import com.example.monopoly_deal_game.model.Player;
 import java.io.Serial;
 
 /**
- * 回合状态：DRAW → PLAY → DISCARD 三阶段。
- * 对齐 Monopoly-Deal-main 中 ActionStatePlayerTurn 的设计。
+ * Turn state: three phases of DRAW -> PLAY -> DISCARD.
+ * Aligned with the design of ActionStatePlayerTurn in Monopoly-Deal-main.
  */
 public class ActionStatePlayerTurn extends ActionState {
     @Serial

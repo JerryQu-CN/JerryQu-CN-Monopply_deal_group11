@@ -3,16 +3,16 @@ package com.example.monopoly_deal_game.model.cards;
 import java.util.List;
 
 /**
- * 租金卡：用于向其他玩家收取特定颜色物业的租金。
+ * Rent card: used to charge other players rent based on properties of specific colors.
  *
- * <p>双色租金卡列出 {@link #applicableColors}；万能全色租金 {@link #isWildRent} 为 true，颜色列表可为空。
+ * <p>Bi-color rent cards list their {@link #applicableColors}; for wild rent {@link #isWildRent} is true and the color list may be empty.
  */
 public class RentCard extends Card {
 
     private final List<CardColor> applicableColors;
     private final boolean isWildRent;
 
-    /** 兼容旧调用：名称固定为 "Rent"。 */
+    /** Backward-compatible constructor: name defaults to "Rent". */
     public RentCard(int id, int value, List<CardColor> applicableColors, boolean isWildRent) {
         this(id, "Rent", value, applicableColors, isWildRent);
     }

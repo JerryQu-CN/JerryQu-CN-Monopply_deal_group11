@@ -21,8 +21,9 @@ import com.example.monopoly_deal_game.view.CardFaceResolver;
 import java.util.List;
 
 /**
- * 将 {@link Card} 映射到资源目录 {@code images/cards} 下的 PNG 文件名。
- * 与 {@link CardFaceResolver} 保持一致，供逻辑层记录出牌展示等使用。
+ * Maps a {@link Card} to a PNG file name under the {@code images/cards} resource directory.
+ * Kept consistent with {@link CardFaceResolver} for use by the logic layer when recording
+ * card play display, etc.
  */
 public final class CardImageMapper {
 
@@ -101,7 +102,8 @@ public final class CardImageMapper {
             case PURPLE -> "pinkCard.png";
             case LIGHT_BLUE -> "lightBlueCard.png";
             case BROWN -> "brownCard.png";
-            case BLACK, LIGHT_GREEN -> "blackCard.png";
+            case BLACK-> "blackCard.png";
+            case LIGHT_GREEN -> "lightGreenCard.png";
             case WILD -> "propertyWildCard.png";
             default -> throw new IllegalStateException("Unexpected value: " + c);
         };

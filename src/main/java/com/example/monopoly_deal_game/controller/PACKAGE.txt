@@ -1,24 +1,24 @@
-包名：com.example.monopoly_deal_game.controller
+Package: com.example.monopoly_deal_game.controller
 ================================================================================
-【包含的类】
-  - ScreenNavigation          FXML 路径、场景切换（宽高常量）。
-  - StageAware                需持有 Stage 的控制器接口。
-  - StartScreenController     主菜单。
-  - AddPlayerScreenController 真人/房间大厅（占位联机）。
-  - AddBotPlayerScreenController 人机大厅（机器人数量）。
-  - LoadGameScreenController  读档路径与校验。
-  （另有 package-info.java。）
+[Included classes]
+  - ScreenNavigation          FXML paths, scene switching (width/height constants).
+  - StageAware                Controller interface requiring a Stage reference.
+  - StartScreenController     Main menu.
+  - AddPlayerScreenController Human/room lobby (online placeholder).
+  - AddBotPlayerScreenController Bot lobby (number of bots).
+  - LoadGameScreenController  Load save path and validation.
+  (Also see package-info.java.)
 
-【接口】
-  - StageAware：setStage(Stage)。
+[Interfaces]
+  - StageAware: setStage(Stage).
 
-【需要实现什么】
-  - 各按钮事件与 game.engine.GameEngine / GameLogic 对接（开局、读档、联机）。
-  - GameplayScreen.fxml 建议新增专用控制器，绑定手牌/银行/物业 UI（需求 17）。
-  - 联机建议增加 SyncController：转发 network 消息并刷新界面。
+[What needs to be implemented]
+  - Each button event connects with game.engine.GameEngine / GameLogic (start game, load save, online).
+  - GameplayScreen.fxml: suggest adding a dedicated controller, binding hand/bank/property UI (Requirement 17).
+  - Online: suggest adding SyncController to forward network messages and refresh the interface.
 
-【与其它包的关系】
-  - → logic：调用 GameEngine 暴露的用例方法；禁止在本包写结算规则。
-  - → network：大厅与对局同步（Room / Client）。
-  - → persistence：LoadGameScreen 调用 SaveGameService。
-  - → view：复杂控件与 GameObserver 订阅可放在 view 包，由本包装配。
+[Relationships with other packages]
+  - → logic: Call use-case methods exposed by GameEngine; do not write settlement rules in this package.
+  - → network: Lobby and game session synchronization (Room / Client).
+  - → persistence: LoadGameScreen calls SaveGameService.
+  - → view: Complex controls and GameObserver subscriptions can be placed in the view package, assembled by this package.

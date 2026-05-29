@@ -5,7 +5,7 @@ import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
- * 摸牌：从 {@link MotionContext#deckPane()} 飞向 {@link MotionContext#handPane()}（或先揭背面再翻转）。
+ * Draw card: flies from {@link MotionContext#deckPane()} to {@link MotionContext#handPane()} (optionally reveals the back first, then flips).
  */
 public class DrawMotion extends AbstractUiMotion {
 
@@ -19,7 +19,7 @@ public class DrawMotion extends AbstractUiMotion {
 
     @Override
     protected Animation buildAnimation(MotionContext ctx) {
-        // TODO(view): PathTransition / TranslateTransition + 可选父容器变更
+        // TODO(view): PathTransition / TranslateTransition + optional parent container change
         return new PauseTransition(duration());
     }
 }

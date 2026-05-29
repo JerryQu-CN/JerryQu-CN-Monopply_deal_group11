@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 卡牌效果执行器，对齐 Monopoly-Deal-main 中各 CardAction 的 doPlay 逻辑。
- * 需要目标玩家的行动牌会推入 ActionState 以阻塞其他玩家。
+ * Card effect executor, aligned with the doPlay logic of each CardAction in Monopoly-Deal-main.
+ * Action cards requiring a target player are pushed into an ActionState to block other players.
  */
 public class CardEffectExecutor {
 
@@ -29,7 +29,7 @@ public class CardEffectExecutor {
         this.cardManager = Objects.requireNonNull(cardManager);
     }
 
-    // ---- 可执行性判断 ----
+    // ---- Playability checks ----
 
     public boolean canUseActionEffect(ActionCard ac, GameSession session) {
         return canUseActionEffect(ac, session, CardPlayOptions.auto());
@@ -43,7 +43,7 @@ public class CardEffectExecutor {
         return PlayEligibility.canUseActionEffectForUi(ac, session);
     }
 
-    // ---- 出牌总入口 ----
+    // ---- Main play entry point ----
 
     public void execute(Card card, GameSession session) {
         execute(card, session, CardPlayOptions.auto());
@@ -52,7 +52,7 @@ public class CardEffectExecutor {
     public void execute(Card card, GameSession session, CardPlayOptions opt) {
         if (opt == null) opt = CardPlayOptions.auto();
         Player cur = session.getCurrentPlayer();
-        if (cur == null) throw new IllegalStateException("无当前玩家");
+        if (cur == null) throw new IllegalStateException("No current player");
 
         if (card instanceof BankCard b) {
             cur.getBank().addCard(b);
@@ -78,7 +78,7 @@ public class CardEffectExecutor {
         session.discardCard(card);
     }
 
-    // ---- 租金结算 ----
+    // ---- Rent resolution ----
 
     private void resolveRent(GameSession session, Player landlord, RentCard rc, CardPlayOptions opt) {
         GameState st = session.getGameState();
@@ -151,7 +151,7 @@ public class CardEffectExecutor {
         return List.of();
     }
 
-    /** 兼容旧接口 */
+    /** Backwards-compatible interface */
     public void execute(GameSession session, ActionCard card, Player user, Player target) {
         execute(card, session, CardPlayOptions.auto().withActionTarget(target));
     }

@@ -6,8 +6,8 @@ import javafx.util.Duration;
 import java.util.Objects;
 
 /**
- * 动效所需的舞台引用与默认参数；由 {@link com.example.monopoly_deal_game.view.GameplayUiBundle} 或
- * 对局 Controller 在构造时填入，避免每个 Motion 构造函数一长串 Pane。
+ * Stage references and default parameters needed for motion effects; filled in at construction time by {@link com.example.monopoly_deal_game.view.GameplayUiBundle} or
+ * the game Controller, avoiding a long chain of Pane arguments in each Motion constructor.
  */
 public record MotionContext(
         Pane deckPane,

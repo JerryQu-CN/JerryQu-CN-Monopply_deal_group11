@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 银行支付与地产作抵押：付款者必须自选桌面资产；不从手牌支付，也不自动扣款。
+ * Bank payment and property collateral: the payer must select assets from the table;
+ * payments are never made from the hand nor deducted automatically.
  */
 public final class PaymentService {
 
@@ -38,7 +39,7 @@ public final class PaymentService {
             String text =
                     justSayNoSituation != null && !justSayNoSituation.isBlank()
                             ? justSayNoSituation
-                            : "需要你支付 $" + amountM + "M。";
+                            : "You need to pay $" + amountM + "M.";
             if (JustSayNoMediator.tryBlockAgainstPlayer(payer, activatingActor, session, text)) {
                 return 0;
             }
@@ -56,7 +57,7 @@ public final class PaymentService {
                             session,
                             justSayNoSituation != null
                                     ? justSayNoSituation
-                                    : "请支付 $" + amountM + "M。");
+                                    : "Please pay $" + amountM + "M.");
             if (picked.isPresent()) {
                 List<Card> choice = picked.get();
                 if (choice.isEmpty() && totalLiquidityValue(payer) <= 0) {
@@ -71,7 +72,7 @@ public final class PaymentService {
         return autoPayFromTo(payer, receiver, amountM, session);
     }
 
-    /** AI 或无 UI 时自动选卡支付：银行大额优先，物业补足余款。 */
+    /** Auto-select cards for payment when AI or no UI: prefer high-value bank cards first, then properties to make up the difference. */
     private static int autoPayFromTo(Player payer, Player receiver, int amountM, GameSession session) {
         int cap = totalLiquidityValue(payer);
         if (cap <= 0) {
@@ -120,7 +121,7 @@ public final class PaymentService {
         return true;
     }
 
-    /** 银行或可视为现金的桌面上物业（不能选择手牌）。 */
+    /** Bank cards or properties on the table that count as cash (hand cards cannot be selected). */
     public static boolean isPayableHeldByPlayer(Player payer, Card c) {
         if (payer == null || c == null) {
             return false;
@@ -143,7 +144,7 @@ public final class PaymentService {
         return null;
     }
 
-    /** UI 校验：所选牌均属可支付区且面值满足抵债规则（不足则必须全交）。 */
+    /** UI validation: all selected cards must be in the payable area and their face value must satisfy the debt rule (if insufficient, all available must be surrendered). */
     public static boolean isValidManualPaymentChoice(Player payer, List<Card> choice, int amountM) {
         return choice != null
                 && !choice.isEmpty()
@@ -163,7 +164,7 @@ public final class PaymentService {
         return sumSel >= amountM;
     }
 
-    /** 可回收作现金的桌面上物业（含面值>0的单卡）之和 + 银行。 */
+    /** Total of bank cards plus properties on table that can be used as cash (face value > 0). */
     public static int totalLiquidityValue(Player p) {
         if (p == null) {
             return 0;

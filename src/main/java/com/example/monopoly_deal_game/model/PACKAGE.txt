@@ -1,24 +1,24 @@
-包名：com.example.monopoly_deal_game.model
+Package: com.example.monopoly_deal_game.model
 ================================================================================
-【包含的类】
-  - Property            物业区一组同色/相容的 {@link PropertyCard} 列表（成套、垄断与租金；原 PropertySet 并入此类）。
-  - Player              玩家（人类/机器人统一）。
-  - ComputerPlayer      机器人，持有 BotPolicy（来自 ai 包）。
-  （卡牌族在子包 model.cards：Card、PropertyCard、BankCard、ActionCard、RentCard、CardColor、CardType）
-  （一局对局聚合根与会话状态在 game.model：GameSession、GameState）
-  （另有 package-info.java。）
+[Included classes]
+  - Property            A group of same-color/compatible {@link PropertyCard} lists in a property area (full set, monopoly, and rent; formerly PropertySet, merged into this class).
+  - Player              Player (unified for human/bot).
+  - ComputerPlayer      Bot, holding a BotPolicy (from the ai package).
+  (The card family is in subpackage model.cards: Card, PropertyCard, BankCard, ActionCard, RentCard, CardColor, CardType)
+  (The game session aggregate root and session state are in game.model: GameSession, GameState)
+  (Also see package-info.java.)
 
-【接口】
-  - 无独立接口文件（Card 为抽象类，位于 model.cards）。
+[Interfaces]
+  - No standalone interface file (Card is an abstract class, located in model.cards).
 
-【需要实现什么】
-  - 需求 1：发 5 张起手、抽牌堆/弃牌堆引用（见 game.model.GameSession + logic.CardManager）。
-  - 需求 4–5：银行区、物业区分组、Wild/双色切换字段。
-  - 需求 16：完整套判定所需的数据结构。
-  - persistence：Session 必须可序列化（勿包含 JavaFX Node）。
+[What needs to be implemented]
+  - Requirement 1: Deal 5 starting cards, draw pile/discard pile references (see game.model.GameSession + logic.CardManager).
+  - Requirement 4-5: Bank area, property area grouping, Wild/dual-color toggle fields.
+  - Requirement 16: Data structures needed for full set determination.
+  - persistence: Session must be serializable (do not include JavaFX Node).
 
-【与其它包的关系】
-  - ← logic：GameLogic、CardManager、CardEffectExecutor 读写 game.model.GameSession。
-  - ← persistence：SaveGameService 序列化 GameSession。
-  - ← network：主机广播的状态应能还原为 Session。
-  - → ai：ComputerPlayer 引用 BotPolicy（策略接口在 ai 包）。
+[Relationships with other packages]
+  - ← logic: GameLogic, CardManager, CardEffectExecutor read/write game.model.GameSession.
+  - ← persistence: SaveGameService serializes GameSession.
+  - ← network: State broadcast by the host should be restorable to Session.
+  - → ai: ComputerPlayer references BotPolicy (strategy interface in the ai package).

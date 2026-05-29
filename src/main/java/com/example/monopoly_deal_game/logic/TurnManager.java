@@ -7,7 +7,7 @@ import com.example.monopoly_deal_game.game.rules.GameConfig;
 import com.example.monopoly_deal_game.model.Player;
 
 /**
- * 回合与出牌张数管理（对齐 Monopoly-Deal-main 中的 ActionStatePlayerTurn 状态机）。
+ * Turn and card play count management (aligned with the ActionStatePlayerTurn state machine from Monopoly-Deal-main).
  */
 public class TurnManager {
 

@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * 将 {@link GameplayUiBundle} 与对局 {@link GameSession} 绑定；由 Controller 在逻辑变更后调用刷新。
+ * Binds {@link GameplayUiBundle} to the game {@link GameSession}; called by Controller to refresh after logic changes.
  */
 public class GameplayViewCoordinator {
 
@@ -35,7 +35,7 @@ public class GameplayViewCoordinator {
         this.sceneResolver = new ScenePaneResolver(zones);
     }
 
-    /** 玩家在手牌区点击某张领域牌时回调（用于选中 / 准备打出）。 */
+    /** Callback when a player clicks a card in the hand area (for selection / preparing to play). */
     public void setOnHandCardPick(Consumer<Card> handler) {
         this.onHandCardPick = handler != null ? handler : c -> {};
     }
@@ -54,10 +54,10 @@ public class GameplayViewCoordinator {
     }
 
     /**
-     * 根据会话刷新牌堆区与手牌区；手牌使用 {@link CardView} 显示卡图。
+     * Refreshes the deck and hand areas based on the session; hand cards use {@link CardView} to display card images.
      *
-     * @param selectedInHand 出牌阶段：当前选中的单张手牌；弃牌阶段忽略（由 discardSelections 决定高亮）
-     * @param discardSelections 弃牌阶段：待弃掉的多选手牌（引用须属于当前手牌）
+     * @param selectedInHand play phase: the currently selected single hand card; ignored during discard phase (highlighting determined by discardSelections)
+     * @param discardSelections discard phase: multiple hand cards to be discarded (references must belong to the current hand)
      */
     public void refreshFromSession(
             GameSession session, Card selectedInHand, Collection<Card> discardSelections) {
@@ -70,10 +70,10 @@ public class GameplayViewCoordinator {
             return;
         }
 
-        Label deckLbl = new Label("抽牌堆: " + session.getDrawPile().size());
+        Label deckLbl = new Label("Draw pile: " + session.getDrawPile().size());
         zones.deckPane().getChildren().add(deckLbl);
 
-        Label discLbl = new Label("弃牌堆: " + session.getDiscardPile().size());
+        Label discLbl = new Label("Discard pile: " + session.getDiscardPile().size());
         zones.discardPane().getChildren().add(discLbl);
 
         refreshTableZones(session);
@@ -112,7 +112,7 @@ public class GameplayViewCoordinator {
         }
 
         if (row.getChildren().isEmpty()) {
-            row.getChildren().add(new Label("手牌为空（牌库或尚未实现发牌）"));
+            row.getChildren().add(new Label("Hand is empty (deck or dealing not yet implemented)"));
         }
 
         ScrollPane scroll = new ScrollPane(row);
@@ -163,7 +163,7 @@ public class GameplayViewCoordinator {
     private static final double PROP_SCALE_SELF = 0.80;
     private static final double BANK_SCALE_SELF = 0.66;
 
-    /** 统一的玩家牌桌面板：顶部信息 + 左（房产列）/ 右（银行流式铺排）。 */
+    /** Unified player board panel: top info + left (property columns) / right (bank flow layout). */
     private VBox buildPlayerBoardPanel(Player p, boolean isOpponent) {
         int players = Math.max(1, com.example.monopoly_deal_game.controller.AppContext.get().gameEngine().getCurrentSession() != null ? com.example.monopoly_deal_game.controller.AppContext.get().gameEngine().getCurrentSession().getPlayers().size() : 2);
         double propScale = players >= 5 ? 0.44 : players == 4 ? 0.50 : players == 3 ? 0.56 : 0.62;
@@ -172,21 +172,21 @@ public class GameplayViewCoordinator {
 
         VBox board = new VBox(5);
         board.setPadding(new Insets(4, 8, 5, 8));
-        board.setStyle("-fx-background-color: rgba(255,255,255,0.42); -fx-background-radius: 10; -fx-border-color: rgba(76,175,80,0.35); -fx-border-radius: 10;");
+        board.getStyleClass().add("player-board");
 
         String head =
                 p.getName()
-                        + (isOpponent ? "  |  手牌 " + p.getHand().size() + " 张" : "（你）")
-                        + "  |  物业组 "
+                        + (isOpponent ? "  |  Hand " + p.getHand().size() + " cards" : " (You)")
+                        + "  |  Property sets "
                         + p.getProperties().size()
-                        + "  成套 "
+                        + "  full sets "
                         + p.getFullSetCount()
-                        + "  银行 "
+                        + "  bank "
                         + sumBank(p)
                         + "M";
         Label header = new Label(head);
-        header.setStyle(
-                "-fx-font-weight:bold; -fx-font-size:" + (isOpponent ? "11px" : "13px") + ";");
+        header.getStyleClass().add("player-board-header");
+        header.getStyleClass().add(isOpponent ? "player-board-header-opponent" : "player-board-header-self");
         board.getChildren().add(header);
 
         HBox split = new HBox(isOpponent ? 10 : 14);
@@ -194,11 +194,9 @@ public class GameplayViewCoordinator {
 
         // ── Left: property columns ─────────────────────────────────────────────
         VBox propOuter = new VBox(6);
-        Label propTitle = new Label("房产区");
-        propTitle.setStyle(
-                "-fx-font-weight:bold; -fx-font-size:"
-                        + (isOpponent ? "11px" : "12px")
-                        + "; -fx-text-fill:#4a148c;");
+        Label propTitle = new Label("Properties");
+        propTitle.getStyleClass().add("property-column-label");
+        if (!isOpponent) propTitle.setStyle("-fx-font-size:12px;");
         propOuter.getChildren().add(propTitle);
 
         HBox propColumns = new HBox(12);
@@ -210,10 +208,7 @@ public class GameplayViewCoordinator {
                 VBox col = new VBox(6);
                 col.setAlignment(Pos.TOP_LEFT);
                 col.setPadding(new Insets(4, 6, 4, 6));
-                col.setStyle(
-                        "-fx-background-color: rgba(106,27,154,0.06); "
-                                + "-fx-background-radius: 8; -fx-border-color: rgba(106,27,154,0.25); "
-                                + "-fx-border-radius: 8;");
+                col.getStyleClass().add("property-column");
 
                 String colName =
                         isOpponent
@@ -228,14 +223,12 @@ public class GameplayViewCoordinator {
                                                         group.getCards()
                                                                 .get(0)
                                                                 .getFullSetThreshold()))
-                                        + (group.isMonopoly() ? " · 垄断" : "");
+                                        + (group.isMonopoly() ? " - Monopoly" : "");
                 Label colLabel = new Label(colName);
                 colLabel.setWrapText(true);
                 colLabel.setMaxWidth(cardW * 2.6 + 24);
-                colLabel.setStyle(
-                        "-fx-font-size:"
-                                + (isOpponent ? "10px" : "11px")
-                                + "; -fx-font-weight:bold; -fx-text-fill:#4a148c;");
+                colLabel.getStyleClass().add("property-column-label");
+                if (isOpponent) colLabel.setStyle("-fx-font-size:10px;");
                 col.getChildren().add(colLabel);
 
                 FlowPane cardFlow = new FlowPane();
@@ -269,11 +262,9 @@ public class GameplayViewCoordinator {
         bankCol.setMaxWidth(isOpponent ? 280 : 400);
         bankCol.setPadding(new Insets(0, 0, 0, 6));
 
-        Label bankTitle = new Label("资产（银行）");
-        bankTitle.setStyle(
-                "-fx-font-weight:bold; -fx-font-size:"
-                        + (isOpponent ? "11px" : "12px")
-                        + "; -fx-text-fill:#1b5e20;");
+        Label bankTitle = new Label("Assets (Bank)");
+        bankTitle.getStyleClass().add("bank-section-header");
+        if (!isOpponent) bankTitle.setStyle("-fx-font-size:12px;");
         bankCol.getChildren().add(bankTitle);
 
         FlowPane bankFlow = new FlowPane();
@@ -287,28 +278,26 @@ public class GameplayViewCoordinator {
             bankFlow.getChildren().add(TableCardKit.createReadOnlyCard(c, bankScale));
         }
         if (bankFlow.getChildren().isEmpty()) {
-            Label emptyBank = new Label("（空）");
-            emptyBank.setStyle("-fx-text-fill:#888; -fx-font-size:11px;");
+            Label emptyBank = new Label("(Empty)");
+            emptyBank.setStyle("-fx-text-fill:#8D6E63; -fx-font-size:11px;");
             bankFlow.getChildren().add(emptyBank);
         }
 
         ScrollPane bankScroll = new ScrollPane(bankFlow);
         bankScroll.setFitToWidth(true);
         bankScroll.setPrefViewportHeight(72);
-        // JavaFX ScrollPane 无 setMaxViewportHeight；用 Region.maxHeight 限制可视区整体高度
+        // JavaFX ScrollPane has no setMaxViewportHeight; use Region.maxHeight to limit visible area overall height
         bankScroll.setMinHeight(54);
         bankScroll.setMaxHeight(92);
         bankScroll.setFocusTraversable(false);
         bankScroll.setPannable(false);
-        bankScroll.setStyle("-fx-background: transparent;");
+        bankScroll.getStyleClass().add("scroll-pane-transparent");
 
         bankCol.getChildren().add(bankScroll);
 
-        Label bankTotal = new Label("合计 " + sumBank(p) + "M");
-        bankTotal.setStyle(
-                "-fx-font-size:"
-                        + (isOpponent ? "10px" : "12px")
-                        + "; -fx-font-weight:bold; -fx-text-fill:#1b5e20;");
+        Label bankTotal = new Label("Total " + sumBank(p) + "M");
+        bankTotal.getStyleClass().add("bank-section-total");
+        if (!isOpponent) bankTotal.setStyle("-fx-font-size:12px;");
         bankCol.getChildren().add(bankTotal);
 
         split.getChildren().add(bankCol);

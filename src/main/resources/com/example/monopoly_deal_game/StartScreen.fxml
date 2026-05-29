@@ -4,24 +4,53 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.text.Font?>
-<?import javafx.scene.text.Text?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="850.0" prefWidth="1400.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.monopoly_deal_game.controller.StartScreenController">
-   <children>
-      <ImageView fitHeight="944.0" fitWidth="1400.0" layoutX="-2.0" layoutY="1.0" pickOnBounds="true" preserveRatio="true">
-         <image>
-            <Image url="@BackGround.png" />
-         </image>
-      </ImageView>
-      <Button fx:id="realPlayerButton" layoutX="238.0" layoutY="271.0" mnemonicParsing="false" onAction="#onRealPlayer" prefHeight="108.0" prefWidth="317.0" text="Create Room" />
-      <Button fx:id="joinRoomButton" layoutX="859.0" layoutY="280.0" mnemonicParsing="false" onAction="#onJoinRoom" prefHeight="108.0" prefWidth="317.0" text="Join Room" />
-      <Button fx:id="loadingButton" layoutX="238.0" layoutY="528.0" mnemonicParsing="false" onAction="#onLoadingGame" prefHeight="108.0" prefWidth="317.0" text="Loading Game" />
-      <Button fx:id="exitButton" layoutX="859.0" layoutY="528.0" mnemonicParsing="false" onAction="#onExit" prefHeight="108.0" prefWidth="317.0" text="Exit" />
-      <Text layoutX="541.0" layoutY="155.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Monopoly Deal ">
-         <font>
-            <Font size="48.0" />
-         </font>
-      </Text>
-   </children>
-</AnchorPane>
+<StackPane prefHeight="850.0" prefWidth="1400.0"
+           styleClass="start-root"
+           xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.example.monopoly_deal_game.controller.StartScreenController">
+
+    <!-- Background image -->
+    <ImageView fitHeight="944.0" fitWidth="1400.0" pickOnBounds="true" preserveRatio="true"
+               StackPane.alignment="CENTER">
+        <Image url="@BackGround.png"/>
+    </ImageView>
+
+    <!-- Dark overlay for text readability -->
+    <AnchorPane styleClass="start-overlay" StackPane.alignment="CENTER"/>
+
+    <!-- Centered content -->
+    <VBox alignment="CENTER" spacing="0" StackPane.alignment="CENTER">
+
+        <!-- Hero / Title section -->
+        <VBox alignment="CENTER" spacing="6" styleClass="start-hero">
+            <Label text="MONOPOLY" styleClass="start-title-line1"/>
+            <Label text="DEAL" styleClass="start-title-line2"/>
+            <Region prefHeight="8"/>
+            <Label text="Monopoly Deal Card Game" styleClass="start-subtitle"/>
+        </VBox>
+
+        <Region prefHeight="36"/>
+
+        <!-- Button panel with glass-morphism effect -->
+        <VBox alignment="CENTER" spacing="14" styleClass="start-button-panel">
+            <Button fx:id="realPlayerButton" text="Create Room"
+                    onAction="#onRealPlayer" styleClass="start-btn-primary"/>
+            <Button fx:id="joinRoomButton" text="Join Room"
+                    onAction="#onJoinRoom" styleClass="start-btn-secondary"/>
+            <Button fx:id="loadingButton" text="Load Game"
+                    onAction="#onLoadingGame" styleClass="start-btn-secondary"/>
+            <Button fx:id="exitButton" text="Exit"
+                    onAction="#onExit" styleClass="start-btn-exit"/>
+        </VBox>
+
+        <Region prefHeight="20"/>
+
+        <!-- Version -->
+        <Label text="Monopoly Deal · v1.0" styleClass="start-version"/>
+    </VBox>
+</StackPane>

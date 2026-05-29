@@ -116,18 +116,18 @@ JustSayNoHandler {
                 return false;
             }
 
-            String act = activator != null ? activator.getName() : "对方";
-            String desc = situation != null && !situation.isBlank() ? situation : act + " 对你使用了行动牌";
+            String act = activator != null ? activator.getName() : "the opponent";
+            String desc = situation != null && !situation.isBlank() ? situation : act + " used an action card against you";
 
-            ButtonType useNo = new ButtonType("使用 Just Say No（反对）", ButtonBar.ButtonData.APPLY);
+            ButtonType useNo = new ButtonType("Use Just Say No (Decline)", ButtonBar.ButtonData.APPLY);
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                    desc + "\n\n你持有「反对（Just Say No）」牌。\n"
-                            + "使用：弃掉 JSN 牌并抵消该行动对你的效果。\n"
-                            + "不使用：行动照常结算。",
-                    useNo, new ButtonType("不使用反对（继续结算）", ButtonBar.ButtonData.CANCEL_CLOSE));
+                    desc + "\n\nYou hold a Just Say No card.\n"
+                            + "Use: discard the JSN card and cancel the action's effect on you.\n"
+                            + "Do not use: the action resolves normally.",
+                    useNo, new ButtonType("Do Not Use (Continue Resolution)", ButtonBar.ButtonData.CANCEL_CLOSE));
             alert.setTitle("Just Say No");
             if (stage != null) alert.initOwner(stage);
-            alert.setHeaderText(respondent.getName() + " — 是否反对「" + act + "」的行动？");
+            alert.setHeaderText(respondent.getName() + " -- Decline \"" + act + "\"'s action?");
 
             boolean use = alert.showAndWait().filter(r -> r == useNo).isPresent();
             if (use) {

@@ -5,7 +5,7 @@ import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
- * 洗牌动画：仅视觉反馈（牌堆抖动、叠放顺序微调）；真实牌序以 logic 为准。
+ * Shuffle animation: visual feedback only (deck jitter, minor stacking order adjustments); the real card order is governed by logic.
  */
 public class ShuffleMotion extends AbstractUiMotion {
 
@@ -19,7 +19,7 @@ public class ShuffleMotion extends AbstractUiMotion {
 
     @Override
     protected Animation buildAnimation(MotionContext ctx) {
-        // TODO(view): 对 deckPane 内子节点做短 Timeline 或 RotateTransition
+        // TODO(view): Apply a short Timeline or RotateTransition to child nodes within deckPane
         return new PauseTransition(duration());
     }
 }

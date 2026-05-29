@@ -9,22 +9,22 @@ import javafx.scene.layout.VBox;
 import java.util.Objects;
 
 /**
- * 对局主界面在 FXML 中划分的功能区域引用（不含具体卡牌绘制逻辑）。
+ * Functional area references of the main game screen defined in FXML (does not include specific card drawing logic).
  * <p>
- * UI 类通常需要这些内容：
+ * UI classes typically need the following:
  * </p>
  * <ul>
- *   <li><b>根与顶栏</b>：{@link #gameRoot()}、{@link #topbar()} —— 全屏覆盖层、菜单入口。</li>
- *   <li><b>左侧 HUD</b>：{@link #leftSidebar()} —— 牌堆示意、步数、主操作按钮等。</li>
- *   <li><b>牌桌分区</b>：{@link #deckPane()}、{@link #discardPane()}、{@link #voidPane()}、
- *   {@link #opponentsPane()}、{@link #selfBoardPane()}、{@link #handPane()} —— 之后在此挂载自定义 Node 或 Canvas。</li>
- *   <li><b>交互层</b>：{@link #actionLayer()} —— 选牌、选目标等模态交互。</li>
- *   <li><b>菜单遮罩</b>：{@link #menuOverlay()} —— 暂停/离开对局。</li>
- *   <li><b>可选</b>：{@link #chatPane()} —— 仅完整对局界面存在；首次运行/精简布局可为 {@code null}。</li>
+ *   <li><b>Root and top bar</b>: {@link #gameRoot()}, {@link #topbar()} -- full-screen overlay layer, menu entry.</li>
+ *   <li><b>Left sidebar HUD</b>: {@link #leftSidebar()} -- deck display, step count, main action buttons, etc.</li>
+ *   <li><b>Table zones</b>: {@link #deckPane()}, {@link #discardPane()}, {@link #voidPane()},
+ *   {@link #opponentsPane()}, {@link #selfBoardPane()}, {@link #handPane()} -- custom Node or Canvas will be mounted here later.</li>
+ *   <li><b>Interaction layer</b>: {@link #actionLayer()} -- modal interactions such as card selection, target selection.</li>
+ *   <li><b>Menu overlay</b>: {@link #menuOverlay()} -- pause/leave game.</li>
+ *   <li><b>Optional</b>: {@link #chatPane()} -- only exists in the full game screen; may be {@code null} in first-run/simplified layouts.</li>
  * </ul>
  * <p>
- * 由 {@link com.example.monopoly_deal_game.controller.AbstractGameplayScreenController#toUiBundle()} 从已加载的 FXML 构造，
- * 便于把「布局引用」传给纯 Java 的视图助手类，避免 controller 继续膨胀。
+ * Constructed from the loaded FXML by {@link com.example.monopoly_deal_game.controller.AbstractGameplayScreenController#toUiBundle()},
+ * making it easy to pass "layout references" to plain Java view helper classes, preventing the controller from further bloat.
  * </p>
  */
 public record GameplayUiBundle(

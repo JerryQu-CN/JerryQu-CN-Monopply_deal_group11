@@ -7,9 +7,9 @@ import javafx.scene.control.Button;
 import javafx.stage.Stage;
 
 /**
- * 主菜单 / 入口，对应设计图中 Lobby 流程的一部分。
+ * Main menu / entry point, corresponding to part of the Lobby flow in the design.
  *
- * TODO(controller): 与 {@link com.example.monopoly_deal_game.game.engine.GameEngine#launchGame()} 衔接（若需全局单例引擎）。
+ * TODO(controller): Wire up with {@link com.example.monopoly_deal_game.game.engine.GameEngine#launchGame()} (if a singleton engine is needed).
  */
 public class StartScreenController implements StageAware {
 

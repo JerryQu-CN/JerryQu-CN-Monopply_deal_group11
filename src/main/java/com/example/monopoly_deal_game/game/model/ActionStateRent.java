@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 租金收取状态：等待 targets 支付租金。
- * Targets 可以在接受前使用 JSN 拒绝。
+ * Rent collection state: waits for targets to pay rent.
+ * Targets can use JSN to refuse before accepting.
  */
 public class ActionStateRent extends ActionState {
     @Serial
@@ -60,14 +60,14 @@ public class ActionStateRent extends ActionState {
         return onAccepted != null;
     }
 
-    /** 执行接受后的业务逻辑（支付等）。多目标时每个目标各调用一次。 */
+    /** Execute the post-acceptance business logic (payment, etc.). With multiple targets, called once per target. */
     public void executeOnAccepted(Player player) {
         if (onAccepted != null) {
             onAccepted.execute(player);
         }
     }
 
-    /** @deprecated 使用 {@link #setAccepted(Player, boolean)} + {@link #executeOnAccepted(Player)} */
+    /** @deprecated Use {@link #setAccepted(Player, boolean)} + {@link #executeOnAccepted(Player)} */
     @Deprecated
     public void playerPaid(Player player) {
         setAccepted(player, true);

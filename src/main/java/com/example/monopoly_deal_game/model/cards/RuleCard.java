@@ -1,8 +1,8 @@
 package com.example.monopoly_deal_game.model.cards;
 
 /**
- * 规则说明书卡：官方 Monopoly Deal 牌组含 4 张，部分桌游开局会从牌库移除。
- * 数字实现中可留在牌库或开局过滤；不计入每回合 3 张出牌限制。
+ * Rule reference card: the official Monopoly Deal deck contains 4 copies; some tabletop games remove them from the deck at startup.
+ * In digital implementations they may remain in the deck or be filtered at start; they do not count toward the 3-card play limit per turn.
  */
 public final class RuleCard extends Card {
 

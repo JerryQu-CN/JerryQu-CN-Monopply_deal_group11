@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** 存入银行的货币/牌（组员 Player 改版）；展示与入账规则由 logic/UI 触发。 */
+/** Money/cards deposited in the bank (revised version from the team Player class); display and deposit rules are triggered by logic/UI. */
 public final class Bank implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

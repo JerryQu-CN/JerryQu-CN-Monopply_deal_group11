@@ -16,10 +16,11 @@ import java.nio.file.Path;
 import java.util.ResourceBundle;
 
 /**
- * 读档界面：路径校验后进入对局。
+ * Load game screen: enter the game after path validation.
  *
- * TODO(controller+persistence): 使用 {@link com.example.monopoly_deal_game.persistence.SaveGameService#load(java.nio.file.Path)}
- * 得到 {@link com.example.monopoly_deal_game.game.model.GameSession}，再交给 {@link com.example.monopoly_deal_game.game.engine.GameEngine} 恢复。
+ * TODO(controller+persistence): Load {@link com.example.monopoly_deal_game.game.model.GameSession}
+ * using {@link com.example.monopoly_deal_game.persistence.SaveGameService#load(java.nio.file.Path)}
+ * and pass it to {@link com.example.monopoly_deal_game.game.engine.GameEngine} for recovery.
  */
 public class LoadGameScreenController implements StageAware, Initializable {
 

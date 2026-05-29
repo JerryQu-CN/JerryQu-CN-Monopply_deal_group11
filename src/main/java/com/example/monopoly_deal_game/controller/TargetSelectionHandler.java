@@ -63,8 +63,8 @@ public class TargetSelectionHandler {
                 : (rc.isWildRent()
                         ? RentCalculator.bestRentWild(me, dbl)
                         : RentCalculator.bestRentForLandlord(me, rc.getApplicableColors(), dbl));
-        return ActionTargetDialogs.chooseOpponent(stage, "收取租金",
-                        "请选择向哪位玩家收取这条租金（预览约 " + preview + "M）。", renters)
+        return ActionTargetDialogs.chooseOpponent(stage, "Collect Rent",
+                        "Please select which player to collect rent from (estimated: " + preview + "M).", renters)
                 .map(p -> CardPlayOptions.rentWithColorAndPlayer(cap, p))
                 .orElse(null);
     }
@@ -76,8 +76,8 @@ public class TargetSelectionHandler {
         if (elig.isEmpty()) return options;
         CardPlayOptions out = options;
         if (out.actionTargetPlayer() == null || !elig.contains(out.actionTargetPlayer())) {
-            out = ActionTargetDialogs.chooseOpponent(stage, "选择对手",
-                            "请选择「" + ac.getName() + "」对哪一位对手生效。", elig)
+            out = ActionTargetDialogs.chooseOpponent(stage, "Select Opponent",
+                            "Please select which opponent to target with \"" + ac.getName() + "\".", elig)
                     .map(out::withActionTarget)
                     .orElse(null);
             if (out == null) return null;
@@ -89,8 +89,8 @@ public class TargetSelectionHandler {
             List<PropertyCard> cards = PropertyQuery.stealableSingleProperties(target);
             if (cards.isEmpty()) return out;
             if (out.targetPropertyCard() == null || !cards.contains(out.targetPropertyCard())) {
-                out = pickPropertyCard(session, "偷偷交易",
-                        "请选择要从「" + target.getName() + "」处拿走的一张非满套房产。",
+                out = pickPropertyCard(session, "Sly Deal",
+                        "Please select a non-full-set property to take from \"" + target.getName() + "\".",
                         cards, out);
                 if (out == null) return null;
             }
@@ -99,14 +99,14 @@ public class TargetSelectionHandler {
             List<PropertyCard> theirs = PropertyQuery.allTableProperties(target);
             if (mine.isEmpty() || theirs.isEmpty()) return out;
             if (out.sourcePropertyCard() == null || !mine.contains(out.sourcePropertyCard())) {
-                out = pickPropertyCard(session, "被迫交易",
-                        "请选择你要交给「" + target.getName() + "」的一张房产。",
+                out = pickPropertyCard(session, "Forced Deal",
+                        "Please select a property card to give to \"" + target.getName() + "\".",
                         mine, out);
                 if (out == null) return null;
             }
             if (out.targetPropertyCard() == null || !theirs.contains(out.targetPropertyCard())) {
-                out = pickPropertyCard(session, "被迫交易",
-                        "请选择要从「" + target.getName() + "」处换来的一张房产。",
+                out = pickPropertyCard(session, "Forced Deal",
+                        "Please select a property card to take from \"" + target.getName() + "\".",
                         theirs, out);
                 if (out == null) return null;
             }
@@ -114,8 +114,8 @@ public class TargetSelectionHandler {
             List<Property> groups = PropertyQuery.monopolyGroups(target);
             if (groups.isEmpty()) return out;
             if (out.targetPropertyGroup() == null || !groups.contains(out.targetPropertyGroup())) {
-                out = pickPropertyGroup(session, "夺产",
-                        "请选择要从「" + target.getName() + "」处夺走的一整套房产。",
+                out = pickPropertyGroup(session, "Deal Breaker",
+                        "Please select a complete property set to take from \"" + target.getName() + "\".",
                         groups, out);
                 if (out == null) return null;
             }

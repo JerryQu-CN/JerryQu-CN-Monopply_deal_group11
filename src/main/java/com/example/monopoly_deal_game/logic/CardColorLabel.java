@@ -8,17 +8,18 @@ public final class CardColorLabel {
     public static String shortLabel(CardColor c) {
         if (c == null) return "?";
         return switch (c) {
-            case BROWN -> "棕";
-            case LIGHT_BLUE -> "浅蓝";
-            case PURPLE -> "紫";
-            case ORANGE -> "橙";
-            case RED -> "红";
-            case YELLOW -> "黄";
-            case GREEN -> "绿";
-            case BLUE -> "深蓝";
-            case BLACK -> "黑";
-            case LIGHT_GREEN -> "浅绿";
-            case NONE -> "—";
+            case BROWN -> "Brn";
+            case LIGHT_BLUE -> "LBl";
+            case PURPLE -> "Prp";
+            case ORANGE -> "Org";
+            case RED -> "Red";
+            case YELLOW -> "Yel";
+            case GREEN -> "Grn";
+            case BLUE -> "Blu";
+            case BLACK -> "Blk";
+            case LIGHT_GREEN -> "LGr";
+            case WILD -> null;
+            case NONE -> "--";
         };
     }
 }

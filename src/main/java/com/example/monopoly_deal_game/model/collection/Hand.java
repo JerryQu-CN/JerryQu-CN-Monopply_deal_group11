@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** 玩家手牌区（数据结构由组员 Player 改版引入）；具体摸牌逻辑在 logic 层。 */
+/** Player hand area (data structure introduced by the revised team Player class); the specific draw logic resides in the logic layer. */
 public final class Hand implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -27,7 +27,7 @@ public final class Hand implements Serializable {
         }
     }
 
-    /** 与 {@link #addCard(Card)} 同义，供 {@link GameLogic} 与分支习惯用法调用。 */
+    /** Synonym for {@link #addCard(Card)}, provided for {@link GameLogic} and branch idiomatic usage. */
     public void add(Card card) {
         addCard(card);
     }

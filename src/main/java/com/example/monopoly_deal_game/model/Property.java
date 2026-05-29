@@ -16,8 +16,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 玩家在物业区的一组地产：由多张 {@link PropertyCard} 组成，用于同色成套、垄断与租金计算。
- * （原单独的 {@code PropertySet} 已并入本类；卡牌本身仍是 {@link PropertyCard}，见需求 5.3–5.6、15.3–15.4。）
+ * A player's property grouping in the property area: composed of multiple {@link PropertyCard} instances, used for same-color set completion, monopoly, and rent calculation.
+ * (The former separate {@code PropertySet} has been merged into this class; the cards themselves remain {@link PropertyCard}. See requirements 5.3–5.6, 15.3–15.4.)
  */
 public final class Property implements Serializable {
     @Serial
@@ -26,7 +26,7 @@ public final class Property implements Serializable {
     private final String id = UUID.randomUUID().toString();
     private Player owner;
     private final List<PropertyCard> cards = new ArrayList<>();
-    /** 置于该成套上的房屋/旅馆（各含一张行动牌）。官方每套至多 1 房 + 1 店。 */
+    /** Houses/hotels placed on this set (each contains one action card). Official rules: at most 1 house + 1 hotel per set. */
     private final List<Card> buildingCards = new ArrayList<>();
 
     public String getId() {
@@ -45,7 +45,7 @@ public final class Property implements Serializable {
         return Collections.unmodifiableList(cards);
     }
 
-    /** 账面：该成套内所有物业牌的金额之和。 */
+    /** Book value: the sum of all property card values in this set. */
     public int getTotalValue() {
         int total = 0;
         for (PropertyCard pc : cards) {
@@ -111,7 +111,7 @@ public final class Property implements Serializable {
         buildingCards.clear();
     }
 
-    /** 成套被拆散或将整组移走时，将房屋/旅馆牌取下并交由调用方丢弃。 */
+    /** When the set is broken up or the entire group is taken, remove the house/hotel cards and return them to the caller to discard. */
     public List<Card> takeAllBuildings() {
         List<Card> out = new ArrayList<>(buildingCards);
         buildingCards.clear();
@@ -163,13 +163,13 @@ public final class Property implements Serializable {
     public CardColor getEffectiveColor() {
         if (cards.isEmpty()) return CardColor.NONE;
         if (!hasSingleColorProperty()) return CardColor.NONE;
-        // 优先取非万能普通卡的颜色作为锚定色
+        // Prefer the color of a non-wild plain card as the anchor color
         for (PropertyCard pc : cards) {
             if (!pc.isMultiColorWild() && !pc.isWild()) {
                 return pc.getCurrentColor();
             }
         }
-        // 全是双色万能时，取第一个的 currentColor
+        // When all cards are bi-color wilds, use the first one's currentColor
         for (PropertyCard pc : cards) {
             if (!pc.isMultiColorWild()) {
                 return pc.getCurrentColor();

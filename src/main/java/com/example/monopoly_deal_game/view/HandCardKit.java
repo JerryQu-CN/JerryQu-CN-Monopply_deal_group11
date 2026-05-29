@@ -3,7 +3,7 @@ package com.example.monopoly_deal_game.view;
 import com.example.monopoly_deal_game.model.cards.Card;
 
 /**
- * 在对局手牌区由领域 {@link Card} 生成可点击的 {@link CardView}。
+ * Generates clickable {@link CardView} from domain {@link Card} in the in-game hand area.
  */
 public final class HandCardKit {
 
@@ -23,7 +23,7 @@ public final class HandCardKit {
         return view;
     }
 
-    /** 手牌扇形排布：加在外层容器上，避免与卡面悬停位移叠加冲突。 */
+    /** Fan layout for hand cards: applied on the outer container to avoid conflicting with card face hover translation. */
     public static void applyFanPose(javafx.scene.layout.Region host, int index, int total) {
         if (host == null || total <= 1) {
             return;
@@ -34,7 +34,7 @@ public final class HandCardKit {
         host.setTranslateY(Math.min(18, Math.abs(d) * 5));
     }
 
-    /** @return 可能为 null */
+    /** @return may be null */
     public static Card modelOrNull(CardView view) {
         Object ud = view.getUserData();
         return ud instanceof Card c ? c : null;

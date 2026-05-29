@@ -7,7 +7,7 @@ import javafx.scene.Cursor;
 import javafx.scene.layout.StackPane;
 
 /**
- * 牌桌区只读卡牌节点：固定占位、缩放至合适尺寸，避免与手牌区交互逻辑混淆。
+ * Table area read-only card node: fixed placeholder, scaled to appropriate size, avoids confusion with hand area interaction logic.
  */
 public final class TableCardKit {
 
@@ -45,11 +45,13 @@ public final class TableCardKit {
     }
 
     /**
-     * 牌桌模型卡只读封装：缩放后占位与视觉一致（避免仅用 {@code Scale} 挤压布局）。
+     * Table model card read-only wrapper: scaled placeholder matches visual appearance (avoids layout compression when using only {@code Scale}).
      */
     public static StackPane createReadOnlyCard(Card domainCard, double scale) {
         if (domainCard == null) {
-            return wrapTableCard(new CardView("propertyWildCard.png", "", ""), scale);
+            CardView fallback = new CardView("propertyWildCard.png", "", "");
+            fallback.setReadOnly(true);
+            return wrapTableCard(fallback, scale);
         }
         CardView cv =
                 new CardView(
@@ -58,6 +60,7 @@ public final class TableCardKit {
                         "");
         cv.setHandInteraction(null);
         cv.setHoverZoomEnabled(false);
+        cv.setReadOnly(true);
         return wrapTableCard(cv, scale);
     }
 }

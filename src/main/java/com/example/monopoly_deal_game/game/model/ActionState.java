@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 行动状态基类。对齐 Monopoly-Deal-main 中 ActionState 的设计。
- * 每个 ActionState 有一个 actionOwner 和若干 targets，控制游戏中「谁能做什么」。
- * 当栈顶有 ActionState 覆盖 TurnState 时，只有相关玩家可以交互。
+ * Action state base class. Aligned with the design of ActionState in Monopoly-Deal-main.
+ * Each ActionState has one actionOwner and several targets, controlling "who can do what" in the game.
+ * When the top of the stack has an ActionState overriding the TurnState, only the relevant players can interact.
  */
 public abstract class ActionState implements Serializable {
     @Serial

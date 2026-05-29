@@ -8,14 +8,15 @@ import com.example.monopoly_deal_game.model.cards.PropertyCard;
 import java.util.List;
 
 /**
- * 租金计算器，基于桌面物业套的当前颜色与张数返回正确的租金档位。
- * 对齐 Monopoly-Deal-main 中 CardProperty.getRent() / PropertyColor.getRent() 的逻辑。
+ * Rent calculator that returns the correct rent tier based on the current color and
+ * count of property sets on the table.
+ * Aligned with CardProperty.getRent() / PropertyColor.getRent() logic from Monopoly-Deal-main.
  */
 public final class RentCalculator {
 
     private RentCalculator() {}
 
-    /** 计算 landlord 在指定颜色下可收取的最高租金（遍历该颜色所有成套，取最大值，含建筑加成）。 */
+    /** Calculate the highest rent the landlord can charge for a given color (iterates all complete sets of that color, takes max, includes building bonuses). */
     public static int rentOnColor(Player landlord, CardColor color) {
         int best = 0;
         for (Property row : landlord.getProperties()) {
@@ -29,7 +30,7 @@ public final class RentCalculator {
         return best;
     }
 
-    /** 在所有候选颜色中选出 landlord 可收取的最高租金。 */
+    /** Select the highest rent the landlord can charge among all candidate colors. */
     public static int bestRentForLandlord(Player landlord, List<CardColor> chosenColors,
                                           boolean doubleRent) {
         int best = 0;
@@ -46,7 +47,7 @@ public final class RentCalculator {
         return doubleRent ? best * 2 : best;
     }
 
-    /** 最佳万能租金（遍历所有 10 种颜色）。 */
+    /** Best wild rent (iterates all 10 colors). */
     public static int bestRentWild(Player landlord, boolean doubleRent) {
         int best = 0;
         for (CardColor c : CardColor.TABLE_COLORS) {
@@ -57,13 +58,13 @@ public final class RentCalculator {
 
     private static int baseRentForSet(List<PropertyCard> cs, CardColor color) {
         int n = cs.size();
-        // 找一张非万能的基础物业卡获取租金档位
+        // Find a non-wild base property card to get the rent tier
         for (PropertyCard pc : cs) {
             if (!pc.isWild() || pc.isBase()) {
                 return pc.getRent(n);
             }
         }
-        // fallback: 用第一张的租金档位
+        // fallback: use the first card's rent tier
         return cs.get(0).getRent(n);
     }
 }

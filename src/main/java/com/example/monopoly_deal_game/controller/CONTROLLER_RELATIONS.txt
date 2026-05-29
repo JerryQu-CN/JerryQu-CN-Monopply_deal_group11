@@ -1,43 +1,47 @@
 ================================================================================
-Controller 层与其它模块如何协作（课设 MVC 骨架说明）
+How the Controller layer collaborates with other modules (course project MVC skeleton documentation)
 ================================================================================
 
-一、角色
-  - controller 包：JavaFX FXML 的 fx:controller，负责「用户点了什么 → 调用哪段业务 API」。
-  - 不写 Monopoly 具体结算规则；规则在 logic / model。
-  - 复杂「怎么画」拆到 view 包（自定义 Node、GameplayUiBundle、GameplayViewCoordinator）。
+I. Roles
+  - controller package: fx:controller for JavaFX FXML, responsible for "what the user clicked -> which business API to call".
+  - Do not write Monopoly-specific settlement rules; rules belong in logic / model.
+  - Complex "how to draw" is split into the view package (custom Node, GameplayUiBundle, GameplayViewCoordinator).
 
-二、和 FXML / 舞台的关系
-  - 每个 *Screen.fxml 通过 fx:controller 指向本包中某个 *Controller 类。
-  - ScreenNavigation.show(...) 加载 FXML 后，若 controller 实现了 StageAware，会注入 JavaFX Stage，
-    便于在同窗口内切换 Scene。
-  - MonopolyDealApplication.start 里对首屏做同样的 StageAware 注入。
+II. Relationship with FXML / Stage
+  - Each *Screen.fxml points to a *Controller class in this package via fx:controller.
+  - After ScreenNavigation.show(...) loads FXML, if the controller implements StageAware, the JavaFX Stage is injected,
+    making it easy to switch Scenes within the same window.
+  - The same StageAware injection is done in MonopolyDealApplication.start for the first screen.
 
-三、和 logic（GameEngine / GameLogic）的关系
-  - 大厅、人机、读档等入口在「开始游戏」时应调用 AppContext.get().gameEngine() 上对应方法
-    （如 startLocalGame、startLanGame），成功后再 navigate 到 GameplayScreen。
-  - 对局中按钮（出牌、结束回合等）应通过 gameEngine().getGameLogic() 或后续封装的 Command API
-    提交意图；不要在 controller 里直接改 GameSession 内部集合 unless logic 提供 API。
+III. Relationship with logic (GameEngine / GameLogic)
+  - Entry points like lobby, bots, load save should call the corresponding method on AppContext.get().gameEngine()
+    (e.g., startLocalGame, startLanGame) when "start game" is triggered, then navigate to GameplayScreen.
+  - In-game buttons (play card, end turn, etc.) should submit intents through gameEngine().getGameLogic()
+    or a later-encapsulated Command API; do not directly modify GameSession internal collections in the controller
+    unless logic provides an API.
 
-四、和 model 的关系
-  - controller 只读或经 logic 返回的 GameSession / DTO；不当作唯一真相源。
-  - 会话更新后：由 logic 回调 或 GameObserver 通知 viewCoordinator.refreshFromSession(...)。
+IV. Relationship with model
+  - The controller only reads GameSession / DTO returned through logic; it is not treated as the single source of truth.
+  - After session update: logic callback or GameObserver notifies viewCoordinator.refreshFromSession(...).
 
-五、和 view 的关系
-  - AbstractGameplayScreenController 在 initialize 中构造 GameplayViewCoordinator，
-    把 GameplayUiBundle（各 Pane 引用）交给纯 Java 视图协调类，后续接 GameObserver / 绑定。
+V. Relationship with view
+  - AbstractGameplayScreenController constructs GameplayViewCoordinator in initialize,
+    passing GameplayUiBundle (various Pane references) to a pure Java view coordinator class,
+    later connecting to GameObserver / bindings.
 
-六、和 persistence 的关系
-  - 读档：LoadGameScreenController 使用 AppContext.get().saveGameService().load(Path)，
-    再把得到的 GameSession 交给 GameEngine 恢复（待 logic 实现）。
-  - 存档：在对局菜单或快捷键中调用 saveGameService().save(...)。
+VI. Relationship with persistence
+  - Load save: LoadGameScreenController uses AppContext.get().saveGameService().load(Path),
+    then passes the resulting GameSession to GameEngine for restoration (waiting on logic implementation).
+  - Save: Call saveGameService().save(...) in the game menu or shortcut.
 
-七、和 network 的关系（联机）
-  - AddPlayerScreenController 中房间/加入逻辑最终应对接 NetworkClient / GameServer；
-    UI 线程只负责展示；网络回调用 Platform.runLater 回到 JavaFX 线程更新控件。
+VII. Relationship with network (online)
+  - In AddPlayerScreenController, room/join logic should ultimately connect to NetworkClient / GameServer;
+    the UI thread is only responsible for display; network callbacks use Platform.runLater to return to the JavaFX thread
+    for updating controls.
 
-八、AppContext（依赖入口）
-  - 在 MonopolyDealApplication.start 开头调用 AppContext.install(AppContext.createDefault())。
-  - 各 ScreenController 通过 AppContext.get() 取共享 GameEngine、SaveGameService，避免手写单例散落。
+VIII. AppContext (dependency entry point)
+  - Call AppContext.install(AppContext.createDefault()) at the beginning of MonopolyDealApplication.start.
+  - Each ScreenController obtains the shared GameEngine and SaveGameService through AppContext.get(),
+    avoiding scattered manual singletons.
 
 ================================================================================

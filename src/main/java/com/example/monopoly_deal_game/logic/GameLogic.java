@@ -18,8 +18,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 游戏规则中枢：初始化、摸牌、出牌主流程及胜负判定。
- * 对齐 Monopoly-Deal-main 中 GameState / MDServer 的游戏生命周期。
+ * Core game rules: initialization, drawing, play flow, and win/loss determination.
+ * Aligned with the GameState / MDServer game lifecycle from Monopoly-Deal-main.
  */
 public class GameLogic {
 
@@ -31,7 +31,7 @@ public class GameLogic {
         this.effectExecutor = new CardEffectExecutor(cardManager);
     }
 
-    /** 初始化游戏：洗牌、发牌、设定首轮玩家。 */
+    /** Initialize the game: shuffle, deal cards, set the first player. */
     public void initGame(GameSession session) {
         CardFactory factory = new CardFactory();
         List<Card> deck = new java.util.ArrayList<>(factory.createFullDeck());
@@ -51,7 +51,7 @@ public class GameLogic {
         turnManager.beginTurn(session);
     }
 
-    /** 回合开始摸牌：空手 5 张，否则 2 张；每回合仅允许摸一次。 */
+    /** Draw at turn start: 5 cards if hand is empty, otherwise 2; draw only once per turn. */
     public void drawCard(GameSession session) {
         Player current = session.getCurrentPlayer();
         GameState state = session.getGameState();
@@ -69,8 +69,9 @@ public class GameLogic {
     }
 
     /**
-     * 出牌主入口。
-     * @return false 时常见原因：尚未摸牌、本回合已打满、手牌中无此牌引用、效果前提不满足
+     * Main entry point for playing a card.
+     * @return false when: haven't drawn yet, already played max cards this turn,
+     *         card not found in hand, or effect preconditions are not met
      */
     public boolean playCard(GameSession session, Card card) {
         return playCard(session, card, CardPlayOptions.auto());
@@ -104,7 +105,7 @@ public class GameLogic {
             }
         }
 
-        // 前置校验
+        // Pre-checks
         if (options.asBankMoney()) {
             if (card instanceof RuleCard) return false;
             if (card instanceof PropertyCard && !GameConfig.CAN_BANK_PROPERTY_CARDS) return false;
@@ -120,7 +121,7 @@ public class GameLogic {
             }
         }
 
-        // 从手中移出
+        // Remove from the owner's hand
         if (!owner.getHand().removeCard(card) && !owner.getBank().removeCard(card)) return false;
         try {
             if (options.asBankMoney()) {
@@ -166,7 +167,7 @@ public class GameLogic {
                 || card instanceof PropertyCard;
     }
 
-    /** 结束回合：手牌 > 7 则进入弃牌阶段。 */
+    /** End the turn: if hand > 7 cards, enter the discard phase. */
     public void endTurn(GameSession session) {
         Player current = session.getCurrentPlayer();
         GameState state = session.getGameState();
@@ -184,7 +185,7 @@ public class GameLogic {
         advanceToNextPlayer(session);
     }
 
-    /** 弃牌阶段：丢弃选中的手牌，≤7 张后轮到下家。 */
+    /** Discard phase: discard selected hand cards; once hand is <= 7, advance to next player. */
     public void discardFromHandChosen(GameSession session, Collection<Card> chosen) {
         if (chosen == null || chosen.isEmpty()) return;
         Player cur = session.getCurrentPlayer();
@@ -213,7 +214,7 @@ public class GameLogic {
         turnManager.beginTurn(session);
     }
 
-    /** 胜负判定：任意玩家达到 {@link GameConfig#FULL_SETS_TO_WIN} 套完整物业。 */
+    /** Win/loss check: any player reaches {@link GameConfig#FULL_SETS_TO_WIN} complete property sets. */
     public boolean checkGameOver(GameSession session) {
         for (Player p : session.getPlayers()) {
             if (p.getFullSetCount() >= GameConfig.FULL_SETS_TO_WIN) {

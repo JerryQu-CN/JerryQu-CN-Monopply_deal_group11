@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 真人支付时自选「银行」与「桌上物业」（不可选手牌）。
+ * Manual payment selection: choose from bank and table properties (hand cards not allowed).
  */
 final class PaymentPickDialogs {
 
@@ -58,13 +58,13 @@ final class PaymentPickDialogs {
         if (activeOwner != null) {
             dialog.initOwner(activeOwner);
         }
-        dialog.setTitle("交付资产");
+        dialog.setTitle("Deliver Assets");
 
         DialogPane pane = dialog.getDialogPane();
 
         LinkedHashSet<Card> picked = new LinkedHashSet<>();
 
-        ButtonType btnConfirm = new ButtonType("确认交出所选牌", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnConfirm = new ButtonType("Confirm Hand Over Selected Cards", ButtonBar.ButtonData.OK_DONE);
         pane.getButtonTypes().setAll(btnConfirm);
 
         Label titleLbl = new Label(reasonLines != null ? reasonLines : "");
@@ -86,10 +86,10 @@ final class PaymentPickDialogs {
                                                     payer, new ArrayList<>(picked), amountDueM));
                     capLbl.setText(
                             String.format(
-                                            "需支付 %dM　|　你可抵债的资产总值：%dM\n当前已选：%dM",
+                                            "Amount due: %dM | Your total liquidatable assets: %dM\nCurrently selected: %dM",
                                             amountDueM, liquidity, sumSel)
                                     + (liquidity > 0 && liquidity < amountDueM
-                                            ? "\n※ 总资产不足时请勾选全部应交出的牌。"
+                                            ? "\n* Insufficient assets: please select all cards you must hand over."
                                             : ""));
                     Button confirmBtn = (Button) pane.lookupButton(btnConfirm);
                     confirmBtn.setDisable(!ok);
@@ -120,20 +120,20 @@ final class PaymentPickDialogs {
         }
 
         if (bankRow.getChildren().isEmpty()) {
-            bankRow.getChildren().add(new Label("（银行暂无牌）"));
+            bankRow.getChildren().add(new Label("(No cards in bank)"));
         }
         if (propTiles == 0) {
-            propRow.getChildren().add(new Label("（桌上暂无物业抵债）"));
+            propRow.getChildren().add(new Label("(No property cards on table to pay with)"));
         }
 
         ScrollPane scroll =
                 new ScrollPane(
                         new VBox(
                                 14,
-                                new Label("可从银行勾选："),
+                                new Label("Select from bank:"),
                                 bankRow,
                                 new Separator(),
-                                new Label("可从桌上物业勾选："),
+                                new Label("Select from table properties:"),
                                 propRow));
         scroll.setFitToWidth(true);
         scroll.setPrefViewportHeight(380);

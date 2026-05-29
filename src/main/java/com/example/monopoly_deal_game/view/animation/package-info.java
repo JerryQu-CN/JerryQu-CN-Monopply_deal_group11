@@ -1,24 +1,27 @@
 /**
- * <h2>界面动效（与牌面类解耦）</h2>
+ * <h2>UI Animations (decoupled from card face classes)</h2>
  * <p>
- * 建议：动效只操作 {@link javafx.scene.Node} 的几何与透明度，不修改 {@link com.example.monopoly_deal_game.game.model.GameSession}；
- * 动画结束后再由 controller 调 logic 提交「动画已播完」后的状态（若需要与规则同步）。
+ * Suggestion: Animations only manipulate {@link javafx.scene.Node} geometry and opacity,
+ * do not modify {@link com.example.monopoly_deal_game.game.model.GameSession};
+ * after the animation ends, the controller calls logic to submit the "animation completed" state
+ * (if synchronization with rules is needed).
  * </p>
  *
- * <h3>继承与分工</h3>
+ * <h3>Inheritance and division of labor</h3>
  * <pre>
- * {@link com.example.monopoly_deal_game.view.animation.UiMotion} — 统一入口 {@link #play(MotionContext, Runnable)}
+ * {@link com.example.monopoly_deal_game.view.animation.UiMotion} — unified entry {@link #play(MotionContext, Runnable)}
  *     ↑
- * {@link com.example.monopoly_deal_game.view.animation.AbstractUiMotion} — 时长、拼接 {@link javafx.animation.Animation} 的模板
- *     ├── {@link com.example.monopoly_deal_game.view.animation.ShuffleMotion}   — 牌堆洗牌（乱序仅视觉；真实顺序仍以 logic 为准）
- *     ├── {@link com.example.monopoly_deal_game.view.animation.DrawMotion}     — 从牌堆到手牌
- *     ├── {@link com.example.monopoly_deal_game.view.animation.PlaceMotion}    — 落到桌面/物业区/银行条
- *     └── {@link com.example.monopoly_deal_game.view.animation.MoveMotion}     — 已有 Node 在父容器内平移/换父（抢牌、归还等）
+ * {@link com.example.monopoly_deal_game.view.animation.AbstractUiMotion} — template for duration and composing {@link javafx.animation.Animation}
+ *     ├── {@link com.example.monopoly_deal_game.view.animation.ShuffleMotion}   — pile shuffle (disorder is visual only; actual order determined by logic)
+ *     ├── {@link com.example.monopoly_deal_game.view.animation.DrawMotion}     — from pile to hand
+ *     ├── {@link com.example.monopoly_deal_game.view.animation.PlaceMotion}    — land on tabletop/property area/bank bar
+ *     └── {@link com.example.monopoly_deal_game.view.animation.MoveMotion}     — translate/reparent existing Node within parent (stealing, returning, etc.)
  * </pre>
  *
  * <p>
- * 需要组合多种动效时，在调用方使用 {@link javafx.animation.SequentialTransition} /
- * {@link javafx.animation.ParallelTransition}，或在本包增加小的编排类（保持各类仍独立可测）。
+ * When combining multiple animations, use {@link javafx.animation.SequentialTransition} /
+ * {@link javafx.animation.ParallelTransition} at the call site,
+ * or add a small orchestrator class in this package (keeping each class independently testable).
  * </p>
  */
 package com.example.monopoly_deal_game.view.animation;

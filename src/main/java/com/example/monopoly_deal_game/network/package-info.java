@@ -1,29 +1,31 @@
 /**
- * <h2>网络层（Network）</h2>
+ * <h2>Network Layer</h2>
  * <p>
- * 职责：{@link com.example.monopoly_deal_game.network.NetworkClient} 与 {@link com.example.monopoly_deal_game.network.GameServer} 传输消息；
- * 主机运行与单机相同的 {@link com.example.monopoly_deal_game.logic.GameLogic}，客户端发 {@link com.example.monopoly_deal_game.logic.PlayerCommand}，
- * 收到 {@link com.example.monopoly_deal_game.game.model.GameSession} 快照或增量更新。
+ * Responsibility: {@link com.example.monopoly_deal_game.network.NetworkClient} and
+ * {@link com.example.monopoly_deal_game.network.GameServer} transmit messages;
+ * the host runs the same {@link com.example.monopoly_deal_game.logic.GameLogic} as single-player mode,
+ * clients send {@link com.example.monopoly_deal_game.logic.PlayerCommand},
+ * and receive {@link com.example.monopoly_deal_game.game.model.GameSession} snapshots or incremental updates.
  * </p>
  *
- * <h3>需要实现的功能</h3>
+ * <h3>Features to implement</h3>
  * <ul>
- *   <li>联机时银行/物业数据与主机一致（需求 4–7 非功能：可靠性）。</li>
- *   <li>断线重连、心跳（选做，类已预留）。</li>
+ *   <li>Bank/property data consistent with the host in online mode (Requirement 4-7 non-functional: reliability).</li>
+ *   <li>Disconnect reconnection, heartbeat (optional, classes are reserved).</li>
  * </ul>
  *
- * <h3>与其它包的关系</h3>
+ * <h3>Relationships with other packages</h3>
  * <ul>
- *   <li><b>→ logic</b>：仅主机直接改状态；客户端收到结果后更新本地只读模型。</li>
- *   <li><b>→ controller</b>：建议 {@code SyncController} 把消息路由到当前界面。</li>
+ *   <li><b>→ logic</b>: Only the host directly modifies state; the client updates its local read-only model after receiving results.</li>
+ *   <li><b>→ controller</b>: Suggest {@code SyncController} to route messages to the current interface.</li>
  * </ul>
  *
- * <h3>TODO（在哪写）</h3>
+ * <h3>TODO (where to write)</h3>
  * <ul>
- *   <li>{@link com.example.monopoly_deal_game.network.GameServer}：监听端口、房间、广播。</li>
- *   <li>{@link com.example.monopoly_deal_game.network.NetworkClient}：连接、发送命令、收快照。</li>
- *   <li>{@link com.example.monopoly_deal_game.network.MessageRouter}：消息类型 → 处理器。</li>
- *   <li>{@link com.example.monopoly_deal_game.network.ConnectionManager} / {@link com.example.monopoly_deal_game.network.HeartbeatService}：连接生命周期。</li>
+ *   <li>{@link com.example.monopoly_deal_game.network.GameServer}: Listen port, rooms, broadcast.</li>
+ *   <li>{@link com.example.monopoly_deal_game.network.NetworkClient}: Connect, send commands, receive snapshots.</li>
+ *   <li>{@link com.example.monopoly_deal_game.network.MessageRouter}: Message type -> handler.</li>
+ *   <li>{@link com.example.monopoly_deal_game.network.ConnectionManager} / {@link com.example.monopoly_deal_game.network.HeartbeatService}: Connection lifecycle.</li>
  * </ul>
  */
 package com.example.monopoly_deal_game.network;

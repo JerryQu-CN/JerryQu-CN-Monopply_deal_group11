@@ -1,6 +1,6 @@
 /**
- * 玩家在桌面上的结构化容器：手牌 {@link com.example.monopoly_deal_game.model.collection.Hand}、
- * 银行 {@link com.example.monopoly_deal_game.model.collection.Bank}。同色成套见 {@link com.example.monopoly_deal_game.model.Property}。
- * 与 {@link com.example.monopoly_deal_game.model.Player} 的职责拆分来自远程提交 fc75239 的设计。
+ * Structured containers for players on the tabletop: Hand {@link com.example.monopoly_deal_game.model.collection.Hand},
+ * Bank {@link com.example.monopoly_deal_game.model.collection.Bank}. Same-color full sets are in {@link com.example.monopoly_deal_game.model.Property}.
+ * The responsibility split with {@link com.example.monopoly_deal_game.model.Player} comes from the design of remote commit fc75239.
  */
 package com.example.monopoly_deal_game.model.collection;

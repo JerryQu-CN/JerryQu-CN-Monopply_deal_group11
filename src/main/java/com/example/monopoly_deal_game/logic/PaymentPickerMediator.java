@@ -8,14 +8,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 支付请求桥：本地热座时直接弹付款者选择窗口；联机时可由 UI 桥把请求转发给付款者客户端。
+ * Payment request bridge: in local hot-seat mode, directly opens the payer's selection window;
+ * in network mode, the UI bridge can forward the request to the payer's client.
  */
 public final class PaymentPickerMediator {
 
     @FunctionalInterface
     public interface Ui {
         /**
-         * @return 付款者选中的桌面资产；Optional.empty 表示当前端无法处理或玩家取消。
+         * @return the table assets selected by the payer; Optional.empty means the current
+         *         endpoint cannot handle the request or the player cancelled.
          */
         Optional<List<Card>> chooseCardsToPay(
                 Player payer, int amountDueM, Player receiver, GameSession session, String reasonText);

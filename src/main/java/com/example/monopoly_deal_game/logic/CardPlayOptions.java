@@ -6,7 +6,8 @@ import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
 /**
- * 一次出牌的可选参数：作银行面值、租金指定颜色、行动/租金目标，以及具体房产目标。
+ * Optional parameters for playing a card: use as bank money, specify a rent color,
+ * action/rent target player, and specific property card/group targets.
  */
 public record CardPlayOptions(
         boolean asBankMoney,

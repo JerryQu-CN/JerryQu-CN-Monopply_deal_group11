@@ -1,22 +1,22 @@
-包名：com.example.monopoly_deal_game.network
+Package: com.example.monopoly_deal_game.network
 ================================================================================
-【包含的类】
-  - GameServer          主机监听、房间与广播（骨架）。
-  - NetworkClient       客户端连接、发送 PlayerCommand、接收状态（骨架）。
-  - MessageRouter       消息类型分发（骨架）。
-  - ConnectionManager   连接与重连（骨架）。
-  - HeartbeatService    心跳（骨架，选做）。
-  （另有 package-info.java。）
+[Included classes]
+  - GameServer          Host listener, rooms and broadcast (skeleton).
+  - NetworkClient       Client connection, send PlayerCommand, receive state (skeleton).
+  - MessageRouter       Message type dispatch (skeleton).
+  - ConnectionManager   Connection and reconnection (skeleton).
+  - HeartbeatService    Heartbeat (skeleton, optional).
+  (Also see package-info.java.)
 
-【接口】
-  - 无；可按需要增加 MessageHandler 等接口。
+[Interfaces]
+  - None; can add MessageHandler and other interfaces as needed.
 
-【需要实现什么】
-  - 协议定义：加入房间、状态同步、断线处理。
-  - 主机权威：客户端不得直接改 model，只提交命令或展示快照。
-  - 与 controller.SyncController（待建）对接。
+[What needs to be implemented]
+  - Protocol definition: join room, state synchronization, disconnect handling.
+  - Host authority: Clients must not directly modify model, only submit commands or display snapshots.
+  - Integration with controller.SyncController (to be created).
 
-【与其它包的关系】
-  - → logic：GameServer 调用 GameLogic 应用指令。
-  - → model：广播 GameSession 或其 DTO。
-  - uses logic.PlayerCommand 作为上行消息载荷类型之一。
+[Relationships with other packages]
+  - → logic: GameServer calls GameLogic to apply commands.
+  - → model: Broadcast GameSession or its DTO.
+  - uses logic.PlayerCommand as one of the upstream message payload types.

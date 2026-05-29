@@ -5,21 +5,21 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
- * 物业牌：普通单色、双色万能、彩虹万能。
- * 对齐 Monopoly-Deal-main 中 oldmana.md.server.card.CardProperty 的逻辑。
+ * Property cards: plain single-color, bi-color wild, rainbow wild.
+ * Aligned with the logic in oldmana.md.server.card.CardProperty from Monopoly-Deal-main.
  */
 public class PropertyCard extends Card {
 
-    private final List<CardColor> colors;   // 卡牌拥有的颜色（1=单色，2=双色，10=彩虹万能）
-    private CardColor currentColor;         // 当前声明/对齐的颜色
+    private final List<CardColor> colors;   // Colors the card possesses (1=single, 2=bi-color, 10=rainbow wild)
+    private CardColor currentColor;         // Currently declared/aligned color
 
-    private final boolean isWild;           // 是否万能属性
-    private final boolean isBase;           // 是否基础物业（非基础=万能，不能作为成套锚定色）
-    private final boolean stealable;        // 是否可被 Sly Deal/Forced Deal 偷取
+    private final boolean isWild;           // Whether this is a wild property
+    private final boolean isBase;           // Whether this is a base property (non-base=wild, cannot serve as set anchor color)
+    private final boolean stealable;        // Whether it can be stolen by Sly Deal/Forced Deal
 
-    private final int[] rentLevels;         // 租金档位数组（从 1 张开始）
+    private final int[] rentLevels;         // Rent tier array (starting from 1 card)
 
-    /** 单色物业 */
+    /** Single-color property */
     public PropertyCard(int id, String name, int value, CardColor color, int[] rentLevels) {
         super(id, name, value, "Property Card: " + color.getDisplayName());
         this.colors = new ArrayList<>(List.of(color));
@@ -29,11 +29,11 @@ public class PropertyCard extends Card {
         this.stealable = true;
         this.rentLevels = rentLevels;
         this.innerColorRGB = 0xFFFFFF;
-        // 设置外框颜色为对应颜色
+        // Set the outer border color to the corresponding color
         this.outerColorRGB = colorToRGB(color);
     }
 
-    /** 双色万能物业 */
+    /** Bi-color wild property */
     public PropertyCard(int id, String name, int value, CardColor c1, CardColor c2, int[] rentLevels, boolean isWild) {
         super(id, name, value, "Wild Property Card (" + c1.getDisplayName() + "/" + c2.getDisplayName() + ")");
         this.colors = new ArrayList<>(List.of(c1, c2));
@@ -46,7 +46,7 @@ public class PropertyCard extends Card {
         this.outerColorRGB = colorToRGB(c1);
     }
 
-    /** 彩虹万能物业（所有颜色） */
+    /** Rainbow wild property (all colors) */
     public PropertyCard(int id, String name, int value, int[] rentLevels, boolean isWild, boolean isBase, boolean stealable) {
         super(id, name, value, "Rainbow Wild Property Card");
         this.colors = new ArrayList<>(CardColor.standardColors());
@@ -56,7 +56,7 @@ public class PropertyCard extends Card {
         this.stealable = stealable;
         this.rentLevels = rentLevels;
         this.innerColorRGB = 0xFFFFFF;
-        this.outerColorRGB = 0xFFD700; // 金色
+        this.outerColorRGB = 0xFFD700; // Gold
     }
 
     private static int colorToRGB(CardColor color) {
@@ -78,15 +78,15 @@ public class PropertyCard extends Card {
     @Override
     public CardType getCardType() { return CardType.PROPERTY; }
 
-    // ---- 颜色管理 ----
+    // ---- Color management ----
 
     public List<CardColor> getColors() { return new ArrayList<>(colors); }
 
-    /** 可算作的合法颜色集合（用于成套与租金判定） */
+    /** Set of eligible colors (used for set completion and rent determination) */
     public List<CardColor> getApplicableColors() {
         LinkedHashSet<CardColor> set = new LinkedHashSet<>();
         if (isMultiColorWild()) {
-            // 彩虹万能：可算作所有标准颜色
+            // Rainbow wild: counts as all standard colors
             set.addAll(CardColor.standardColors());
         } else {
             set.addAll(colors);
@@ -102,7 +102,7 @@ public class PropertyCard extends Card {
         }
     }
 
-    /** 将万能牌对齐到指定锚定色系 */
+    /** Align a wild card to the specified anchor color */
     public void alignToDeclaredColor(CardColor anchor) {
         if (!isWild || anchor == null || anchor == CardColor.NONE || anchor == CardColor.WILD) return;
         if (isMultiColorWild()) {
@@ -114,24 +114,24 @@ public class PropertyCard extends Card {
         }
     }
 
-    // ---- 属性查询 ----
+    // ---- Property queries ----
 
     public boolean isWild() { return isWild; }
 
-    /** 彩虹万能（拥有所有 10 种标准颜色） */
+    /** Rainbow wild (possesses all 10 standard colors) */
     public boolean isMultiColorWild() {
         return isWild && colors.size() >= 10;
     }
 
-    /** 是否双色万能（非彩虹） */
+    /** Whether this is a bi-color wild (non-rainbow) */
     public boolean isBiColor() { return colors.size() == 2 && isWild; }
 
-    /** 双色万能或彩虹万能支持手动切换颜色 */
+    /** Bi-color wild or rainbow wild supports manual color switching */
     public boolean canFlipWildDualColor() {
         return isWild && (isBiColor() || isMultiColorWild());
     }
 
-    /** 可切换的颜色列表 */
+    /** List of selectable colors */
     public List<CardColor> getSelectableColors() {
         if (isMultiColorWild()) return CardColor.standardColors();
         return new ArrayList<>(colors);
@@ -144,7 +144,7 @@ public class PropertyCard extends Card {
 
     public boolean isSingleColor() { return colors.size() == 1 && !isWild; }
 
-    // ---- 租金 ----
+    // ---- Rent ----
 
     public int[] getRentLevels() { return rentLevels; }
 
@@ -157,7 +157,7 @@ public class PropertyCard extends Card {
         return rentLevels != null ? rentLevels.length : Integer.MAX_VALUE;
     }
 
-    // ---- 兼容旧接口 ----
+    // ---- Backward-compatible interface ----
 
     public CardColor getPrimaryColor() { return colors.isEmpty() ? CardColor.NONE : colors.get(0); }
     public CardColor getSecondaryColor() { return colors.size() > 1 ? colors.get(1) : null; }

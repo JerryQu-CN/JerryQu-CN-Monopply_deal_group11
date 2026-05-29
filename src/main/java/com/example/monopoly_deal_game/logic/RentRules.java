@@ -13,7 +13,7 @@ import java.util.List;
 public final class RentRules {
     private RentRules() {}
 
-    /** 返回可收费的颜色列表（需要房东在该颜色上有物业）。 */
+    /** Returns the list of colors the rent can be charged on (requires the landlord to have properties of that color). */
     public static List<CardColor> eligibleChargeColors(RentCard rc, Player landlord) {
         List<CardColor> out = new ArrayList<>();
         if (rc == null || landlord == null) return out;

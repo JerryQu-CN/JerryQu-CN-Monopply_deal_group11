@@ -9,8 +9,9 @@ import javafx.application.Platform;
 import java.util.Objects;
 
 /**
- * 应用级依赖容器（课设阶段无 Spring 时的轻量替代）：在 {@link com.example.monopoly_deal_game.app.MonopolyDealApplication}
- * 启动时注入一次，各 {@code *ScreenController} 通过 {@link #get()} 取得共享实例。
+ * App-level dependency container (lightweight substitute when Spring is not available during coursework):
+ * injected once at startup in {@link com.example.monopoly_deal_game.app.MonopolyDealApplication};
+ * each {@code *ScreenController} accesses shared instances via {@link #get()}.
  */
 public final class AppContext {
 
@@ -29,7 +30,7 @@ public final class AppContext {
         this.gameEngine.setStateListener(session -> this.networkLobbyState.setSession(session));
     }
 
-    /** 默认实现：单进程一个引擎、一个存档服务。 */
+    /** Default implementation: one engine and one save service per process. */
     public static AppContext createDefault() {
         GameEngine engine = new GameEngine();
         AppContext ctx = new AppContext(engine, new GameServer(engine), new SaveGameService());

@@ -4,7 +4,7 @@ import javafx.animation.Animation;
 import javafx.util.Duration;
 
 /**
- * 模板：子类实现 {@link #buildAnimation(MotionContext)}，基类负责 {@link #play} 与结束回调。
+ * Template: subclasses implement {@link #buildAnimation(MotionContext)}, while the base class handles {@link #play} and the completion callback.
  */
 public abstract class AbstractUiMotion implements UiMotion {
 

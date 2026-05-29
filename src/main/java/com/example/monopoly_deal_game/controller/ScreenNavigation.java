@@ -11,9 +11,9 @@ import java.net.URL;
 import java.util.Objects;
 
 /**
- * FXML 场景切换工具类。
+ * FXML scene navigation utility class.
  *
- * TODO(controller): 若引入 Spring/JavaFX 依赖注入，可改为导航服务接口。
+ * TODO(controller): If Spring/JavaFX DI is introduced, this can be replaced with a navigation service interface.
  */
 public final class ScreenNavigation {
     public static final double SCENE_WIDTH = 1400;
@@ -21,10 +21,19 @@ public final class ScreenNavigation {
 
     private static final String FXML_BASE = "/com/example/monopoly_deal_game/";
 
-    /** 对局主界面 FXML 文件名（对应设计图中的 GameView）。 */
+    /** Main game screen FXML file name (corresponding to GameView in the design). */
     public static final String GAMEPLAY_FXML = "GameplayScreen.fxml";
 
     private ScreenNavigation() {}
+
+    private static final String STYLESHEET = FXML_BASE + "game-style.css";
+
+    private static void loadStylesheet(Scene scene) {
+        URL css = ScreenNavigation.class.getResource(STYLESHEET);
+        if (css != null) {
+            scene.getStylesheets().add(css.toExternalForm());
+        }
+    }
 
     public static URL fxmlUrl(String fxmlResourceName) {
         String path = FXML_BASE + fxmlResourceName;
@@ -41,7 +50,9 @@ public final class ScreenNavigation {
             if (controller instanceof StageAware stageAware) {
                 stageAware.setStage(stage);
             }
-            stage.setScene(new Scene(root, SCENE_WIDTH, SCENE_HEIGHT));
+            Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
+            loadStylesheet(scene);
+            stage.setScene(scene);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -4,7 +4,7 @@ import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
 
 /**
- * 完整对局界面，对应 {@code GameplayScreen.fxml}（含可选聊天区）。
+ * Full game interface, corresponding to {@code GameplayScreen.fxml} (includes optional chat area).
  */
 public class GameplayScreenController extends AbstractGameplayScreenController {
 
