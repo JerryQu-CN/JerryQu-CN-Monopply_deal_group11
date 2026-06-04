@@ -20,6 +20,7 @@ public final class TableCardKit {
         StackPane holder = new StackPane(cardView);
         holder.setAlignment(Pos.CENTER);
         holder.setCursor(Cursor.DEFAULT);
+        holder.setFocusTraversable(false);
         double w = TABLE_CARD_BASE_W * scale;
         double h = TABLE_CARD_BASE_H * scale;
         holder.setPrefSize(w, h);

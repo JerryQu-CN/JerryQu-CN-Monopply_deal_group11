@@ -23,7 +23,11 @@ public abstract class AbstractUiMotion implements UiMotion {
     @Override
     public final void play(MotionContext ctx, Runnable onFinished) {
         Animation anim = buildAnimation(ctx);
+        javafx.event.EventHandler<javafx.event.ActionEvent> existing = anim.getOnFinished();
         anim.setOnFinished(e -> {
+            if (existing != null) {
+                existing.handle(e);
+            }
             if (onFinished != null) {
                 onFinished.run();
             }

@@ -96,34 +96,79 @@ public class GameplayViewCoordinator {
 
         List<Card> handCards = cp.getHand().getCards();
         int n = handCards.size();
+
+        // ── Calculate optimal hand fan layout ───────────────────────
+        double handWidth = handPane.getWidth();
+        if (handWidth <= 0) handWidth = handPane.getPrefWidth() > 0 ? handPane.getPrefWidth() : 1100;
+        double cardW = TableCardKit.TABLE_CARD_BASE_W;
+
+        // Exposure = how many px of each card are visible past the previous card's left edge
+        double preferredExposure = 55;
+        double minExposure = 35;
+        double sidePad = 12;
+        double avail = handWidth - sidePad * 2;
+
+        double neededPref = n <= 1 ? cardW : cardW + (n - 1) * preferredExposure;
+        double neededMin = n <= 1 ? cardW : cardW + (n - 1) * minExposure;
+
+        double exposure;
+        if (neededPref <= avail) {
+            exposure = preferredExposure;
+        } else if (neededMin <= avail) {
+            exposure = Math.max(minExposure, (avail - cardW) / Math.max(1, n - 1));
+        } else {
+            exposure = minExposure;
+        }
+
+        double totalSpread = n <= 1 ? cardW : cardW + (n - 1) * exposure;
+        boolean needsScroll = totalSpread > avail;
+
+        double startX = needsScroll ? sidePad : (avail - totalSpread) / 2.0 + sidePad;
+
+        Pane handContent = new Pane();
+        handContent.setFocusTraversable(false);
+
         for (int i = 0; i < n; i++) {
             Card card = handCards.get(i);
             boolean sel =
                     inDiscard ? disc.contains(card) : Objects.equals(card, selectedInHand);
             CardView view = HandCardKit.createHandCard(card, sel, () -> onHandCardPick.accept(card));
             StackPane wrap = new StackPane(view);
-            wrap.setPrefSize(TableCardKit.TABLE_CARD_BASE_W, TableCardKit.TABLE_CARD_BASE_H);
+            wrap.setPrefSize(cardW, TableCardKit.TABLE_CARD_BASE_H);
+            wrap.setFocusTraversable(false);
             if (sel) {
                 wrap.setScaleX(1.1);
                 wrap.setScaleY(1.1);
             }
+            double x = startX + i * exposure;
+            wrap.setLayoutX(x);
+            wrap.setLayoutY(6);
             HandCardKit.applyFanPose(wrap, i, n);
-            row.getChildren().add(wrap);
+            handContent.getChildren().add(wrap);
         }
 
-        if (row.getChildren().isEmpty()) {
-            row.getChildren().add(new Label("Hand is empty (deck or dealing not yet implemented)"));
+        if (handContent.getChildren().isEmpty()) {
+            Label empty = new Label("Hand is empty");
+            empty.setStyle("-fx-text-fill:#8D6E63; -fx-font-size:13px;");
+            empty.setLayoutX(sidePad);
+            empty.setLayoutY(80);
+            handContent.getChildren().add(empty);
         }
 
-        ScrollPane scroll = new ScrollPane(row);
-        scroll.setFitToHeight(true);
-        scroll.setFocusTraversable(false);
-        scroll.setPannable(false);
-        row.setFocusTraversable(false);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setStyle("-fx-background:transparent;");
-        handPane.getChildren().add(scroll);
+        if (needsScroll) {
+            handContent.setPrefWidth(totalSpread + sidePad * 2);
+            ScrollPane scroll = new ScrollPane(handContent);
+            scroll.setFitToHeight(true);
+            scroll.setFocusTraversable(false);
+            scroll.setPannable(false);
+            scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+            scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            scroll.getStyleClass().add("scroll-pane-transparent");
+            handPane.getChildren().add(scroll);
+        } else {
+            handContent.prefWidthProperty().bind(handPane.widthProperty());
+            handPane.getChildren().add(handContent);
+        }
     }
 
     private void refreshTableZones(GameSession session) {
@@ -247,7 +292,14 @@ public class GameplayViewCoordinator {
                 propColumns.getChildren().add(col);
             }
         }
-        propOuter.getChildren().add(propColumns);
+        // Wrap property columns in horizontal scroll for overflow
+        ScrollPane propHScroll = new ScrollPane(propColumns);
+        propHScroll.setFocusTraversable(false);
+        propHScroll.setPannable(false);
+        propHScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        propHScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        propHScroll.getStyleClass().add("scroll-pane-transparent");
+        propOuter.getChildren().add(propHScroll);
 
         ScrollPane propScroll = wrapVerticalScroll(propOuter);
         propScroll.setFitToWidth(true);
@@ -332,7 +384,7 @@ public class GameplayViewCoordinator {
         scroll.setPannable(false);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle("-fx-background:transparent;");
+        scroll.getStyleClass().add("scroll-pane-transparent");
         return scroll;
     }
 

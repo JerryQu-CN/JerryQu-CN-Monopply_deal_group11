@@ -42,6 +42,7 @@ public class CardView extends StackPane {
         setPrefSize(CARD_W, CARD_H);
         setMaxSize(CARD_W, CARD_H);
         setCursor(Cursor.HAND);
+        setFocusTraversable(false);
 
         cardImage = new ImageView();
         cardImage.setFitWidth(CARD_W);

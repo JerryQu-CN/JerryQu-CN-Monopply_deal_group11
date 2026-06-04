@@ -57,9 +57,6 @@
                         <Button fx:id="primaryActionButton" maxWidth="1.7976931348623157E308"
                                 onAction="#onPrimaryAction" prefHeight="46.0" text="Action"
                                 styleClass="button-primary"/>
-                        <Button fx:id="undoButton" maxWidth="1.7976931348623157E308"
-                                onAction="#onUndo" prefHeight="40.0" text="Undo (disabled)"
-                                styleClass="button-secondary"/>
 
                         <Pane VBox.vgrow="ALWAYS"/>
                         <Label fx:id="versionLabel" styleClass="version-label" text="Version x.x.x"/>

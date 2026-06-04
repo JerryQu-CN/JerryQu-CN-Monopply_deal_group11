@@ -18,6 +18,8 @@ import com.example.monopoly_deal_game.network.NetworkMessage;
 import com.example.monopoly_deal_game.view.GameplayUiBundle;
 import com.example.monopoly_deal_game.view.GameplayViewCoordinator;
 import com.example.monopoly_deal_game.view.MoneyHudText;
+import com.example.monopoly_deal_game.view.animation.DrawMotion;
+import com.example.monopoly_deal_game.view.animation.MotionContext;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -25,7 +27,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
@@ -53,7 +54,6 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     @FXML private Label moneyHudLabel;
     @FXML private Label feedbackLabel;
     @FXML protected Button primaryActionButton;
-    @FXML protected Button undoButton;
     @FXML protected Label versionLabel;
     @FXML protected Pane opponentsPane;
     @FXML protected Pane selfBoardPane;
@@ -78,6 +78,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     protected Stage stage;
     protected GameplayViewCoordinator viewCoordinator;
     private final AtomicBoolean dialogBusy = new AtomicBoolean(false);
+    private boolean drawAnimating = false;
 
     // ---- extracted helpers ----
     private NetworkSyncHelper networkSync;
@@ -122,12 +123,8 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         // network snapshot listener
         installNetworkSnapshotListener();
 
-        // disable undo (not yet implemented)
-        if (undoButton != null) {
-            undoButton.setDisable(true);
-            undoButton.setTooltip(new Tooltip("Not yet available: planned to undo the last played card and restore board state."));
-        }
         if (gameRoot != null) gameRoot.getStyleClass().add("root-pane");
+
         refreshGameplayUi();
     }
 
@@ -244,16 +241,31 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         if (state.isGameOver()) return;
 
         switch (state.getPhase()) {
-            case DRAW_PHASE -> handleDrawPhase(logic, session, state);
-            case PLAY_PHASE -> handlePlayPhase(logic, session, state);
-            case DISCARD_PHASE -> handleDiscardPhase(logic, session);
-            case WAITING_FOR_SELECTION -> setFeedback("Please wait for the dialog selection to complete.");
+            case DRAW_PHASE -> {
+                drawAnimating = false;
+                handleDrawPhase(logic, session, state);
+                if (!drawAnimating) refreshGameplayUi();
+            }
+            case PLAY_PHASE -> {
+                drawAnimating = false;
+                handlePlayPhase(logic, session, state);
+                if (!drawAnimating) refreshGameplayUi();
+            }
+            case DISCARD_PHASE -> {
+                handleDiscardPhase(logic, session);
+                refreshGameplayUi();
+            }
+            case WAITING_FOR_SELECTION -> {
+                setFeedback("Please wait for the dialog selection to complete.");
+                refreshGameplayUi();
+            }
         }
 
-        refreshGameplayUi();
-        String log = pendingNetworkLogText;
-        pendingNetworkLogText = null;
-        networkSync.publishSessionChange(session, log);
+        if (!drawAnimating) {
+            String log = pendingNetworkLogText;
+            pendingNetworkLogText = null;
+            networkSync.publishSessionChange(session, log);
+        }
     }
 
     private void handleDrawPhase(GameLogic logic, GameSession session, GameState state) {
@@ -261,9 +273,21 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         if (state.isHasDrawnThisTurn()) {
             setFeedback("Already drawn this turn. Play cards or end turn.");
         } else {
-            logic.drawCard(session);
             Player cur = session.getCurrentPlayer();
+            int before = cur != null ? cur.getHand().size() : 0;
+            logic.drawCard(session);
+            int after = cur != null ? cur.getHand().size() : 0;
+            int newCards = after - before;
             if (cur != null) setPendingLog(cur.getName() + " drew a card");
+            if (newCards > 0) {
+                drawAnimating = true;
+                playDrawSequence(newCards, () -> {
+                    refreshGameplayUi();
+                    String log = pendingNetworkLogText;
+                    pendingNetworkLogText = null;
+                    networkSync.publishSessionChange(session, log);
+                });
+            }
         }
     }
 
@@ -282,11 +306,28 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             return;
         }
         try {
+            int before = cur != null ? cur.getHand().size() : 0;
             boolean ok = logic.playCard(session, selected);
+            int after = cur != null ? cur.getHand().size() : 0;
+            int newCards = after - before;
             if (ok) {
                 clearFeedback();
                 handCardPicker.setSelectedHandCard(null);
                 setPendingLog(who + " played " + selected.getName());
+                if (newCards > 0) {
+                    drawAnimating = true;
+                    playDrawSequence(newCards, () -> {
+                        refreshGameplayUi();
+                        if (logic.checkGameOver(session)) {
+                            state.setGameOver(true);
+                            announceWinner(session);
+                        }
+                        String log = pendingNetworkLogText;
+                        pendingNetworkLogText = null;
+                        networkSync.publishSessionChange(session, log);
+                    });
+                    return;
+                }
                 if (logic.checkGameOver(session)) {
                     state.setGameOver(true);
                     announceWinner(session);
@@ -323,7 +364,19 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         }
     }
 
-    @FXML protected void onUndo(ActionEvent event) { /* reserved */ }
+    // ---- draw animation ----
+
+    /** Play {@code count} card-fly animations sequentially, then invoke {@code onDone}. */
+    private void playDrawSequence(int count, Runnable onDone) {
+        if (count <= 0) { onDone.run(); return; }
+        playNextDraw(count, 0, onDone);
+    }
+
+    private void playNextDraw(int total, int index, Runnable onDone) {
+        if (index >= total) { onDone.run(); return; }
+        MotionContext ctx = viewCoordinator.motionContext();
+        new DrawMotion().play(ctx, () -> playNextDraw(total, index + 1, onDone));
+    }
 
     // ---- hand card pick delegate ----
 
@@ -418,16 +471,28 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 refreshGameplayUi();
                 return;
             }
+            Player cur = session.getCurrentPlayer();
+            int before = cur != null ? cur.getHand().size() : 0;
             boolean ok = logic.playCard(session, card, merged);
+            int after = cur != null ? cur.getHand().size() : 0;
+            int newCards = after - before;
             if (ok) {
                 if (!merged.jsnBlocked()) clearFeedback();
-                Player cur = session.getCurrentPlayer();
                 String who = cur != null ? cur.getName() : "?";
                 logCardPlay(who, card, merged, session);
                 handCardPicker.setSelectedHandCard(null);
                 if (logic.checkGameOver(session)) {
                     session.getGameState().setGameOver(true);
                     announceWinner(session);
+                }
+                if (newCards > 0) {
+                    playDrawSequence(newCards, () -> {
+                        refreshGameplayUi();
+                        String log2 = pendingNetworkLogText;
+                        pendingNetworkLogText = null;
+                        networkSync.publishSessionChange(session, log2);
+                    });
+                    return;
                 }
                 refreshGameplayUi();
                 String log2 = pendingNetworkLogText;
@@ -524,6 +589,15 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                     primaryActionButton.setText("Confirm discard (min " + must + " card(s))");
                     primaryActionButton.setDisable(
                             sel < must || handSize - sel > GameConfig.MAX_HAND_SIZE_END_TURN);
+                    // Show discard requirement prominently in feedback label
+                    int remaining = must - sel;
+                    if (remaining > 0) {
+                        setFeedback("Must discard " + must + " card(s)! Currently selected: "
+                                + sel + " — pick " + remaining + " more.");
+                    } else {
+                        setFeedback("Selected " + sel + " card(s) to discard (need " + must
+                                + "). Press button to confirm.");
+                    }
                 }
             }
             case WAITING_FOR_SELECTION -> {

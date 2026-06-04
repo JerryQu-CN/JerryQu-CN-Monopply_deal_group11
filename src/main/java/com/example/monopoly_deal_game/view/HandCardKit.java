@@ -23,15 +23,15 @@ public final class HandCardKit {
         return view;
     }
 
-    /** Fan layout for hand cards: applied on the outer container to avoid conflicting with card face hover translation. */
+    /** Fan layout for hand cards: arc rotation and vertical offset from center. */
     public static void applyFanPose(javafx.scene.layout.Region host, int index, int total) {
         if (host == null || total <= 1) {
             return;
         }
         double mid = (total - 1) / 2.0;
         double d = index - mid;
-        host.setRotate(d * 5.5);
-        host.setTranslateY(Math.min(18, Math.abs(d) * 5));
+        host.setRotate(d * 7.0);
+        host.setTranslateY(Math.abs(d) * (total > 10 ? 4.5 : 6.5));
     }
 
     /** @return may be null */
