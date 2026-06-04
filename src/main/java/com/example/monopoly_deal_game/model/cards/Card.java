@@ -1,5 +1,9 @@
 package com.example.monopoly_deal_game.model.cards;
 
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.logic.CardPlayOptions;
+import com.example.monopoly_deal_game.model.Player;
+
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -15,19 +19,12 @@ public abstract class Card implements Serializable {
     protected String description;
     protected int value;
 
-    // Card display properties
-    protected String[] displayName;      // Multi-line display name
-    protected int fontSize = 8;
-    protected int displayOffsetY;
-    protected int descriptionId;         // Description ID (-1 = no description)
-
     // Card colors
     protected int outerColorRGB;         // Outer border color (RGB int)
     protected int innerColorRGB;         // Inner color (RGB int)
 
     protected boolean countsTowardLimit = true;
     protected boolean undoable = false;
-    protected boolean clearsUndoableCards = false;
 
     public Card(int id, String name, int value, String description) {
         this.id = id;
@@ -36,7 +33,6 @@ public abstract class Card implements Serializable {
         this.description = description;
         this.outerColorRGB = 0x808080;   // Default gray outer border
         this.innerColorRGB = 0xFFFFFF;   // Default white interior
-        this.descriptionId = -1;
     }
 
     public int getId() { return id; }
@@ -46,37 +42,16 @@ public abstract class Card implements Serializable {
     public void setValue(int value) { this.value = value; }
 
     public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
 
     public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    // Display
-    public String[] getDisplayName() { return displayName; }
-    public void setDisplayName(String[] displayName) { this.displayName = displayName; }
-
-    public int getFontSize() { return fontSize; }
-    public void setFontSize(int fontSize) { this.fontSize = fontSize; }
-
-    public int getDisplayOffsetY() { return displayOffsetY; }
-    public void setDisplayOffsetY(int displayOffsetY) { this.displayOffsetY = displayOffsetY; }
-
-    public int getDescriptionId() { return descriptionId; }
-    public void setDescriptionId(int descriptionId) { this.descriptionId = descriptionId; }
 
     // Color
     public int getOuterColorRGB() { return outerColorRGB; }
-    public void setOuterColorRGB(int rgb) { this.outerColorRGB = rgb; }
 
     public int getInnerColorRGB() { return innerColorRGB; }
-    public void setInnerColorRGB(int rgb) { this.innerColorRGB = rgb; }
 
     // Undo
-    public boolean isUndoable() { return undoable; }
     public void setUndoable(boolean undoable) { this.undoable = undoable; }
-
-    public boolean shouldClearUndoableCards() { return clearsUndoableCards; }
-    public void setClearsUndoableCards(boolean clears) { this.clearsUndoableCards = clears; }
 
     public boolean isCountsTowardLimit() { return countsTowardLimit; }
     public void setCountsTowardLimit(boolean c) { this.countsTowardLimit = c; }
@@ -90,6 +65,26 @@ public abstract class Card implements Serializable {
 
     @Override
     public int hashCode() { return Integer.hashCode(id); }
+
+    public String getImageFileName() { return "propertyWildCard.png"; }
+
+    /** Execute this card's effect when played. Override in subclasses for specific behavior. */
+    public void executePlay(Player player, GameSession session, CardPlayOptions opt) {
+        session.discardCard(this);
+    }
+
+    // ---- Building card queries (overridden by House/Hotel) ----
+
+    public boolean isBuilding() { return false; }
+    public boolean isHouse() { return false; }
+    public boolean isHotel() { return false; }
+    public int getBuildingRentBonus() { return 0; }
+
+    // ---- Play log text (overridden per card type) ----
+
+    public String getPlayLogText(String who, CardPlayOptions opts, GameSession session) {
+        return who + " played " + getName();
+    }
 
     @Override
     public String toString() { return getName() + " (" + getValue() + "M)"; }

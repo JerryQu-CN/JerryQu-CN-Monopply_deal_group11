@@ -1,5 +1,6 @@
 package com.example.monopoly_deal_game.view;
 
+import com.example.monopoly_deal_game.logic.CardImageMapper;
 import com.example.monopoly_deal_game.model.cards.Card;
 
 /**
@@ -13,7 +14,7 @@ public final class HandCardKit {
             Card card,
             boolean visuallySelected,
             Runnable onChosen) {
-        String file = CardFaceResolver.imageFileFor(card);
+        String file = CardImageMapper.imageFileFor(card);
         CardView view = new CardView(file, card.getName(), card.getDescription());
         view.setUserData(card);
         view.setHandInteraction(onChosen);

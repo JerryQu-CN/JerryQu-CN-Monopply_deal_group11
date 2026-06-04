@@ -1,5 +1,0 @@
-Package: com.example.monopoly_deal_game.model.cards
-================================================================================
-[Responsibility] Card domain model: abstract Card, various concrete card types, CardColor / CardType enums.
-
-[Relationships] The card piles and player list for a game session are in game.model.GameSession; this package does not contain session state.

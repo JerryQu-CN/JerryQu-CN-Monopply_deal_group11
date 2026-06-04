@@ -1,11 +1,9 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.game.state.GameSession;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.Property;
 import com.example.monopoly_deal_game.model.cards.ActionCard;
-import com.example.monopoly_deal_game.model.cards.ActionCardHotel;
-import com.example.monopoly_deal_game.model.cards.ActionCardHouse;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
@@ -15,6 +13,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Places property cards onto a player's board, transfers groups between players,
+ * and manages building (house/hotel) attachments.
+ */
 public final class PropertyPlayHelper {
 
     private static final List<CardColor> BOARD_COLOR_RANK =
@@ -40,22 +42,7 @@ public final class PropertyPlayHelper {
     }
 
     public static void placePropertyCard(Player owner, PropertyCard card) {
-        Objects.requireNonNull(owner);
-        Objects.requireNonNull(card);
-        for (Property row : owner.getProperties()) {
-            if (row.accepts(card) && chosenColorMatchesRow(row, card)) {
-                alignWildToRow(row, card);
-                row.addCard(card);
-                sortBoardPropertiesNaturalOrder(owner);
-                return;
-            }
-        }
-        Property nov = new Property();
-        if (card.isWild()) {
-            card.alignToDeclaredColor(card.getCurrentColor());
-        }
-        nov.addCard(card);
-        owner.addProperty(nov);
+        placePropertyCardInternal(owner, card);
         sortBoardPropertiesNaturalOrder(owner);
     }
 
@@ -66,13 +53,13 @@ public final class PropertyPlayHelper {
         List<Card> buildings = new ArrayList<>(group.takeAllBuildings());
         for (PropertyCard pc : toPlace) {
             group.removeCard(pc);
-            placePropertyCardSkippingSort(to, pc);
+            placePropertyCardInternal(to, pc);
         }
         attachBuildingsFromStolenSet(to, buildings, session);
         sortBoardPropertiesNaturalOrder(to);
     }
 
-    private static void placePropertyCardSkippingSort(Player owner, PropertyCard card) {
+    private static void placePropertyCardInternal(Player owner, PropertyCard card) {
         for (Property row : owner.getProperties()) {
             if (row.accepts(card) && chosenColorMatchesRow(row, card)) {
                 alignWildToRow(row, card);
@@ -90,10 +77,10 @@ public final class PropertyPlayHelper {
 
     private static void attachBuildingsFromStolenSet(Player to, List<Card> buildings, GameSession session) {
         if (buildings == null || buildings.isEmpty()) return;
-        buildings.sort(Comparator.comparingInt(b -> (b instanceof ActionCardHotel) ? 1 : 0));
+        buildings.sort(Comparator.comparingInt(b -> b.isHotel() ? 1 : 0));
         for (Card b : buildings) {
             boolean placed = false;
-            if (b instanceof ActionCardHouse || b instanceof ActionCardHotel) {
+            if (b.isBuilding()) {
                 for (Property row : to.getProperties()) {
                     if (row.isMonopoly() && row.addBuildingCard(b)) {
                         placed = true;
@@ -128,6 +115,35 @@ public final class PropertyPlayHelper {
         if (anchor != null && anchor != CardColor.NONE) {
             incoming.alignToDeclaredColor(anchor);
         }
+    }
+
+    /** Move a wild property card from its current group to the group matching {@code newColor}. */
+    public static void moveWildCardToColor(Player owner, PropertyCard card, CardColor newColor, GameSession session) {
+        Objects.requireNonNull(owner);
+        Objects.requireNonNull(card);
+        Objects.requireNonNull(newColor);
+        Objects.requireNonNull(session);
+
+        Property oldGroup = null;
+        for (Property group : new ArrayList<>(owner.getProperties())) {
+            if (group.getCards().contains(card)) {
+                oldGroup = group;
+                break;
+            }
+        }
+        if (oldGroup == null) return;
+
+        oldGroup.removeCard(card);
+
+        if (oldGroup.getCards().isEmpty()) {
+            for (Card b : oldGroup.takeAllBuildings()) session.discardCard(b);
+            owner.removeProperty(oldGroup);
+        } else if (!oldGroup.isMonopoly()) {
+            for (Card b : oldGroup.takeAllBuildings()) session.discardCard(b);
+        }
+
+        card.alignToDeclaredColor(newColor);
+        placePropertyCard(owner, card);
     }
 
     public static void removePropertyCardFromBoard(Player victim, PropertyCard pc, GameSession session) {

@@ -1,8 +1,5 @@
 package com.example.monopoly_deal_game.model;
 
-import com.example.monopoly_deal_game.model.cards.ActionCard;
-import com.example.monopoly_deal_game.model.cards.ActionCardHotel;
-import com.example.monopoly_deal_game.model.cards.ActionCardHouse;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
@@ -16,8 +13,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * A player's property grouping in the property area: composed of multiple {@link PropertyCard} instances, used for same-color set completion, monopoly, and rent calculation.
- * (The former separate {@code PropertySet} has been merged into this class; the cards themselves remain {@link PropertyCard}. See requirements 5.3–5.6, 15.3–15.4.)
+ * A player's property grouping on the table — holds same-color property cards
+ * for set completion, monopoly status, and rent calculation.
  */
 public final class Property implements Serializable {
     @Serial
@@ -29,10 +26,6 @@ public final class Property implements Serializable {
     /** Houses/hotels placed on this set (each contains one action card). Official rules: at most 1 house + 1 hotel per set. */
     private final List<Card> buildingCards = new ArrayList<>();
 
-    public String getId() {
-        return id;
-    }
-
     public Player getOwner() {
         return owner;
     }
@@ -41,17 +34,20 @@ public final class Property implements Serializable {
         this.owner = owner;
     }
 
-    public List<PropertyCard> getCards() {
-        return Collections.unmodifiableList(cards);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Property that)) return false;
+        return id.equals(that.id);
     }
 
-    /** Book value: the sum of all property card values in this set. */
-    public int getTotalValue() {
-        int total = 0;
-        for (PropertyCard pc : cards) {
-            total += pc.getValue();
-        }
-        return total;
+    @Override
+    public int hashCode() {
+        return id.hashCode();
+    }
+
+    public List<PropertyCard> getCards() {
+        return Collections.unmodifiableList(cards);
     }
 
     public void addCard(PropertyCard card) {
@@ -68,47 +64,24 @@ public final class Property implements Serializable {
     }
 
     public boolean addBuildingCard(Card building) {
-        if (building == null) {
-            return false;
-        }
-        if (!(building instanceof ActionCardHouse) && !(building instanceof ActionCardHotel)) {
-            return false;
-        }
-        if (!isMonopoly()) {
-            return false;
-        }
-        if (building instanceof ActionCardHouse && hasHouseBuilding()) {
-            return false;
-        }
-        if (building instanceof ActionCardHotel && (!hasHouseBuilding() || hasHotelBuilding())) {
-            return false;
-        }
+        if (building == null || !building.isBuilding()) return false;
+        if (!isMonopoly()) return false;
+        if (building.isHouse() && hasHouseBuilding()) return false;
+        if (building.isHotel() && (!hasHouseBuilding() || hasHotelBuilding())) return false;
         buildingCards.add(building);
         return true;
     }
 
     private boolean hasHouseBuilding() {
-        return buildingCards.stream().anyMatch(c -> c instanceof ActionCardHouse);
+        return buildingCards.stream().anyMatch(Card::isHouse);
     }
 
     private boolean hasHotelBuilding() {
-        return buildingCards.stream().anyMatch(c -> c instanceof ActionCardHotel);
+        return buildingCards.stream().anyMatch(Card::isHotel);
     }
 
     public int getBuildingRentBonus() {
-        int b = 0;
-        for (Card c : buildingCards) {
-            if (c instanceof ActionCardHouse) {
-                b += 3;
-            } else if (c instanceof ActionCardHotel) {
-                b += 4;
-            }
-        }
-        return b;
-    }
-
-    public void clearBuildings() {
-        buildingCards.clear();
+        return buildingCards.stream().mapToInt(Card::getBuildingRentBonus).sum();
     }
 
     /** When the set is broken up or the entire group is taken, remove the house/hotel cards and return them to the caller to discard. */
@@ -123,8 +96,15 @@ public final class Property implements Serializable {
         CardColor anchor = null;
         boolean anchorFromWild = false;
         boolean hasNonMultiColorAnchor = false;
+        boolean hasMultiColorWildAnchor = false;
+        CardColor multiWildColor = null;
         for (PropertyCard pc : cards) {
             if (pc.isMultiColorWild()) {
+                CardColor c = pc.getCurrentColor();
+                if (c != null && c != CardColor.NONE && c != CardColor.WILD) {
+                    hasMultiColorWildAnchor = true;
+                    if (multiWildColor == null) multiWildColor = c;
+                }
                 continue;
             }
             CardColor current = pc.getCurrentColor();
@@ -150,7 +130,7 @@ public final class Property implements Serializable {
                 return false;
             }
         }
-        return hasNonMultiColorAnchor;
+        return hasNonMultiColorAnchor || hasMultiColorWildAnchor;
     }
 
     private PropertyCard findFirstNonRainbowCard() {
@@ -173,6 +153,15 @@ public final class Property implements Serializable {
         for (PropertyCard pc : cards) {
             if (!pc.isMultiColorWild()) {
                 return pc.getCurrentColor();
+            }
+        }
+        // When only rainbow wilds exist, use the first one with a declared color
+        for (PropertyCard pc : cards) {
+            if (pc.isMultiColorWild()) {
+                CardColor c = pc.getCurrentColor();
+                if (c != null && c != CardColor.NONE && c != CardColor.WILD) {
+                    return c;
+                }
             }
         }
         return CardColor.NONE;

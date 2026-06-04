@@ -1,13 +1,11 @@
 package com.example.monopoly_deal_game.model.cards;
 
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.logic.CardPlayOptions;
+import com.example.monopoly_deal_game.model.Player;
+
 /**
- * Currency cards (M-denomination, etc.).
- *
- * <p>Responsibilities:
- * <ol>
- *   <li>Store the currency denomination.</li>
- *   <li>Can only be deposited into the bank area or used as payment; has no action effects.</li>
- * </ol>
+ * Currency cards providing money denominations for payment and banking.
  */
 public class BankCard extends Card {
 
@@ -23,6 +21,14 @@ public class BankCard extends Card {
     @Override
     public CardType getCardType() {
         return CardType.CURRENCY;
+    }
+
+    @Override
+    public String getImageFileName() { return value + "M.png"; }
+
+    @Override
+    public void executePlay(Player player, GameSession session, CardPlayOptions opt) {
+        player.getBank().addCard(this);
     }
 
 }

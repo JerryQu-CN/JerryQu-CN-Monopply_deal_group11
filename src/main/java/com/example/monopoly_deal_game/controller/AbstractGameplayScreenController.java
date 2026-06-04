@@ -1,23 +1,31 @@
 package com.example.monopoly_deal_game.controller;
 
 import com.example.monopoly_deal_game.game.engine.GameEngine;
-import com.example.monopoly_deal_game.game.model.ActionState;
-import com.example.monopoly_deal_game.game.model.ActionStatePlayerTargeted;
-import com.example.monopoly_deal_game.game.model.ActionStateRent;
-import com.example.monopoly_deal_game.game.model.GameSession;
-import com.example.monopoly_deal_game.game.model.GameState;
-import com.example.monopoly_deal_game.game.rules.GameConfig;
+import com.example.monopoly_deal_game.game.state.ActionState;
+import com.example.monopoly_deal_game.game.state.ActionStatePlayerTargeted;
+import com.example.monopoly_deal_game.game.state.ActionStateRent;
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.game.state.GameState;
+import com.example.monopoly_deal_game.logic.GameConfig;
 import com.example.monopoly_deal_game.logic.*;
+import com.example.monopoly_deal_game.controller.dialog.ActionTargetDialogs;
+import com.example.monopoly_deal_game.controller.dialog.DoubleTheRentPrompter;
+import com.example.monopoly_deal_game.controller.dialog.JustSayNoHandler;
+import com.example.monopoly_deal_game.controller.dialog.PaymentHandler;
+import com.example.monopoly_deal_game.controller.gameplay.HandCardPicker;
+import com.example.monopoly_deal_game.controller.gameplay.HudUpdater;
+import com.example.monopoly_deal_game.controller.gameplay.PlayChromeBuilder;
+import com.example.monopoly_deal_game.controller.gameplay.TargetSelectionHandler;
 import com.example.monopoly_deal_game.model.Player;
-import com.example.monopoly_deal_game.model.cards.ActionCard;
-import com.example.monopoly_deal_game.model.cards.BankCard;
 import com.example.monopoly_deal_game.model.cards.Card;
+import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 import com.example.monopoly_deal_game.model.cards.RentCard;
+import com.example.monopoly_deal_game.network.HostLobbyBridge;
 import com.example.monopoly_deal_game.network.NetworkMessage;
+import com.example.monopoly_deal_game.view.GameActionLogger;
 import com.example.monopoly_deal_game.view.GameplayUiBundle;
 import com.example.monopoly_deal_game.view.GameplayViewCoordinator;
-import com.example.monopoly_deal_game.view.MoneyHudText;
 import com.example.monopoly_deal_game.view.animation.DrawMotion;
 import com.example.monopoly_deal_game.view.animation.MotionContext;
 import javafx.application.Platform;
@@ -32,11 +40,15 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Objects;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+/**
+ * Abstract base controller for the main gameplay screen — handles turn phases,
+ * card play, payment flows, Just Say No chains, and UI refresh orchestration.
+ */
 public abstract class
 AbstractGameplayScreenController implements StageAware, Initializable {
 
@@ -88,11 +100,9 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     private PlayChromeBuilder playChromeBuilder;
     private TargetSelectionHandler targetSelectionHandler;
 
-    // ---- log state tracking (prevent duplicate entries across refreshes) ----
-    private String lastKnownTurnPlayer;
-    private GameState.Phase lastKnownPhase;
-    private String lastLoggedActionOwner;
-    private String pendingNetworkLogText;
+    private GameActionLogger actionLogger;
+    private HudUpdater hudUpdater;
+    private Consumer<NetworkMessage> networkSnapshotHandler;
 
     // ---- StageAware ----
     @Override public void setStage(Stage stage) { this.stage = stage; }
@@ -111,10 +121,17 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         handCardPicker = new HandCardPicker(dialogBusy);
         playChromeBuilder = new PlayChromeBuilder();
         targetSelectionHandler = new TargetSelectionHandler(stage, dialogBusy);
+        actionLogger = new GameActionLogger(logEntriesBox, logScrollPane,
+                gameOverOverlay, gameOverWinnerLabel, gameOverDetailLabel);
+        hudUpdater = new HudUpdater(topbarTitle, movesLabel, moneyHudLabel,
+                primaryActionButton, feedbackLabel, this::setFeedback,
+                handCardPicker, actionLogger, gameOverOverlay);
 
         // view coordinator
         viewCoordinator = new GameplayViewCoordinator(toUiBundle());
         viewCoordinator.setOnHandCardPick(this::handleHandCardPick);
+        viewCoordinator.setOnTableWildCardClick(this::handleTableWildCardClick);
+        viewCoordinator.setLocalPlayerName(AppContext.get().networkLobbyState().getLocalPlayerName());
 
         // register mediator UIs
         justSayNoHandler.installIntoMediator();
@@ -129,7 +146,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     }
 
     private void installNetworkSnapshotListener() {
-        Consumer<NetworkMessage> handler = msg -> {
+        networkSnapshotHandler = msg -> {
             if (msg != null && msg.getType() == NetworkMessage.Type.PAYMENT_REQUEST) {
                 paymentHandler.handleRequestMessage(msg);
                 return;
@@ -140,27 +157,12 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             }
             if (msg != null && msg.getType() == NetworkMessage.Type.SESSION_SNAPSHOT
                     && msg.getSession() != null) {
-                // Only restore session from network snapshot when there are remote
-                // clients. In a single-machine game the local session is already
-                // authoritative — replacing it asynchronously causes stale-state races.
-                String roomId = AppContext.get().networkLobbyState().getRoomId();
-                boolean hasRemote = false;
-                if (roomId != null && !roomId.isBlank()
-                        && AppContext.get().networkLobbyState().isHost()) {
-                    com.example.monopoly_deal_game.network.GameServer.Room room =
-                            AppContext.get().gameServer().getRoom(roomId);
-                    hasRemote = room != null && room.hasRemoteClients();
-                }
-                if (!hasRemote && roomId != null && !roomId.isBlank()
-                        && !AppContext.get().networkLobbyState().isHost()) {
-                    hasRemote = true;
-                }
+                boolean hasRemote = NetworkSyncHelper.hasRemoteClients();
                 if (!hasRemote) {
-                    // single-machine: don't restore session from network, but still display log
                     String localLog = msg.getLogText();
                     if (localLog != null && !localLog.isBlank()) {
                         Platform.runLater(() -> {
-                            appendLog(localLog,
+                            actionLogger.appendLog(localLog,
                                     localLog.contains("used")
                                     || localLog.contains("charged")
                                     || localLog.contains("wins"));
@@ -179,17 +181,17 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                                 || netLog.contains("used")
                                 || netLog.contains("charged")
                                 || netLog.contains("wins");
-                        appendLog(netLog, important);
+                        actionLogger.appendLog(netLog, important);
                     }
                     if (!AppContext.get().networkLobbyState().isHost()) {
-                        logRemoteSessionUpdate(msg.getSession());
+                        actionLogger.logRemoteSessionUpdate(msg.getSession());
                     }
                     refreshGameplayUi();
                 });
             }
         };
-        AppContext.get().networkLobbyState().addListener(handler);
-        HostLobbyBridge.setListener(handler);
+        AppContext.get().networkLobbyState().addListener(networkSnapshotHandler);
+        HostLobbyBridge.setListener(networkSnapshotHandler);
     }
 
     // ---- FXML actions ----
@@ -204,18 +206,18 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         menuOverlay.setManaged(false);
     }
 
-    @FXML protected void onMenuLeave(ActionEvent event) {
-        handCardPicker.clearAll();
-        justSayNoHandler.uninstallFromMediator();
-        paymentHandler.uninstallFromMediator();
-        AppContext.get().gameEngine().clearSession();
-        if (stage != null) ScreenNavigation.show(stage, "StartScreen.fxml");
-    }
+    @FXML protected void onMenuLeave(ActionEvent event) { cleanupAndReturnToStart(); }
 
-    @FXML protected void onGameOverReturn(ActionEvent event) {
+    @FXML protected void onGameOverReturn(ActionEvent event) { cleanupAndReturnToStart(); }
+
+    private void cleanupAndReturnToStart() {
         handCardPicker.clearAll();
         justSayNoHandler.uninstallFromMediator();
         paymentHandler.uninstallFromMediator();
+        if (networkSnapshotHandler != null) {
+            AppContext.get().networkLobbyState().removeListener(networkSnapshotHandler);
+            HostLobbyBridge.removeListener(networkSnapshotHandler);
+        }
         AppContext.get().gameEngine().clearSession();
         if (stage != null) ScreenNavigation.show(stage, "StartScreen.fxml");
     }
@@ -262,8 +264,8 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         }
 
         if (!drawAnimating) {
-            String log = pendingNetworkLogText;
-            pendingNetworkLogText = null;
+            String log = actionLogger.getPendingLog();
+            actionLogger.clearPendingLog();
             networkSync.publishSessionChange(session, log);
         }
     }
@@ -278,13 +280,13 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             logic.drawCard(session);
             int after = cur != null ? cur.getHand().size() : 0;
             int newCards = after - before;
-            if (cur != null) setPendingLog(cur.getName() + " drew a card");
+            if (cur != null) actionLogger.setPendingLog(cur.getName() + " drew a card");
             if (newCards > 0) {
                 drawAnimating = true;
                 playDrawSequence(newCards, () -> {
                     refreshGameplayUi();
-                    String log = pendingNetworkLogText;
-                    pendingNetworkLogText = null;
+                    String log = actionLogger.getPendingLog();
+                    actionLogger.clearPendingLog();
                     networkSync.publishSessionChange(session, log);
                 });
             }
@@ -298,7 +300,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         if (selected == null) {
             clearFeedback();
             logic.endTurn(session);
-            setPendingLog(who + " ended their turn");
+            actionLogger.setPendingLog(who + " ended their turn");
             return;
         }
         if (PlayChromeBuilder.requiresExplicitPlayMode(selected)) {
@@ -313,24 +315,24 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             if (ok) {
                 clearFeedback();
                 handCardPicker.setSelectedHandCard(null);
-                setPendingLog(who + " played " + selected.getName());
+                actionLogger.setPendingLog(who + " played " + selected.getName());
                 if (newCards > 0) {
                     drawAnimating = true;
                     playDrawSequence(newCards, () -> {
                         refreshGameplayUi();
                         if (logic.checkGameOver(session)) {
                             state.setGameOver(true);
-                            announceWinner(session);
+                            actionLogger.announceWinner(session);
                         }
-                        String log = pendingNetworkLogText;
-                        pendingNetworkLogText = null;
+                        String log = actionLogger.getPendingLog();
+                        actionLogger.clearPendingLog();
                         networkSync.publishSessionChange(session, log);
                     });
                     return;
                 }
                 if (logic.checkGameOver(session)) {
                     state.setGameOver(true);
-                    announceWinner(session);
+                    actionLogger.announceWinner(session);
                 }
             } else {
                 setFeedback("Cannot play: must draw first, max " + GameConfig.MAX_PLAY_PER_TURN + " plays per turn reached, or hand reference invalid.");
@@ -360,7 +362,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             logic.discardFromHandChosen(session,
                     new ArrayList<>(handCardPicker.getDiscardSelections()));
             handCardPicker.clearAll();
-            setPendingLog(cur.getName() + " discarded " + count + " card(s)");
+            actionLogger.setPendingLog(cur.getName() + " discarded " + count + " card(s)");
         }
     }
 
@@ -380,12 +382,38 @@ AbstractGameplayScreenController implements StageAware, Initializable {
 
     // ---- hand card pick delegate ----
 
+
     private void handleHandCardPick(Card card) {
         GameSession session = AppContext.get().gameEngine().getCurrentSession();
         if (handCardPicker.handlePick(card, session, this::setFeedback)) {
             refreshGameplayUi();
         }
     }
+
+    private void handleTableWildCardClick(PropertyCard pc) {
+        GameSession session = AppContext.get().gameEngine().getCurrentSession();
+        if (session == null) return;
+        GameState gs = session.getGameState();
+        if (gs.getPhase() != GameState.Phase.PLAY_PHASE) return;
+        Player cur = session.getCurrentPlayer();
+        if (cur == null || !isLocalPlayersTurn(session)) return;
+
+        List<CardColor> colors = pc.isMultiColorWild()
+                ? CardColor.standardColors()
+                : pc.getSelectableColors();
+        if (colors.isEmpty()) return;
+
+        ActionTargetDialogs.chooseColor(stage, "Switch Color",
+                "Select a new color for \"" + pc.getName() + "\"", colors)
+                .ifPresent(newColor -> {
+                    GameLogic logic = AppContext.get().gameEngine().getGameLogic();
+                    PropertyPlayHelper.moveWildCardToColor(cur, pc, newColor, session);
+                    String who = cur.getName();
+                    actionLogger.setPendingLog(who + " switched " + pc.getName() + " to " + CardColorLabel.shortLabel(newColor));
+                    refreshGameplayUi();
+                });
+    }
+
 
     // ---- feedback helpers ----
 
@@ -400,8 +428,6 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     private void clearFeedback() { setFeedback(""); }
 
     // ---- UI refresh ----
-
-    public void refreshSessionUi() { refreshGameplayUi(); }
 
     protected void refreshGameplayUi() {
         GameSession session = AppContext.get().gameEngine().getCurrentSession();
@@ -431,7 +457,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             }
         }
 
-        applyHud(session);
+        hudUpdater.applyHud(session);
         if (viewCoordinator != null) {
             viewCoordinator.refreshFromSession(session,
                     handCardPicker.getSelectedHandCard(),
@@ -472,6 +498,18 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 return;
             }
             Player cur = session.getCurrentPlayer();
+            // Prompt for Double The Rent before playing a rent card
+            boolean usedDoubleRent = false;
+            if (!merged.asBankMoney() && card instanceof RentCard && cur != null) {
+                Card doubleCard = DoubleTheRentPrompter.findDoubleTheRent(cur);
+                if (doubleCard != null && DoubleTheRentPrompter.showPrompt(stage)) {
+                    usedDoubleRent = true;
+                    cur.getHand().removeCard(doubleCard);
+                    session.discardCard(doubleCard);
+                    session.getGameState().setDoubleNextRent(true);
+                    session.getGameState().setDoubleRentCount(1);
+                }
+            }
             int before = cur != null ? cur.getHand().size() : 0;
             boolean ok = logic.playCard(session, card, merged);
             int after = cur != null ? cur.getHand().size() : 0;
@@ -479,24 +517,27 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             if (ok) {
                 if (!merged.jsnBlocked()) clearFeedback();
                 String who = cur != null ? cur.getName() : "?";
-                logCardPlay(who, card, merged, session);
+                actionLogger.logCardPlay(who, card, merged, session);
+                if (usedDoubleRent) {
+                    actionLogger.setPendingLog(who + " used Double The Rent — rent doubled (x2)");
+                }
                 handCardPicker.setSelectedHandCard(null);
                 if (logic.checkGameOver(session)) {
                     session.getGameState().setGameOver(true);
-                    announceWinner(session);
+                    actionLogger.announceWinner(session);
                 }
                 if (newCards > 0) {
                     playDrawSequence(newCards, () -> {
                         refreshGameplayUi();
-                        String log2 = pendingNetworkLogText;
-                        pendingNetworkLogText = null;
+                        String log2 = actionLogger.getPendingLog();
+                        actionLogger.clearPendingLog();
                         networkSync.publishSessionChange(session, log2);
                     });
                     return;
                 }
                 refreshGameplayUi();
-                String log2 = pendingNetworkLogText;
-                pendingNetworkLogText = null;
+                String log2 = actionLogger.getPendingLog();
+                actionLogger.clearPendingLog();
                 networkSync.publishSessionChange(session, log2);
             } else {
                 setFeedback("Cannot play like this. Check turn order, play count, or prerequisites.");
@@ -505,105 +546,6 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         } catch (IllegalStateException ex) {
             setFeedback(ex.getMessage() != null ? ex.getMessage() : "Play conditions not met");
             refreshGameplayUi();
-        }
-    }
-
-    // ---- HUD ----
-
-    private void applyHud(GameSession session) {
-        if (session == null) {
-            topbarTitle.setText("Monopoly Deal -- No game started");
-            movesLabel.setText("--");
-            if (moneyHudLabel != null) moneyHudLabel.setText("Funds --\nNot started");
-            primaryActionButton.setText("Start/Draw");
-            primaryActionButton.setDisable(true);
-            return;
-        }
-        GameState state = session.getGameState();
-        Player current = session.getCurrentPlayer();
-        Player local = localPlayer(session);
-        String who = current != null ? current.getName() : "?";
-        boolean myTurn = isLocalPlayersTurn(session);
-
-        if (state.isGameOver()) {
-            topbarTitle.setText("Game Over");
-            movesLabel.setText("--");
-            if (moneyHudLabel != null) moneyHudLabel.setText("Funds --\nFinished");
-            primaryActionButton.setText("Finished");
-            primaryActionButton.setDisable(true);
-            if (gameOverOverlay != null && !gameOverOverlay.isVisible()) {
-                gameOverOverlay.setVisible(true);
-                gameOverOverlay.setManaged(true);
-            }
-            return;
-        }
-
-        logStateTransition(session);
-
-        topbarTitle.setText("Turn: " + who + (myTurn ? " (You)" : " (Waiting)")
-                + "  |  " + formatPhase(state.getPhase()));
-        movesLabel.setText("Plays this turn: " + state.getCardsPlayedThisTurn()
-                + " / " + GameConfig.MAX_PLAY_PER_TURN);
-        if (moneyHudLabel != null) moneyHudLabel.setText(
-                MoneyHudText.forPlayer(local != null ? local : current));
-
-        switch (state.getPhase()) {
-            case DRAW_PHASE -> {
-                primaryActionButton.setText(myTurn ? "Draw" : "Waiting for " + who + " to draw");
-                primaryActionButton.setDisable(!myTurn);
-            }
-            case PLAY_PHASE -> {
-                if (feedbackLabel != null && feedbackLabel.getText() != null
-                        && feedbackLabel.getText().startsWith("Hint:")) feedbackLabel.setText("");
-                if (!myTurn) {
-                    primaryActionButton.setText("Waiting for " + who + " to play");
-                    primaryActionButton.setDisable(true);
-                } else {
-                    Card sel = handCardPicker.getSelectedHandCard();
-                    if (sel == null) {
-                        primaryActionButton.setDisable(false);
-                        primaryActionButton.setText("End Turn");
-                    } else if (PlayChromeBuilder.requiresExplicitPlayMode(sel)) {
-                        primaryActionButton.setDisable(true);
-                        primaryActionButton.setText("Use action bar above");
-                    } else if (sel instanceof BankCard) {
-                        primaryActionButton.setDisable(false);
-                        primaryActionButton.setText("Play (Bank)");
-                    } else {
-                        primaryActionButton.setDisable(false);
-                        primaryActionButton.setText("Play Selected");
-                    }
-                }
-            }
-            case DISCARD_PHASE -> {
-                int handSize = current != null ? current.getHand().size() : 0;
-                int must = Math.max(0, handSize - GameConfig.MAX_HAND_SIZE_END_TURN);
-                int sel = handCardPicker.getDiscardSelections().size();
-                if (!myTurn) {
-                    primaryActionButton.setText("Waiting for " + who + " to discard");
-                    primaryActionButton.setDisable(true);
-                } else if (must <= 0) {
-                    primaryActionButton.setText("Discard");
-                    primaryActionButton.setDisable(true);
-                } else {
-                    primaryActionButton.setText("Confirm discard (min " + must + " card(s))");
-                    primaryActionButton.setDisable(
-                            sel < must || handSize - sel > GameConfig.MAX_HAND_SIZE_END_TURN);
-                    // Show discard requirement prominently in feedback label
-                    int remaining = must - sel;
-                    if (remaining > 0) {
-                        setFeedback("Must discard " + must + " card(s)! Currently selected: "
-                                + sel + " — pick " + remaining + " more.");
-                    } else {
-                        setFeedback("Selected " + sel + " card(s) to discard (need " + must
-                                + "). Press button to confirm.");
-                    }
-                }
-            }
-            case WAITING_FOR_SELECTION -> {
-                primaryActionButton.setText("Waiting for response...");
-                primaryActionButton.setDisable(true);
-            }
         }
     }
 
@@ -618,20 +560,16 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     protected Pane chatPaneOrNull() { return null; }
 
     private boolean isLocalPlayersTurn(GameSession session) {
-        Player local = localPlayer(session);
-        Player current = session != null ? session.getCurrentPlayer() : null;
+        if (session == null) return false;
+        Player local = session.localPlayer(AppContext.get().networkLobbyState().getLocalPlayerName());
+        Player current = session.getCurrentPlayer();
         return local != null && current != null && local.equals(current);
-    }
-
-    private Player localPlayer(GameSession session) {
-        if (session == null) return null;
-        return session.localPlayer(AppContext.get().networkLobbyState().getLocalPlayerName());
     }
 
     /**
      * Check all pending targets of the current action state.
      * For each unresponded human target: offer JSN if held, otherwise auto-accept.
-     * For AI targets: auto-accept immediately.
+     * For automated targets: auto-accept immediately.
      * In networked games only the local player is checked; offline covers all.
      * <p>
      * State change (setAccepted) and side effects (payment/transfer) are separate steps.
@@ -645,17 +583,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         if (as == null || as == gs.getTurnState()) return;
 
         // Determine which targets to process.
-        String roomId = AppContext.get().networkLobbyState().getRoomId();
-        boolean hasRemote = false;
-        if (roomId != null && !roomId.isBlank() && AppContext.get().networkLobbyState().isHost()) {
-            com.example.monopoly_deal_game.network.GameServer.Room room =
-                    AppContext.get().gameServer().getRoom(roomId);
-            hasRemote = room != null && room.hasRemoteClients();
-        }
-        if (!hasRemote && roomId != null && !roomId.isBlank()
-                && !AppContext.get().networkLobbyState().isHost()) {
-            hasRemote = true;
-        }
+        boolean hasRemote = NetworkSyncHelper.hasRemoteClients();
 
         String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
         java.util.List<Player> toCheck = new java.util.ArrayList<>();
@@ -693,11 +621,11 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 boolean used = justSayNoHandler.promptDialog(
                         target, as.getActionOwner(), session, desc);
                 if (used) {
-                    setPendingLog(target.getName() + " used Just Say No to refuse "
+                    actionLogger.setPendingLog(target.getName() + " used Just Say No to refuse "
                             + as.getActionOwner().getName() + "'s action");
                     refreshGameplayUi();
-                    String logJsn = pendingNetworkLogText;
-                    pendingNetworkLogText = null;
+                    String logJsn = actionLogger.getPendingLog();
+                    actionLogger.clearPendingLog();
                     networkSync.publishSessionChange(session, logJsn);
                     return; // state changed, restart from top
                 }
@@ -713,177 +641,15 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         // Push updated state once after all targets processed.
         // Host broadcasts to all clients; non-host clients send PLAYER_ACTION to host.
         if (stateChanged && hasRemote) {
-            String logSt = pendingNetworkLogText;
-            pendingNetworkLogText = null;
+            String logSt = actionLogger.getPendingLog();
+            actionLogger.clearPendingLog();
             networkSync.publishSessionChange(session, logSt);
         }
     }
 
     /** Execute business logic (payment, property transfer) after a target accepts. */
     private static void applyAcceptedSideEffects(ActionState as, Player target) {
-        if (as instanceof ActionStatePlayerTargeted pts && pts.hasOnAccepted()) {
-            pts.executeOnAccepted(target);
-        } else if (as instanceof ActionStateRent rent && rent.hasOnAccepted()) {
-            rent.executeOnAccepted(target);
-        }
+        as.tryExecuteOnAccepted(target);
     }
 
-    // ---- player log ----
-
-    /** Logs normal operations (draw, play, discard, etc.). */
-    private void appendLog(String text) {
-        appendLog(text, false);
-    }
-
-    /** Logs important operations (highlights action cards used against others). */
-    private void appendLog(String text, boolean important) {
-        if (logEntriesBox == null) return;
-        Label entry = new Label(text);
-        entry.setWrapText(true);
-        entry.setMaxWidth(230);
-        entry.setFocusTraversable(false);
-        entry.setMouseTransparent(true);
-        if (important) {
-            entry.getStyleClass().add("log-entry-important");
-        } else {
-            entry.getStyleClass().add("log-entry-normal");
-        }
-        logEntriesBox.getChildren().add(entry);
-        Platform.runLater(() -> logScrollPane.setVvalue(1.0));
-    }
-
-    private void setPendingLog(String text) {
-        pendingNetworkLogText = text;
-    }
-
-    /** System separator log (local display only, not synced to network). */
-    private void appendSeparator(String text) {
-        if (logEntriesBox == null) return;
-        Label entry = new Label(text);
-        entry.setWrapText(true);
-        entry.setMaxWidth(230);
-        entry.setFocusTraversable(false);
-        entry.setMouseTransparent(true);
-        entry.getStyleClass().add("log-entry-separator");
-        logEntriesBox.getChildren().add(entry);
-        Platform.runLater(() -> logScrollPane.setVvalue(1.0));
-    }
-
-    private void announceWinner(GameSession session) {
-        Player winner = null;
-        int maxSets = 0;
-        for (Player p : session.getPlayers()) {
-            int sets = p.getFullSetCount();
-            if (sets > maxSets) { maxSets = sets; winner = p; }
-        }
-        if (winner != null) {
-            setPendingLog(" Game over! " + winner.getName() + " wins! (" + maxSets + " full sets)");
-            if (gameOverWinnerLabel != null) {
-                gameOverWinnerLabel.setText(winner.getName() + " is the winner!");
-            }
-            if (gameOverDetailLabel != null) {
-                gameOverDetailLabel.setText(maxSets + " full property sets completed");
-            }
-            if (gameOverOverlay != null) {
-                gameOverOverlay.setVisible(true);
-                gameOverOverlay.setManaged(true);
-            }
-        }
-    }
-
-    /** Detects and logs turn/phase/waiting state changes (called on every applyHud; internally deduplicated). */
-    private void logStateTransition(GameSession session) {
-        GameState gs = session.getGameState();
-        Player cur = session.getCurrentPlayer();
-        String curName = cur != null ? cur.getName() : null;
-        GameState.Phase phase = gs.getPhase();
-
-        // Turn switch
-        if (!Objects.equals(curName, lastKnownTurnPlayer) && curName != null) {
-            lastKnownTurnPlayer = curName;
-            appendSeparator("-- " + curName + "'s turn --");
-        }
-
-        // Action state waiting
-        ActionState as = gs.getActionState();
-        if (phase == GameState.Phase.WAITING_FOR_SELECTION
-                && as != null && as != gs.getTurnState()) {
-            String owner = as.getActionOwner() != null ? as.getActionOwner().getName() : "?";
-            String desc = as.getStatus() != null && !as.getStatus().isBlank()
-                    ? as.getStatus() : "";
-            if (!Objects.equals(owner, lastLoggedActionOwner)
-                    || lastKnownPhase != phase) {
-                lastLoggedActionOwner = owner;
-                appendLog("Waiting for " + owner + "'s action response..." + desc);
-            }
-        } else {
-            lastLoggedActionOwner = null;
-        }
-
-        lastKnownPhase = phase;
-    }
-
-    /** Extracts key actions from a remotely synced session and writes them to the log. */
-    private void logRemoteSessionUpdate(GameSession session) {
-        GameState gs = session.getGameState();
-        ActionState as = gs.getActionState();
-        if (as == null || as == gs.getTurnState()) return;
-
-        String owner = as.getActionOwner() != null ? as.getActionOwner().getName() : "?";
-        java.util.List<Player> targets = as.getTargetPlayers();
-        String desc = as.getStatus() != null && !as.getStatus().isBlank()
-                ? "(" + as.getStatus() + ")" : "";
-
-        if (targets != null && !targets.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < targets.size(); i++) {
-                if (i > 0) sb.append(i == targets.size() - 1 ? " and " : ", ");
-                sb.append(targets.get(i).getName());
-            }
-            appendLog(owner + " used an action card on " + sb + desc, true);
-        } else {
-            appendLog(owner + " used an action card" + desc, true);
-        }
-    }
-
-    /** Generates the appropriate log entry based on card type and play options. */
-    private void logCardPlay(String who, Card card, CardPlayOptions opts, GameSession session) {
-        if (opts.asBankMoney()) {
-            setPendingLog(who + " banked " + card.getName() + " (+" + card.getValue() + "M)");
-            return;
-        }
-        if (card instanceof PropertyCard) {
-            setPendingLog(who + " placed " + card.getName() + " on the table");
-            return;
-        }
-        if (card instanceof RentCard rc) {
-            String color = opts.rentColorChoice() != null
-                    ? CardColorLabel.shortLabel(opts.rentColorChoice()) : "?";
-            String dbl = session.getGameState().isDoubleNextRent() ? " (x2)" : "";
-            setPendingLog(who + " charged " + color + " rent" + dbl);
-            return;
-        }
-        if (card instanceof ActionCard) {
-            String cardName = card.getName();
-            Player target = opts.actionTargetPlayer();
-            if (target != null) {
-                setPendingLog(who + " used " + cardName + " on " + target.getName());
-            } else {
-                setPendingLog(who + " used " + cardName);
-            }
-            return;
-        }
-        // fallback
-        setPendingLog(who + " played " + card.getName());
-    }
-
-    private static String formatPhase(GameState.Phase phase) {
-        if (phase == null) return "--";
-        return switch (phase) {
-            case DRAW_PHASE -> "Phase: Draw";
-            case PLAY_PHASE -> "Phase: Play";
-            case DISCARD_PHASE -> "Phase: Discard";
-            case WAITING_FOR_SELECTION -> "Phase: Waiting...";
-        };
-    }
 }

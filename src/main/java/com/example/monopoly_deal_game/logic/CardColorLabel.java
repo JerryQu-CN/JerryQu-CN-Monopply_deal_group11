@@ -2,6 +2,9 @@ package com.example.monopoly_deal_game.logic;
 
 import com.example.monopoly_deal_game.model.cards.CardColor;
 
+/**
+ * Provides abbreviated display labels for {@link CardColor} values.
+ */
 public final class CardColorLabel {
     private CardColorLabel() {}
 
@@ -18,7 +21,7 @@ public final class CardColorLabel {
             case BLUE -> "Blu";
             case BLACK -> "Blk";
             case LIGHT_GREEN -> "LGr";
-            case WILD -> null;
+            case WILD -> "Wld";
             case NONE -> "--";
         };
     }

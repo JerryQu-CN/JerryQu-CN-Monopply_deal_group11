@@ -1,18 +1,18 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.game.model.ActionState;
-import com.example.monopoly_deal_game.game.model.ActionStatePlayerTurn;
-import com.example.monopoly_deal_game.game.model.GameSession;
-import com.example.monopoly_deal_game.game.model.GameState;
-import com.example.monopoly_deal_game.game.rules.GameConfig;
+import com.example.monopoly_deal_game.game.state.ActionState;
+import com.example.monopoly_deal_game.game.state.ActionStatePlayerTurn;
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.game.state.GameState;
+import com.example.monopoly_deal_game.logic.GameConfig;
+import com.example.monopoly_deal_game.logic.payment.RentRules;
 import com.example.monopoly_deal_game.model.PlayedCardSnapshot;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.ActionCard;
 import com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo;
 import com.example.monopoly_deal_game.model.cards.Card;
-import com.example.monopoly_deal_game.model.cards.PropertyCard;
+import com.example.monopoly_deal_game.model.cards.CardType;
 import com.example.monopoly_deal_game.model.cards.RentCard;
-import com.example.monopoly_deal_game.model.cards.RuleCard;
 
 import java.util.Collection;
 import java.util.List;
@@ -35,7 +35,7 @@ public class GameLogic {
     public void initGame(GameSession session) {
         CardFactory factory = new CardFactory();
         List<Card> deck = new java.util.ArrayList<>(factory.createFullDeck());
-        deck.removeIf(c -> c instanceof RuleCard);
+        deck.removeIf(c -> c.getCardType() == CardType.RULE);
         cardManager.initDeck(session, deck);
 
         List<Player> players = session.getPlayers();
@@ -88,52 +88,24 @@ public class GameLogic {
 
         boolean isJSN = card instanceof ActionCardJustSayNo;
 
-        // Check if player is allowed to act right now
-        if (!isJSN) {
-            GameState gs = session.getGameState();
-            // Non-JSN cards can only be played when focused (your turn, no action state override)
-            if (!gs.isPlayerFocused(owner) && !options.asBankMoney()) {
-                if (!isReaction) return false;
-            }
-            if (!isReaction && !turnManager.canPlayMore(session)) return false;
-        } else {
-            // JSN can only be played when there's a pending action state that targets this player
-            GameState gs = session.getGameState();
-            ActionState as = gs.getActionState();
-            if (as == null || as == gs.getTurnState() || !as.canRefuseAny(owner)) {
-                return false;
-            }
-        }
+        if (!canPlayerActNow(owner, session, isReaction, isJSN, options.asBankMoney())) return false;
+        if (!isCardEligible(card, owner, session, options, isJSN)) return false;
 
-        // Pre-checks
-        if (options.asBankMoney()) {
-            if (card instanceof RuleCard) return false;
-            if (card instanceof PropertyCard && !GameConfig.CAN_BANK_PROPERTY_CARDS) return false;
-            if (card instanceof ActionCard && !GameConfig.CAN_BANK_ACTION_CARDS) return false;
-        } else if (!options.jsnBlocked() && !isJSN) {
-            if (card instanceof ActionCard ac) {
-                if (!effectExecutor.canUseActionEffect(ac, session, options)) return false;
-            }
-            if (card instanceof RentCard rc) {
-                Player pay = RentRules.resolvedRentPayer(owner, session, options);
-                if (!RentRules.canUseRentEffect(rc, owner, options.rentColorChoice(), pay, session))
-                    return false;
-            }
+        boolean fromHand = owner.getHand().getCards().contains(card);
+        if (fromHand) {
+            owner.getHand().removeCard(card);
+        } else if (!owner.getBank().removeCard(card)) {
+            return false;
         }
-
-        // Remove from the owner's hand
-        if (!owner.getHand().removeCard(card) && !owner.getBank().removeCard(card)) return false;
         try {
             if (options.asBankMoney()) {
                 owner.getBank().addCard(card);
             } else if (options.jsnBlocked()) {
                 session.discardCard(card);
             } else if (isJSN) {
-                // JSN: call refuse on the current action state, then discard
                 GameState gs = session.getGameState();
                 ActionState as = gs.getActionState();
                 if (as != null && as != gs.getTurnState()) {
-                    // The JSN player refuses the action owner
                     Player refuser = owner;
                     Player target = as.getActionOwner();
                     as.refuse(refuser, target);
@@ -149,7 +121,11 @@ public class GameLogic {
             turnManager.onCardPlayed(session, card.isCountsTowardLimit() && !isReaction && !isJSN);
             return true;
         } catch (RuntimeException ex) {
-            owner.getHand().addCard(card);
+            if (fromHand) {
+                owner.getHand().addCard(card);
+            } else {
+                owner.getBank().addCard(card);
+            }
             throw ex;
         }
     }
@@ -162,9 +138,41 @@ public class GameLogic {
         return null;
     }
 
+    private boolean canPlayerActNow(Player owner, GameSession session,
+                                     boolean isReaction, boolean isJSN, boolean asBankMoney) {
+        if (!isJSN) {
+            GameState gs = session.getGameState();
+            if (!gs.isPlayerFocused(owner) && !asBankMoney && !isReaction) return false;
+            return isReaction || turnManager.canPlayMore(session);
+        }
+        GameState gs = session.getGameState();
+        ActionState as = gs.getActionState();
+        return as != null && as != gs.getTurnState() && as.canRefuseAny(owner);
+    }
+
+    private boolean isCardEligible(Card card, Player owner, GameSession session,
+                                    CardPlayOptions options, boolean isJSN) {
+        CardType ct = card.getCardType();
+        if (options.asBankMoney()) {
+            if (ct == CardType.RULE) return false;
+            if (ct == CardType.PROPERTY && !GameConfig.CAN_BANK_PROPERTY_CARDS) return false;
+            return ct != CardType.ACTION || GameConfig.CAN_BANK_ACTION_CARDS;
+        }
+        if (options.jsnBlocked() || isJSN) return true;
+        if (ct == CardType.ACTION && !effectExecutor.canUseActionEffect((ActionCard) card, session, options)) return false;
+        if (ct == CardType.RENT) {
+            RentCard rc = (RentCard) card;
+            Player pay = RentRules.resolvedRentPayer(owner, session, options);
+            return RentRules.canUseRentEffect(rc, owner, options.rentColorChoice(), pay, session);
+        }
+        return true;
+    }
+
     private static boolean shouldRecordOnPlayTable(Card card) {
-        return card instanceof com.example.monopoly_deal_game.model.cards.BankCard
-                || card instanceof PropertyCard;
+        return switch (card.getCardType()) {
+            case CURRENCY, PROPERTY -> true;
+            default -> false;
+        };
     }
 
     /** End the turn: if hand > 7 cards, enter the discard phase. */

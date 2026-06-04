@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.network;
 
-import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.game.state.GameSession;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.Card;
 
@@ -9,6 +9,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Serializable message envelope for all network communication — carries
+ * message type, room/player metadata, session snapshots, and action payloads.
+ */
 public final class NetworkMessage implements Serializable {
     @Serial private static final long serialVersionUID = 1L;
 

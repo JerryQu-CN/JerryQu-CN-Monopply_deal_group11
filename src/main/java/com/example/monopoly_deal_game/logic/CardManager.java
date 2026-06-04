@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.game.state.GameSession;
 import com.example.monopoly_deal_game.model.cards.Card;
 
 import java.util.Collections;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Draw pile / discard pile / reshuffle refill (requirements 1.5, 2.4).
+ * Manages the draw pile and discard pile — draw, shuffle, and reshuffle-from-discard operations.
  */
 public class CardManager {
 
@@ -27,7 +27,7 @@ public class CardManager {
      * Draw one card: if the draw pile is empty, first shuffle the discard pile back in;
      * if still empty, return {@code null}.
      */
-    public Card drawOne(GameSession session) {
+    public static Card drawOne(GameSession session) {
         List<Card> draw = session.getDrawPile();
         if (draw.isEmpty()) {
             shuffleDrawPileFromDiscard(session);
@@ -38,7 +38,7 @@ public class CardManager {
         return draw.removeLast();
     }
 
-    public void shuffleDrawPileFromDiscard(GameSession session) {
+    public static void shuffleDrawPileFromDiscard(GameSession session) {
         List<Card> draw = session.getDrawPile();
         List<Card> discard = session.getDiscardPile();
         if (discard.isEmpty()) {

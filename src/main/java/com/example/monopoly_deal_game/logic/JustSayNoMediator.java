@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.game.model.ActionState;
-import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.game.state.ActionState;
+import com.example.monopoly_deal_game.game.state.GameSession;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo;
 import com.example.monopoly_deal_game.model.cards.Card;
@@ -32,30 +32,6 @@ public final class JustSayNoMediator {
 
     public static JustSayNoUi getUiOrNull() {
         return ui;
-    }
-
-    /**
-     * @deprecated JSN is now handled through the ActionState system.
-     * This stub exists for backward compatibility; always returns false.
-     */
-    @Deprecated
-    public static boolean tryBlockAgainstPlayer(
-            Player respondent, Player activator, GameSession session, String situationText) {
-        // JSN flow is now handled by the ActionState stack:
-        // CardEffectExecutor pushes an ActionState with targets,
-        // targeted players get JSN dialog, JSN is played via GameLogic.playCard().
-        return false;
-    }
-
-    /**
-     * Check if the given player should be offered a JSN dialog.
-     * Returns true when there's a pending action state that can be refused by this player.
-     */
-    public static boolean shouldOfferJustSayNo(Player player, GameSession session) {
-        if (player == null || session == null) return false;
-        ActionState as = session.getGameState().getActionState();
-        if (as == null || as == session.getGameState().getTurnState()) return false;
-        return as.canRefuseAny(player) && findJustSayNoInHand(player) != null;
     }
 
     public static Card findJustSayNoRespondentHeld(Player p) {

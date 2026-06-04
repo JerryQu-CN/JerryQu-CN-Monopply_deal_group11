@@ -1,17 +1,18 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.game.model.ActionStateRent;
-import com.example.monopoly_deal_game.game.model.GameSession;
-import com.example.monopoly_deal_game.game.model.GameState;
-import com.example.monopoly_deal_game.game.rules.GameConfig;
+import com.example.monopoly_deal_game.game.state.ActionStateRent;
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.game.state.GameState;
+import com.example.monopoly_deal_game.logic.GameConfig;
+import com.example.monopoly_deal_game.logic.payment.PaymentRequest;
+import com.example.monopoly_deal_game.logic.payment.PaymentService;
+import com.example.monopoly_deal_game.logic.payment.RentCalculator;
+import com.example.monopoly_deal_game.logic.payment.RentRules;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.ActionCard;
-import com.example.monopoly_deal_game.model.cards.BankCard;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.CardColor;
-import com.example.monopoly_deal_game.model.cards.PropertyCard;
 import com.example.monopoly_deal_game.model.cards.RentCard;
-import com.example.monopoly_deal_game.model.cards.RuleCard;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,34 +54,12 @@ public class CardEffectExecutor {
         if (opt == null) opt = CardPlayOptions.auto();
         Player cur = session.getCurrentPlayer();
         if (cur == null) throw new IllegalStateException("No current player");
-
-        if (card instanceof BankCard b) {
-            cur.getBank().addCard(b);
-            return;
-        }
-        if (card instanceof PropertyCard pc) {
-            PropertyPlayHelper.placePropertyCard(cur, pc);
-            return;
-        }
-        if (card instanceof RuleCard) {
-            session.discardCard(card);
-            return;
-        }
-        if (card instanceof RentCard rc) {
-            resolveRent(session, cur, rc, opt);
-            session.discardCard(rc);
-            return;
-        }
-        if (card instanceof ActionCard ac) {
-            ac.doPlay(cur, session, opt);
-            return;
-        }
-        session.discardCard(card);
+        card.executePlay(cur, session, opt);
     }
 
     // ---- Rent resolution ----
 
-    private void resolveRent(GameSession session, Player landlord, RentCard rc, CardPlayOptions opt) {
+    public static void resolveRent(GameSession session, Player landlord, RentCard rc, CardPlayOptions opt) {
         GameState st = session.getGameState();
         int dblCount = st.getDoubleRentCount();
         st.setDoubleRentCount(0);
@@ -125,13 +104,13 @@ public class CardEffectExecutor {
             ActionStateRent rentState = new ActionStateRent(landlord, victims, finalAmount);
             rentState.setOnAccepted(player -> {
                 String label = landlord.getName() + " charges " + finalAmount + "M rent.";
-                PaymentService.payFromTo(player, landlord, finalAmount, session, landlord, label);
+                PaymentService.payFromTo(new PaymentRequest(player, landlord, finalAmount, session, label));
             });
             session.getGameState().addActionState(rentState);
         }
     }
 
-    private List<Player> resolveRentVictims(Player landlord, GameSession session, RentCard rc, CardPlayOptions opt) {
+    public static List<Player> resolveRentVictims(Player landlord, GameSession session, RentCard rc, CardPlayOptions opt) {
         List<Player> others = RentRules.rentersExcludingLandlord(landlord, session);
         if (others.isEmpty()) return List.of();
 
@@ -144,15 +123,10 @@ public class CardEffectExecutor {
                 ? GameConfig.MULTI_COLOR_RENT_CHARGES_ALL
                 : (rc.getApplicableColors().size() >= 2 ? GameConfig.TWO_COLOR_RENT_CHARGES_ALL : false);
 
-        if (chargesAll && others.size() > 1) {
+        if (chargesAll) {
             return new ArrayList<>(others);
         }
 
         return List.of();
-    }
-
-    /** Backwards-compatible interface */
-    public void execute(GameSession session, ActionCard card, Player user, Player target) {
-        execute(card, session, CardPlayOptions.auto().withActionTarget(target));
     }
 }

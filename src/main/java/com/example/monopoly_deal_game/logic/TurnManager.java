@@ -1,9 +1,9 @@
 package com.example.monopoly_deal_game.logic;
 
-import com.example.monopoly_deal_game.game.model.ActionStatePlayerTurn;
-import com.example.monopoly_deal_game.game.model.GameSession;
-import com.example.monopoly_deal_game.game.model.GameState;
-import com.example.monopoly_deal_game.game.rules.GameConfig;
+import com.example.monopoly_deal_game.game.state.ActionStatePlayerTurn;
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.game.state.GameState;
+import com.example.monopoly_deal_game.logic.GameConfig;
 import com.example.monopoly_deal_game.model.Player;
 
 /**

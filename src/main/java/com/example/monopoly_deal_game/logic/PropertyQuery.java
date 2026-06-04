@@ -2,13 +2,15 @@ package com.example.monopoly_deal_game.logic;
 
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.Property;
-import com.example.monopoly_deal_game.model.cards.ActionCardHouse;
-import com.example.monopoly_deal_game.model.cards.ActionCardHotel;
+import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Query methods for property cards and groups on a player's board.
+ */
 public final class PropertyQuery {
     private PropertyQuery() {}
 
@@ -73,9 +75,9 @@ public final class PropertyQuery {
             if (!ps.isMonopoly()) continue;
             if (!ps.getEffectiveColor().isBuildable()) continue;
             boolean hasH = ps.getBuildingCards().stream()
-                    .anyMatch(c -> c instanceof ActionCardHouse);
+                    .anyMatch(Card::isHouse);
             boolean hasT = ps.getBuildingCards().stream()
-                    .anyMatch(c -> c instanceof ActionCardHotel);
+                    .anyMatch(Card::isHotel);
             if (forHouse && !hasH) return ps;
             if (!forHouse && hasH && !hasT) return ps;
         }

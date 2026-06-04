@@ -42,8 +42,6 @@
                     onAction="#onRealPlayer" styleClass="start-btn-primary"/>
             <Button fx:id="joinRoomButton" text="Join Room"
                     onAction="#onJoinRoom" styleClass="start-btn-secondary"/>
-            <Button fx:id="loadingButton" text="Load Game"
-                    onAction="#onLoadingGame" styleClass="start-btn-secondary"/>
             <Button fx:id="exitButton" text="Exit"
                     onAction="#onExit" styleClass="start-btn-exit"/>
         </VBox>

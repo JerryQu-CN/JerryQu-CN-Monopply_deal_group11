@@ -1,7 +1,7 @@
 package com.example.monopoly_deal_game.view;
 
-import com.example.monopoly_deal_game.game.model.GameSession;
-import com.example.monopoly_deal_game.game.model.GameState;
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.game.state.GameState;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.Property;
 import com.example.monopoly_deal_game.model.cards.Card;
@@ -9,7 +9,7 @@ import com.example.monopoly_deal_game.logic.CardColorLabel;
 import com.example.monopoly_deal_game.model.cards.CardColor;
 import com.example.monopoly_deal_game.model.cards.PropertyCard;
 import com.example.monopoly_deal_game.view.animation.MotionContext;
-import com.example.monopoly_deal_game.view.scene.ScenePaneResolver;
+import com.example.monopoly_deal_game.view.ScenePaneResolver;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -29,15 +29,26 @@ public class GameplayViewCoordinator {
     private final GameplayUiBundle zones;
     private final ScenePaneResolver sceneResolver;
     private Consumer<Card> onHandCardPick = c -> {};
+    private Consumer<PropertyCard> onTableWildCardClick = c -> {};
+    private String localPlayerName;
 
     public GameplayViewCoordinator(GameplayUiBundle zones) {
         this.zones = zones;
         this.sceneResolver = new ScenePaneResolver(zones);
     }
 
+    public void setLocalPlayerName(String name) {
+        this.localPlayerName = name;
+    }
+
     /** Callback when a player clicks a card in the hand area (for selection / preparing to play). */
     public void setOnHandCardPick(Consumer<Card> handler) {
         this.onHandCardPick = handler != null ? handler : c -> {};
+    }
+
+    /** Callback when the local player clicks a wild property card on their own table to switch its color. */
+    public void setOnTableWildCardClick(Consumer<PropertyCard> handler) {
+        this.onTableWildCardClick = handler != null ? handler : c -> {};
     }
 
     public GameplayUiBundle zones() {
@@ -78,7 +89,8 @@ public class GameplayViewCoordinator {
 
         refreshTableZones(session);
 
-        Player cp = localPlayer(session);
+        String localName = this.localPlayerName;
+        Player cp = session.localPlayer(localName);
         if (cp == null) {
             cp = session.getCurrentPlayer();
         }
@@ -86,10 +98,11 @@ public class GameplayViewCoordinator {
             return;
         }
 
-        HBox row = new HBox(4);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(8, 6, 12, 6));
+        buildHandFanContent(handPane, cp, session, selectedInHand, discardSelections);
+    }
 
+    private void buildHandFanContent(Pane handPane, Player cp, GameSession session,
+                                      Card selectedInHand, Collection<Card> discardSelections) {
         GameState.Phase phase = session.getGameState().getPhase();
         boolean inDiscard = phase == GameState.Phase.DISCARD_PHASE;
         Collection<Card> disc = discardSelections != null ? discardSelections : List.of();
@@ -97,12 +110,10 @@ public class GameplayViewCoordinator {
         List<Card> handCards = cp.getHand().getCards();
         int n = handCards.size();
 
-        // ── Calculate optimal hand fan layout ───────────────────────
         double handWidth = handPane.getWidth();
         if (handWidth <= 0) handWidth = handPane.getPrefWidth() > 0 ? handPane.getPrefWidth() : 1100;
         double cardW = TableCardKit.TABLE_CARD_BASE_W;
 
-        // Exposure = how many px of each card are visible past the previous card's left edge
         double preferredExposure = 55;
         double minExposure = 35;
         double sidePad = 12;
@@ -122,7 +133,6 @@ public class GameplayViewCoordinator {
 
         double totalSpread = n <= 1 ? cardW : cardW + (n - 1) * exposure;
         boolean needsScroll = totalSpread > avail;
-
         double startX = needsScroll ? sidePad : (avail - totalSpread) / 2.0 + sidePad;
 
         Pane handContent = new Pane();
@@ -130,8 +140,7 @@ public class GameplayViewCoordinator {
 
         for (int i = 0; i < n; i++) {
             Card card = handCards.get(i);
-            boolean sel =
-                    inDiscard ? disc.contains(card) : Objects.equals(card, selectedInHand);
+            boolean sel = inDiscard ? disc.contains(card) : Objects.equals(card, selectedInHand);
             CardView view = HandCardKit.createHandCard(card, sel, () -> onHandCardPick.accept(card));
             StackPane wrap = new StackPane(view);
             wrap.setPrefSize(cardW, TableCardKit.TABLE_CARD_BASE_H);
@@ -174,7 +183,8 @@ public class GameplayViewCoordinator {
     private void refreshTableZones(GameSession session) {
         if (zones.opponentsPane() != null) zones.opponentsPane().getChildren().clear();
         if (zones.selfBoardPane() != null) zones.selfBoardPane().getChildren().clear();
-        Player current = localPlayer(session);
+        String localName = this.localPlayerName;
+        Player current = session.localPlayer(localName);
         if (current == null) {
             current = session.getCurrentPlayer();
         }
@@ -185,7 +195,7 @@ public class GameplayViewCoordinator {
         tableRows.setPadding(new Insets(8, 8, 8, 8));
         int playerCount = Math.max(1, players.size());
         for (Player p : players) {
-            VBox row = buildPlayerBoardPanel(p, !p.equals(current));
+            VBox row = buildPlayerBoardPanel(p, !p.equals(current), playerCount);
             row.setMaxWidth(Double.MAX_VALUE);
             row.prefHeightProperty().bind(zones.opponentsPane().heightProperty().subtract(16 + (playerCount - 1) * 8.0).divide(playerCount));
             row.minHeightProperty().bind(row.prefHeightProperty());
@@ -209,8 +219,7 @@ public class GameplayViewCoordinator {
     private static final double BANK_SCALE_SELF = 0.66;
 
     /** Unified player board panel: top info + left (property columns) / right (bank flow layout). */
-    private VBox buildPlayerBoardPanel(Player p, boolean isOpponent) {
-        int players = Math.max(1, com.example.monopoly_deal_game.controller.AppContext.get().gameEngine().getCurrentSession() != null ? com.example.monopoly_deal_game.controller.AppContext.get().gameEngine().getCurrentSession().getPlayers().size() : 2);
+    private VBox buildPlayerBoardPanel(Player p, boolean isOpponent, int players) {
         double propScale = players >= 5 ? 0.44 : players == 4 ? 0.50 : players == 3 ? 0.56 : 0.62;
         double bankScale = players >= 5 ? 0.40 : players == 4 ? 0.45 : players == 3 ? 0.50 : 0.56;
         double cardW = TableCardKit.TABLE_CARD_BASE_W * propScale;
@@ -218,26 +227,31 @@ public class GameplayViewCoordinator {
         VBox board = new VBox(5);
         board.setPadding(new Insets(4, 8, 5, 8));
         board.getStyleClass().add("player-board");
-
-        String head =
-                p.getName()
-                        + (isOpponent ? "  |  Hand " + p.getHand().size() + " cards" : " (You)")
-                        + "  |  Property sets "
-                        + p.getProperties().size()
-                        + "  full sets "
-                        + p.getFullSetCount()
-                        + "  bank "
-                        + sumBank(p)
-                        + "M";
-        Label header = new Label(head);
-        header.getStyleClass().add("player-board-header");
-        header.getStyleClass().add(isOpponent ? "player-board-header-opponent" : "player-board-header-self");
-        board.getChildren().add(header);
+        board.getChildren().add(buildPlayerHeader(p, isOpponent));
 
         HBox split = new HBox(isOpponent ? 10 : 14);
         split.setAlignment(Pos.TOP_LEFT);
+        split.getChildren().add(buildPropertySection(p, isOpponent, propScale, cardW));
+        split.getChildren().add(buildBankSection(p, isOpponent, bankScale));
+        HBox.setHgrow(split.getChildren().get(0), Priority.ALWAYS);
+        HBox.setHgrow(split.getChildren().get(1), Priority.NEVER);
+        board.getChildren().add(split);
+        return board;
+    }
 
-        // ── Left: property columns ─────────────────────────────────────────────
+    private Label buildPlayerHeader(Player p, boolean isOpponent) {
+        String head = p.getName()
+                + (isOpponent ? "  |  Hand " + p.getHand().size() + " cards" : " (You)")
+                + "  |  Property sets " + p.getProperties().size()
+                + "  full sets " + p.getFullSetCount()
+                + "  bank " + sumBank(p) + "M";
+        Label header = new Label(head);
+        header.getStyleClass().add("player-board-header");
+        header.getStyleClass().add(isOpponent ? "player-board-header-opponent" : "player-board-header-self");
+        return header;
+    }
+
+    private ScrollPane buildPropertySection(Player p, boolean isOpponent, double propScale, double cardW) {
         VBox propOuter = new VBox(6);
         Label propTitle = new Label("Properties");
         propTitle.getStyleClass().add("property-column-label");
@@ -255,20 +269,12 @@ public class GameplayViewCoordinator {
                 col.setPadding(new Insets(4, 6, 4, 6));
                 col.getStyleClass().add("property-column");
 
-                String colName =
-                        isOpponent
-                                ? CardColorLabel.shortLabel(group.getEffectiveColor())
-                                : CardColorLabel.shortLabel(group.getEffectiveColor())
-                                        + "  "
-                                        + group.getCards().size()
-                                        + "/"
-                                        + (group.getCards().isEmpty()
-                                                ? "?"
-                                                : String.valueOf(
-                                                        group.getCards()
-                                                                .get(0)
-                                                                .getFullSetThreshold()))
-                                        + (group.isMonopoly() ? " - Monopoly" : "");
+                String colName = isOpponent
+                        ? CardColorLabel.shortLabel(group.getEffectiveColor())
+                        : CardColorLabel.shortLabel(group.getEffectiveColor())
+                                + "  " + group.getCards().size() + "/"
+                                + (group.getCards().isEmpty() ? "?" : String.valueOf(group.getCards().get(0).getFullSetThreshold()))
+                                + (group.isMonopoly() ? " - Monopoly" : "");
                 Label colLabel = new Label(colName);
                 colLabel.setWrapText(true);
                 colLabel.setMaxWidth(cardW * 2.6 + 24);
@@ -282,7 +288,11 @@ public class GameplayViewCoordinator {
                 cardFlow.setPrefWrapLength(Math.max(160, cardW * 2.35 + 18));
 
                 for (PropertyCard pc : group.getCards()) {
-                    cardFlow.getChildren().add(TableCardKit.createReadOnlyCard(pc, propScale));
+                    if (!isOpponent && (pc.isBiColor() || pc.isMultiColorWild())) {
+                        cardFlow.getChildren().add(TableCardKit.createClickableWildCard(pc, propScale, () -> onTableWildCardClick.accept(pc)));
+                    } else {
+                        cardFlow.getChildren().add(TableCardKit.createReadOnlyCard(pc, propScale));
+                    }
                 }
                 double bScale = propScale * 0.92;
                 for (Card b : group.getBuildingCards()) {
@@ -292,7 +302,6 @@ public class GameplayViewCoordinator {
                 propColumns.getChildren().add(col);
             }
         }
-        // Wrap property columns in horizontal scroll for overflow
         ScrollPane propHScroll = new ScrollPane(propColumns);
         propHScroll.setFocusTraversable(false);
         propHScroll.setPannable(false);
@@ -305,9 +314,10 @@ public class GameplayViewCoordinator {
         propScroll.setFitToWidth(true);
         propScroll.setMinWidth(200);
         HBox.setHgrow(propScroll, Priority.ALWAYS);
-        split.getChildren().add(propScroll);
+        return propScroll;
+    }
 
-        // ── Right: bank flow ───────────────────────────────────────────────────
+    private VBox buildBankSection(Player p, boolean isOpponent, double bankScale) {
         VBox bankCol = new VBox(6);
         bankCol.setAlignment(Pos.TOP_LEFT);
         bankCol.setMinWidth(isOpponent ? 120 : 200);
@@ -338,43 +348,19 @@ public class GameplayViewCoordinator {
         ScrollPane bankScroll = new ScrollPane(bankFlow);
         bankScroll.setFitToWidth(true);
         bankScroll.setPrefViewportHeight(72);
-        // JavaFX ScrollPane has no setMaxViewportHeight; use Region.maxHeight to limit visible area overall height
         bankScroll.setMinHeight(54);
         bankScroll.setMaxHeight(92);
         bankScroll.setFocusTraversable(false);
         bankScroll.setPannable(false);
         bankScroll.getStyleClass().add("scroll-pane-transparent");
-
         bankCol.getChildren().add(bankScroll);
 
         Label bankTotal = new Label("Total " + sumBank(p) + "M");
         bankTotal.getStyleClass().add("bank-section-total");
         if (!isOpponent) bankTotal.setStyle("-fx-font-size:12px;");
         bankCol.getChildren().add(bankTotal);
-
-        split.getChildren().add(bankCol);
-        HBox.setHgrow(propScroll, Priority.ALWAYS);
-        HBox.setHgrow(bankCol, Priority.NEVER);
-        board.getChildren().add(split);
-        return board;
+        return bankCol;
     }
-
-    private static Player localPlayer(GameSession session) {
-        if (session == null) {
-            return null;
-        }
-        String localName = com.example.monopoly_deal_game.controller.AppContext.get().networkLobbyState().getLocalPlayerName();
-        if (localName == null || localName.isBlank()) {
-            return null;
-        }
-        for (Player player : session.getPlayers()) {
-            if (localName.equals(player.getName())) {
-                return player;
-            }
-        }
-        return null;
-    }
-
 
     private static ScrollPane wrapVerticalScroll(VBox content) {
         content.setFocusTraversable(false);

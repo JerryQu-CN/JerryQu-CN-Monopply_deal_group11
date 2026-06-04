@@ -8,34 +8,44 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
+/**
+ * TCP client that connects to a {@link GameServer}, sending commands and
+ * receiving session snapshots and lobby events.
+ */
 public class NetworkClient implements AutoCloseable {
     private final Socket socket;
     private final ObjectOutputStream out;
     private final ObjectInputStream in;
     private final BlockingQueue<NetworkMessage> inbox = new LinkedBlockingQueue<>();
     private final Consumer<NetworkMessage> listener;
+    private final Consumer<Exception> onError;
+    private volatile boolean connected = true;
 
     public NetworkClient(String host, int port, Consumer<NetworkMessage> listener) throws Exception {
+        this(host, port, listener, null);
+    }
+
+    public NetworkClient(String host, int port, Consumer<NetworkMessage> listener,
+                         Consumer<Exception> onError) throws Exception {
         socket = new Socket();
         socket.connect(new java.net.InetSocketAddress(Objects.requireNonNull(host), port), 10000);
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
         this.listener = listener;
+        this.onError = onError;
         Thread t = new Thread(this::readLoop, "network-client-reader");
         t.setDaemon(true);
         t.start();
     }
 
+    public boolean isConnected() {
+        return connected && !socket.isClosed();
+    }
+
     public void send(NetworkMessage msg) throws Exception {
-        try {
-            out.reset();
-            out.writeObject(msg);
-            out.flush();
-        } catch (Exception ex) {
-            System.err.println("[NetworkClient] send failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
-            ex.printStackTrace(System.err);
-            throw ex;
-        }
+        out.reset();
+        out.writeObject(msg);
+        out.flush();
     }
 
     public NetworkMessage take() throws InterruptedException {
@@ -54,12 +64,16 @@ public class NetworkClient implements AutoCloseable {
                 }
             }
         } catch (Exception ex) {
-            System.err.println("[NetworkClient] readLoop failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
-            ex.printStackTrace(System.err);
+            connected = false;
+            if (onError != null) {
+                onError.accept(ex);
+            }
         }
     }
 
+    @Override
     public void close() throws Exception {
+        connected = false;
         socket.close();
     }
 }

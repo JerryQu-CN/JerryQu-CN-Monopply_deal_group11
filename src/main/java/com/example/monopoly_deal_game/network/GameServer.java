@@ -1,10 +1,12 @@
 package com.example.monopoly_deal_game.network;
 
-import com.example.monopoly_deal_game.controller.AppContext;
-import com.example.monopoly_deal_game.controller.HostLobbyBridge;
+
+import com.example.monopoly_deal_game.network.HostLobbyBridge;
 import com.example.monopoly_deal_game.game.engine.GameEngine;
-import com.example.monopoly_deal_game.game.model.GameSession;
-import com.example.monopoly_deal_game.logic.PaymentService;
+import com.example.monopoly_deal_game.game.state.ActionState;
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.logic.payment.PaymentRequest;
+import com.example.monopoly_deal_game.logic.payment.PaymentService;
 import com.example.monopoly_deal_game.model.Player;
 
 import java.io.ObjectInputStream;
@@ -21,6 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
+/**
+ * In-process game server — manages rooms, client connections, session synchronization,
+ * and authoritative game logic execution for LAN multiplayer.
+ */
 public class GameServer {
 
     private static GameEngine gameEngine = null;
@@ -52,6 +58,13 @@ public class GameServer {
     }
 
     public Room getRoom(String roomId) { return ROOMS.get(roomId); }
+
+    public void closeRoom(String roomId) {
+        Room room = ROOMS.remove(roomId);
+        if (room != null) {
+            room.close();
+        }
+    }
 
     public static final class Room {
         private final String roomId;
@@ -97,7 +110,6 @@ public class GameServer {
                 port = serverSocket.getLocalPort();
             } catch (Exception e) {
                 System.err.println("[GameServer] Failed to create ServerSocket: " + e.getMessage());
-                e.printStackTrace(System.err);
                 return;
             }
             Thread accept = new Thread(() -> {
@@ -111,11 +123,22 @@ public class GameServer {
                     } catch (Exception ex) {
                         if (serverSocket.isClosed()) break;
                         System.err.println("[GameServer] accept error: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
-                        ex.printStackTrace(System.err);
                     }
                 }
             }, "room-accept-" + roomId);
             accept.setDaemon(true); accept.start();
+        }
+
+        void close() {
+            try {
+                if (serverSocket != null && !serverSocket.isClosed()) {
+                    serverSocket.close();
+                }
+            } catch (Exception ignored) { }
+            for (ClientConnection c : clients) {
+                c.close();
+            }
+            clients.clear();
         }
 
         private void addLocalPlayer(String playerName) {
@@ -124,7 +147,7 @@ public class GameServer {
             if (!players.contains(playerName)) {
                 players.add(playerName);
                 pushRoomState();
-                com.example.monopoly_deal_game.controller.HostLobbyBridge.emit(
+                HostLobbyBridge.emit(
                         NetworkMessage.builder(NetworkMessage.Type.ROOM_STATE)
                                 .roomId(roomId)
                                 .players(players)
@@ -162,17 +185,18 @@ public class GameServer {
             HostLobbyBridge.emit(msg);
         }
 
-        public void broadcastPaymentRequest(String requestId, Player payer, Player receiver, int amountM, GameSession baseSession, String reasonText) {
-            if (payer == null || receiver == null) return;
-            pendingRequestSnapshots.put(requestId, baseSession != null ? baseSession : session);
+        public void broadcastPaymentRequest(String requestId, PaymentRequest req) {
+            if (req.payer() == null || req.receiver() == null) return;
+            GameSession base = req.session();
+            pendingRequestSnapshots.put(requestId, base != null ? base : session);
             NetworkMessage msg = NetworkMessage.builder(NetworkMessage.Type.PAYMENT_REQUEST)
                     .roomId(roomId)
                     .requestId(requestId)
-                    .payerName(payer.getName())
-                    .receiverName(receiver.getName())
-                    .amountM(amountM)
-                    .session(baseSession != null ? baseSession : session)
-                    .text(reasonText)
+                    .payerName(req.payer().getName())
+                    .receiverName(req.receiver().getName())
+                    .amountM(req.amountM())
+                    .session(base != null ? base : session)
+                    .text(req.description())
                     .build();
             broadcast(msg);
             HostLobbyBridge.emit(msg);
@@ -181,132 +205,109 @@ public class GameServer {
         private void handleMessage(ClientConnection conn, NetworkMessage msg) {
             if (msg == null) return;
             switch (msg.getType()) {
-                case JOIN_ROOM -> {
-                    if (started) {
-                        conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR)
-                                .roomId(roomId)
-                                .text("Room already started")
-                                .build());
-                        return;
-                    }
-                    if (msg.getRoomId() != null && !roomId.equalsIgnoreCase(msg.getRoomId().trim())) {
-                        conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR)
-                                .roomId(roomId)
-                                .text("Room not found")
-                                .build());
-                        return;
-                    }
-                    if (msg.getPlayerName() != null) addLocalPlayer(msg.getPlayerName());
-                    conn.send(snapshot(this));
-                    pushRoomState();
-                    HostLobbyBridge.emit(snapshot(this));
-                    return;
-                }
-                case HOST_ROOM, HELLO -> {
-                    conn.send(snapshot(this));
-                    return;
-                }
+                case JOIN_ROOM -> handleJoinRoom(conn, msg);
+                case HOST_ROOM, HELLO -> handleHostRoom(conn);
                 case READY -> ready = true;
                 case START_GAME -> startGame();
-                case PAYMENT_REQUEST -> {
-                    if (session != null && msg.getPayerName() != null && msg.getReceiverName() != null) {
-                        if (msg.getRequestId() != null) pendingRequestSnapshots.put(msg.getRequestId(), session);
-                        NetworkMessage forward = NetworkMessage.builder(NetworkMessage.Type.PAYMENT_REQUEST)
-                                .roomId(roomId)
-                                .requestId(msg.getRequestId())
-                                .payerName(msg.getPayerName())
-                                .receiverName(msg.getReceiverName())
-                                .amountM(msg.getAmountM())
-                                .session(session)
-                                .text(msg.getText())
-                                .build();
-                        broadcast(forward);
-                        HostLobbyBridge.emit(forward);
-                    }
-                    return;
-                }
-                case JUST_SAY_NO_REQUEST -> {
-                    if (session != null && msg.getPayerName() != null) {
-                        if (msg.getRequestId() != null) pendingRequestSnapshots.put(msg.getRequestId(), session);
-                        NetworkMessage forward = NetworkMessage.builder(NetworkMessage.Type.JUST_SAY_NO_REQUEST)
-                                .roomId(roomId)
-                                .requestId(msg.getRequestId())
-                                .payerName(msg.getPayerName())
-                                .receiverName(msg.getReceiverName())
-                                .session(session)
-                                .text(msg.getText())
-                                .build();
-                        broadcast(forward);
-                        HostLobbyBridge.emit(forward);
-                    }
-                    return;
-                }
-                case JUST_SAY_NO_RESPONSE -> {
-                    return;
-                }
-                case PAYMENT_RESPONSE -> {
-                    if (session != null && msg.isAccepted()) {
-                        GameSession base = msg.getRequestId() != null ? pendingRequestSnapshots.remove(msg.getRequestId()) : null;
-                        if (base != null) {
-                            session = base;
-                        }
-                        Player payer = playerByName(session, msg.getPayerName());
-                        Player receiver = playerByName(session, msg.getReceiverName());
-                        if (payer != null && receiver != null) {
-                            PaymentService.applyChosenPayment(payer, receiver, msg.getSelectedCards(), session);
-                            gameEngine.resumeSession(session);
-                            broadcastSessionSnapshot(msg.getLogText());
-                        }
-                    }
-                    return;
-                }
-                case PLAYER_ACTION -> {
-                    if (msg.getSession() != null && isValidTurnProgression(msg.getPlayerName(), msg.getSession())) {
-                        session = msg.getSession();
-                        gameEngine.resumeSession(session);
-                        System.out.println("[GameServer] accepted PLAYER_ACTION from " + msg.getPlayerName()
-                                + ", current=" + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "?")
-                                + ", phase=" + session.getGameState().getPhase());
-                        broadcastSessionSnapshot(msg.getLogText());
-                        return;
-                    }
-                    if (session != null) {
-                        System.err.println("[GameServer] rejected PLAYER_ACTION from " + msg.getPlayerName()
-                                + ", authoritativeCurrent=" + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "?"));
-                        conn.send(NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
-                                .roomId(roomId)
-                                .text("SESSION_SNAPSHOT")
-                                .players(players)
-                                .port(port)
-                                .session(session)
-                                .build());
-                    }
-                    return;
-                }
+                case PAYMENT_REQUEST -> handlePaymentRequest(msg);
+                case JUST_SAY_NO_REQUEST -> handleJustSayNoRequest(msg);
+                case JUST_SAY_NO_RESPONSE -> { /* no-op */ }
+                case PAYMENT_RESPONSE -> handlePaymentResponse(msg);
+                case PLAYER_ACTION -> handlePlayerAction(conn, msg);
                 case DISCONNECT -> clients.remove(conn);
                 default -> { }
             }
             broadcast(snapshot(this));
         }
 
-        private static boolean removeJustSayNoFromPlayer(Player player, GameSession session) {
-            for (var c : new ArrayList<>(player.getHand().getCards())) {
-                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo) {
-                    if (player.getHand().removeCard(c)) {
-                        session.discardCard(c);
-                        return true;
-                    }
-                }
+        private void handleJoinRoom(ClientConnection conn, NetworkMessage msg) {
+            if (started) {
+                conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR)
+                        .roomId(roomId).text("Room already started").build());
+                return;
             }
-            for (var c : new ArrayList<>(player.getBank().getCards())) {
-                if (c instanceof com.example.monopoly_deal_game.model.cards.ActionCardJustSayNo) {
-                    if (player.getBank().removeCard(c)) {
-                        session.discardCard(c);
-                        return true;
-                    }
-                }
+            if (msg.getRoomId() != null && !roomId.equalsIgnoreCase(msg.getRoomId().trim())) {
+                conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR)
+                        .roomId(roomId).text("Room not found").build());
+                return;
             }
-            return false;
+            if (players.size() >= maxPlayers) {
+                conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR).roomId(roomId)
+                        .text("ROOM_FULL|Room is full — already " + maxPlayers + "/" + maxPlayers + " players. Cannot join.").build());
+                conn.close();
+                clients.remove(conn);
+                return;
+            }
+            if (msg.getPlayerName() != null) addLocalPlayer(msg.getPlayerName());
+            conn.setAuthorized(true);
+            conn.send(snapshot(this));
+            pushRoomState();
+            HostLobbyBridge.emit(snapshot(this));
+        }
+
+        private void handleHostRoom(ClientConnection conn) {
+            if (!conn.isAuthorized() && players.size() >= maxPlayers) {
+                conn.send(NetworkMessage.builder(NetworkMessage.Type.ERROR).roomId(roomId)
+                        .text("ROOM_FULL|Room is full — already " + maxPlayers + "/" + maxPlayers + " players. Cannot join.").build());
+                conn.close();
+                clients.remove(conn);
+                return;
+            }
+            conn.send(snapshot(this));
+        }
+
+        private void handlePaymentRequest(NetworkMessage msg) {
+            forwardRequest(msg, NetworkMessage.Type.PAYMENT_REQUEST, true);
+        }
+
+        private void handleJustSayNoRequest(NetworkMessage msg) {
+            forwardRequest(msg, NetworkMessage.Type.JUST_SAY_NO_REQUEST, false);
+        }
+
+        private void forwardRequest(NetworkMessage msg, NetworkMessage.Type type, boolean needsReceiver) {
+            if (session == null || msg.getPayerName() == null) return;
+            if (needsReceiver && msg.getReceiverName() == null) return;
+            if (msg.getRequestId() != null) pendingRequestSnapshots.put(msg.getRequestId(), session);
+            var builder = NetworkMessage.builder(type)
+                    .roomId(roomId).requestId(msg.getRequestId())
+                    .payerName(msg.getPayerName()).receiverName(msg.getReceiverName())
+                    .session(session).text(msg.getText());
+            if (type == NetworkMessage.Type.PAYMENT_REQUEST) builder.amountM(msg.getAmountM());
+            NetworkMessage forward = builder.build();
+            broadcast(forward);
+            HostLobbyBridge.emit(forward);
+        }
+
+        private void handlePaymentResponse(NetworkMessage msg) {
+            if (session == null || !msg.isAccepted()) return;
+            GameSession base = msg.getRequestId() != null ? pendingRequestSnapshots.remove(msg.getRequestId()) : null;
+            if (base != null) session = base;
+            Player payer = playerByName(session, msg.getPayerName());
+            Player receiver = playerByName(session, msg.getReceiverName());
+            if (payer != null && receiver != null) {
+                PaymentService.applyChosenPayment(payer, receiver, msg.getSelectedCards(), session);
+                gameEngine.resumeSession(session);
+                broadcastSessionSnapshot(msg.getLogText());
+            }
+        }
+
+        private void handlePlayerAction(ClientConnection conn, NetworkMessage msg) {
+            if (msg.getSession() != null && isValidTurnProgression(msg.getPlayerName(), msg.getSession())) {
+                session = msg.getSession();
+                gameEngine.resumeSession(session);
+                System.out.println("[GameServer] accepted PLAYER_ACTION from " + msg.getPlayerName()
+                        + ", current=" + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "?")
+                        + ", phase=" + session.getGameState().getPhase());
+                broadcastSessionSnapshot(msg.getLogText());
+                return;
+            }
+            if (session != null) {
+                System.err.println("[GameServer] rejected PLAYER_ACTION from " + msg.getPlayerName()
+                        + ", authoritativeCurrent=" + (session.getCurrentPlayer() != null ? session.getCurrentPlayer().getName() : "?"));
+                conn.send(NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
+                        .roomId(roomId).text("SESSION_SNAPSHOT")
+                        .players(players).port(port).session(session).build());
+            }
         }
 
         private static Player playerByName(GameSession session, String name) {
@@ -323,8 +324,7 @@ public class GameServer {
             }
             // Allow a player who is a target of the current action state to push
             // session updates (e.g. payment response from a remote client).
-            com.example.monopoly_deal_game.game.model.ActionState as =
-                    session.getGameState().getActionState();
+            ActionState as = session.getGameState().getActionState();
             boolean isActionRespondent = as != null
                     && as != session.getGameState().getTurnState()
                     && as.isTarget(playerByName(session, playerName));
@@ -362,12 +362,14 @@ public class GameServer {
 
     public static final class ClientConnection {
         private final Socket socket; private final ObjectOutputStream out; private final ObjectInputStream in; private final Room room;
+        private volatile boolean authorized;
         public ClientConnection(Socket socket, Room room) throws Exception { this.socket = socket; this.room = room; this.out = new ObjectOutputStream(socket.getOutputStream()); this.in = new ObjectInputStream(socket.getInputStream()); }
+        public void setAuthorized(boolean authorized) { this.authorized = authorized; }
+        public boolean isAuthorized() { return authorized; }
         private void start() {
             Thread reader = new Thread(() -> {
                 try { while (!socket.isClosed()) { Object obj = in.readObject(); if (obj instanceof NetworkMessage msg) room.handleMessage(this, msg); } } catch (Exception ex) {
                     System.err.println("[GameServer] client reader failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
-                    ex.printStackTrace(System.err);
                 }
             }, "room-client-reader"); reader.setDaemon(true); reader.start();
         }
@@ -378,7 +380,6 @@ public class GameServer {
                 out.flush();
             } catch (Exception ex) {
                 System.err.println("[GameServer] send failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
-                ex.printStackTrace(System.err);
                 close();
             }
         }

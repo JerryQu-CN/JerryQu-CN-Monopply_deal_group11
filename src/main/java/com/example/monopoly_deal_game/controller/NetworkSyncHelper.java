@@ -1,6 +1,7 @@
 package com.example.monopoly_deal_game.controller;
 
-import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.logic.payment.PaymentRequest;
 import com.example.monopoly_deal_game.model.Player;
 import com.example.monopoly_deal_game.model.cards.Card;
 import com.example.monopoly_deal_game.network.GameServer;
@@ -9,6 +10,10 @@ import com.example.monopoly_deal_game.network.NetworkMessage;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * Encapsulates network synchronization — publishes session changes, forwards
+ * payment requests, and broadcasts game state to remote clients.
+ */
 public class NetworkSyncHelper {
     private final Consumer<String> feedback;
 
@@ -70,17 +75,15 @@ public class NetworkSyncHelper {
                 .build(), "Failed to send payment response");
     }
 
-    public void sendPaymentRequest(String roomId, String requestId,
-                                    Player payer, Player receiver,
-                                    int amountM, GameSession session, String reason) {
+    public void sendPaymentRequest(String roomId, String requestId, PaymentRequest req) {
         send(NetworkMessage.builder(NetworkMessage.Type.PAYMENT_REQUEST)
                 .roomId(roomId)
                 .requestId(requestId)
-                .payerName(payer.getName())
-                .receiverName(receiver != null ? receiver.getName() : null)
-                .amountM(amountM)
-                .session(session)
-                .text(reason)
+                .payerName(req.payer().getName())
+                .receiverName(req.receiver() != null ? req.receiver().getName() : null)
+                .amountM(req.amountM())
+                .session(req.session())
+                .text(req.description())
                 .build(), "Failed to send payment request");
     }
 
@@ -116,5 +119,21 @@ public class NetworkSyncHelper {
         } catch (Exception ex) {
             feedback.accept(errorPrefix + ": " + ex.getMessage());
         }
+    }
+
+    public static boolean hasRemoteClients() {
+        String roomId = AppContext.get().networkLobbyState().getRoomId();
+        if (roomId == null || roomId.isBlank()) return false;
+        if (AppContext.get().networkLobbyState().isHost()) {
+            GameServer.Room room = AppContext.get().gameServer().getRoom(roomId);
+            return room != null && room.hasRemoteClients();
+        }
+        return true;
+    }
+
+    public static boolean shouldForwardToRemote(Player localPlayer, Player targetPlayer) {
+        if (localPlayer == null || targetPlayer == null) return false;
+        if (localPlayer.getName().equals(targetPlayer.getName())) return false;
+        return hasRemoteClients();
     }
 }

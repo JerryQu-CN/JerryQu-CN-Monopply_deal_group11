@@ -6,8 +6,8 @@ import javafx.util.Duration;
 import java.util.Objects;
 
 /**
- * Stage references and default parameters needed for motion effects; filled in at construction time by {@link com.example.monopoly_deal_game.view.GameplayUiBundle} or
- * the game Controller, avoiding a long chain of Pane arguments in each Motion constructor.
+ * Pane references and default animation duration for UiMotion effects,
+ * avoiding repeated Pane arguments in each motion constructor.
  */
 public record MotionContext(
         Pane deckPane,

@@ -12,10 +12,7 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * JavaFX application entry point (formerly HelloApplication, renamed per course project naming conventions).
- *
- * TODO(app): If pre-launch config loading or singleton {@link com.example.monopoly_deal_game.game.engine.GameEngine}
- *            warm-up is needed, it can be extended here.
+ * JavaFX {@link Application} entry point — initializes the game engine and loads the start screen.
  */
 public class MonopolyDealApplication extends Application {
 

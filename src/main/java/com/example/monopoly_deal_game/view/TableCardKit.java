@@ -1,5 +1,6 @@
 package com.example.monopoly_deal_game.view;
 
+import com.example.monopoly_deal_game.logic.CardImageMapper;
 import com.example.monopoly_deal_game.model.PlayedCardSnapshot;
 import com.example.monopoly_deal_game.model.cards.Card;
 import javafx.geometry.Pos;
@@ -56,12 +57,28 @@ public final class TableCardKit {
         }
         CardView cv =
                 new CardView(
-                        CardFaceResolver.imageFileFor(domainCard),
+                        CardImageMapper.imageFileFor(domainCard),
                         domainCard.getName() != null ? domainCard.getName() : "",
                         "");
         cv.setHandInteraction(null);
         cv.setHoverZoomEnabled(false);
         cv.setReadOnly(true);
         return wrapTableCard(cv, scale);
+    }
+
+    /** Interactive table card for wild property cards — clickable to switch color during the player's turn. */
+    public static StackPane createClickableWildCard(Card domainCard, double scale, Runnable onClick) {
+        CardView cv = new CardView(
+                CardImageMapper.imageFileFor(domainCard),
+                domainCard.getName() != null ? domainCard.getName() : "",
+                "");
+        cv.setReadOnly(true);
+        cv.setHoverZoomEnabled(true);
+        StackPane holder = wrapTableCard(cv, scale);
+        holder.setCursor(Cursor.HAND);
+        holder.setOnMouseClicked(e -> {
+            if (onClick != null) onClick.run();
+        });
+        return holder;
     }
 }

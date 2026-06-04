@@ -1,6 +1,6 @@
 package com.example.monopoly_deal_game.game.engine;
 
-import com.example.monopoly_deal_game.game.model.GameSession;
+import com.example.monopoly_deal_game.game.state.GameSession;
 import com.example.monopoly_deal_game.logic.GameLogic;
 
 import com.example.monopoly_deal_game.model.Player;

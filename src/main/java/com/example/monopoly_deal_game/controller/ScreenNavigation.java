@@ -11,9 +11,7 @@ import java.net.URL;
 import java.util.Objects;
 
 /**
- * FXML scene navigation utility class.
- *
- * TODO(controller): If Spring/JavaFX DI is introduced, this can be replaced with a navigation service interface.
+ * FXML scene navigation utility — loads FXML files and switches the primary stage's scene.
  */
 public final class ScreenNavigation {
     public static final double SCENE_WIDTH = 1400;

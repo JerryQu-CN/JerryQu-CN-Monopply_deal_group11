@@ -1,5 +1,10 @@
 package com.example.monopoly_deal_game.model.cards;
 
+import com.example.monopoly_deal_game.game.state.GameSession;
+import com.example.monopoly_deal_game.logic.CardPlayOptions;
+import com.example.monopoly_deal_game.logic.PropertyPlayHelper;
+import com.example.monopoly_deal_game.model.Player;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -77,6 +82,59 @@ public class PropertyCard extends Card {
 
     @Override
     public CardType getCardType() { return CardType.PROPERTY; }
+
+    @Override
+    public void executePlay(Player player, GameSession session, CardPlayOptions opt) {
+        PropertyPlayHelper.placePropertyCard(player, this);
+    }
+
+    @Override
+    public String getPlayLogText(String who, CardPlayOptions opts, GameSession session) {
+        return who + " placed " + getName() + " on the table";
+    }
+
+    @Override
+    public String getImageFileName() {
+        if (isWild()) {
+            return isMultiColorWild() ? "propertyWildCard.png" : wildPropertyFileByColors();
+        }
+        return colorToPropertyFile(getCurrentColor());
+    }
+
+    private String wildPropertyFileByColors() {
+        CardColor a = getPrimaryColor();
+        CardColor b = getSecondaryColor();
+        if (pairMatches(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) return "brown-lightblueCard.png";
+        if (pairMatches(a, b, CardColor.RED, CardColor.YELLOW)) return "red-yellowCard.png";
+        if (pairMatches(a, b, CardColor.PURPLE, CardColor.ORANGE)) return "pink-orangeCard.png";
+        if (pairMatches(a, b, CardColor.BLUE, CardColor.GREEN)) return "green-blueCard.png";
+        if (pairMatches(a, b, CardColor.BLACK, CardColor.GREEN)) return "green-blackCard.png";
+        if (pairMatches(a, b, CardColor.LIGHT_BLUE, CardColor.BLACK)) return "lightBlue-blackCard.png";
+        if (pairMatches(a, b, CardColor.BLACK, CardColor.LIGHT_GREEN)) return "black-lightGreenCard.png";
+        return "propertyWildCard.png";
+    }
+
+    private static boolean pairMatches(CardColor a, CardColor b, CardColor x, CardColor y) {
+        return (a == x && b == y) || (a == y && b == x);
+    }
+
+    private static String colorToPropertyFile(CardColor c) {
+        if (c == null || c == CardColor.NONE) return "propertyWildCard.png";
+        return switch (c) {
+            case RED -> "redCard.png";
+            case BLUE -> "blueCard.png";
+            case GREEN -> "greenCard.png";
+            case YELLOW -> "yellowCard.png";
+            case ORANGE -> "orange.png";
+            case PURPLE -> "pinkCard.png";
+            case LIGHT_BLUE -> "lightBlueCard.png";
+            case BROWN -> "brownCard.png";
+            case BLACK -> "blackCard.png";
+            case LIGHT_GREEN -> "lightGreenCard.png";
+            case WILD -> "propertyWildCard.png";
+            default -> "propertyWildCard.png";
+        };
+    }
 
     // ---- Color management ----
 

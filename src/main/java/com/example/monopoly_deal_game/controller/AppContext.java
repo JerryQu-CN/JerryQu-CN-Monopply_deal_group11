@@ -2,16 +2,15 @@ package com.example.monopoly_deal_game.controller;
 
 import com.example.monopoly_deal_game.game.engine.GameEngine;
 import com.example.monopoly_deal_game.network.GameServer;
-import com.example.monopoly_deal_game.persistence.SaveGameService;
+import com.example.monopoly_deal_game.network.NetworkLobbyState;
 
 import javafx.application.Platform;
 
 import java.util.Objects;
 
 /**
- * App-level dependency container (lightweight substitute when Spring is not available during coursework):
- * injected once at startup in {@link com.example.monopoly_deal_game.app.MonopolyDealApplication};
- * each {@code *ScreenController} accesses shared instances via {@link #get()}.
+ * Singleton dependency container providing shared access to {@link GameEngine},
+ * {@link GameServer}, and {@link NetworkLobbyState} across all controllers.
  */
 public final class AppContext {
 
@@ -20,20 +19,18 @@ public final class AppContext {
     private final GameEngine gameEngine;
     private final GameServer gameServer;
     private final NetworkLobbyState networkLobbyState;
-    private final SaveGameService saveGameService;
 
-    public AppContext(GameEngine gameEngine, GameServer gameServer, SaveGameService saveGameService) {
+    public AppContext(GameEngine gameEngine, GameServer gameServer) {
         this.gameEngine = Objects.requireNonNull(gameEngine);
         this.gameServer = Objects.requireNonNull(gameServer);
         this.networkLobbyState = new NetworkLobbyState();
-        this.saveGameService = Objects.requireNonNull(saveGameService);
         this.gameEngine.setStateListener(session -> this.networkLobbyState.setSession(session));
     }
 
-    /** Default implementation: one engine and one save service per process. */
+    /** Default implementation: one engine per process. */
     public static AppContext createDefault() {
         GameEngine engine = new GameEngine();
-        AppContext ctx = new AppContext(engine, new GameServer(engine), new SaveGameService());
+        AppContext ctx = new AppContext(engine, new GameServer(engine));
         engine.setStateListener(session -> {
             if (Platform.isFxApplicationThread()) {
                 if (instance != null) {
@@ -70,8 +67,4 @@ public final class AppContext {
     }
 
     public NetworkLobbyState networkLobbyState() { return networkLobbyState; }
-
-    public SaveGameService saveGameService() {
-        return saveGameService;
-    }
 }

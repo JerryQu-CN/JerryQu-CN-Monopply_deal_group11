@@ -7,9 +7,7 @@ import javafx.scene.control.Button;
 import javafx.stage.Stage;
 
 /**
- * Main menu / entry point, corresponding to part of the Lobby flow in the design.
- *
- * TODO(controller): Wire up with {@link com.example.monopoly_deal_game.game.engine.GameEngine#launchGame()} (if a singleton engine is needed).
+ * Main menu controller — lobby entry point for hosting, joining, or starting a local game.
  */
 public class StartScreenController implements StageAware {
 
@@ -18,9 +16,6 @@ public class StartScreenController implements StageAware {
 
     @FXML
     private Button exitButton;
-
-    @FXML
-    private Button loadingButton;
 
     @FXML
     private Button realPlayerButton;
@@ -40,11 +35,6 @@ public class StartScreenController implements StageAware {
     @FXML
     void onJoinRoom(ActionEvent event) {
         ScreenNavigation.show(stage, "JoinRoomScreen.fxml");
-    }
-
-    @FXML
-    void onLoadingGame(ActionEvent event) {
-        ScreenNavigation.show(stage, "LoadGameScreen.fxml");
     }
 
     @FXML
