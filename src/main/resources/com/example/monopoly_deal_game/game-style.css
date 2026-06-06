@@ -1,0 +1,627 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Monopoly Deal — Game Stylesheet (Dark Glass-Morphism Theme)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Start Screen ─────────────────────────────────────────────────── */
+
+.start-root {
+    -fx-background-color: #0D0D1A;
+}
+
+.start-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.50);
+}
+
+.start-hero {
+    -fx-padding: 0 0 8 0;
+}
+
+.start-title-line1 {
+    -fx-font-size: 56px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFD700;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.70), 12, 0, 0, 4);
+}
+
+.start-title-line2 {
+    -fx-font-size: 68px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FF8C00;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.75), 16, 0, 0, 5);
+}
+
+.start-subtitle {
+    -fx-font-size: 20px;
+    -fx-text-fill: #DDD5C5;
+    -fx-font-weight: normal;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 4, 0, 0, 2);
+}
+
+.start-button-panel {
+    -fx-background-color: rgba(24, 12, 0, 0.78);
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(201, 162, 43, 0.38);
+    -fx-border-radius: 18;
+    -fx-border-width: 1.5;
+    -fx-padding: 30 40 30 40;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 24, 0, 0, 10);
+}
+
+/* Primary button — gold gradient */
+.start-btn-primary {
+    -fx-background-color: linear-gradient(to bottom, #FFD54F, #DAA520);
+    -fx-text-fill: #3E2723;
+    -fx-font-weight: bold;
+    -fx-font-size: 18px;
+    -fx-background-radius: 10;
+    -fx-border-color: #B8860B;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 14 44;
+    -fx-pref-width: 300;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(218,165,32,0.35), 8, 0, 0, 3);
+}
+.start-btn-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, #FFE88C, #FFC107);
+    -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.65), 16, 0, 0, 6);
+    -fx-border-color: #FFC107;
+}
+.start-btn-primary:pressed {
+    -fx-background-color: linear-gradient(to bottom, #B8860B, #8B6914);
+    -fx-text-fill: #FFF8E1;
+    -fx-effect: dropshadow(gaussian, rgba(218,165,32,0.20), 4, 0, 0, 1);
+}
+
+/* Secondary button — gold outline on transparent */
+.start-btn-secondary {
+    -fx-background-color: rgba(255, 248, 225, 0.08);
+    -fx-text-fill: #F5E6C8;
+    -fx-font-weight: bold;
+    -fx-font-size: 18px;
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(201, 162, 43, 0.50);
+    -fx-border-radius: 10;
+    -fx-border-width: 1.5;
+    -fx-padding: 14 44;
+    -fx-pref-width: 300;
+    -fx-cursor: hand;
+}
+.start-btn-secondary:hover {
+    -fx-background-color: rgba(255, 248, 225, 0.18);
+    -fx-border-color: rgba(255, 215, 0, 0.75);
+    -fx-text-fill: #FFE88C;
+    -fx-effect: dropshadow(gaussian, rgba(201,162,43,0.30), 10, 0, 0, 4);
+}
+.start-btn-secondary:pressed {
+    -fx-background-color: rgba(255, 248, 225, 0.05);
+    -fx-border-color: rgba(201, 162, 43, 0.35);
+}
+
+/* Exit button — muted red */
+.start-btn-exit {
+    -fx-background-color: rgba(180, 40, 40, 0.15);
+    -fx-text-fill: #E0C0C0;
+    -fx-font-weight: bold;
+    -fx-font-size: 18px;
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(200, 80, 80, 0.40);
+    -fx-border-radius: 10;
+    -fx-border-width: 1.5;
+    -fx-padding: 14 44;
+    -fx-pref-width: 300;
+    -fx-cursor: hand;
+}
+.start-btn-exit:hover {
+    -fx-background-color: rgba(200, 50, 50, 0.30);
+    -fx-border-color: rgba(220, 100, 100, 0.70);
+    -fx-text-fill: #FFCCCC;
+    -fx-effect: dropshadow(gaussian, rgba(200,50,50,0.35), 10, 0, 0, 4);
+}
+.start-btn-exit:pressed {
+    -fx-background-color: rgba(140, 30, 30, 0.25);
+    -fx-border-color: rgba(160, 60, 60, 0.40);
+}
+
+.start-version {
+    -fx-font-size: 12px;
+    -fx-text-fill: rgba(200, 190, 170, 0.50);
+}
+
+/* ── Lobby Screens (Create / Join / Load) ─────────────────────────── */
+
+.lobby-title {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFD700;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.70), 10, 0, 0, 3);
+}
+
+.lobby-info-label {
+    -fx-font-size: 20px;
+    -fx-text-fill: #DDD5C5;
+    -fx-font-weight: normal;
+}
+
+.lobby-input-label {
+    -fx-font-size: 18px;
+    -fx-text-fill: #F5E6C8;
+    -fx-font-weight: normal;
+}
+
+.lobby-text-field {
+    -fx-background-color: rgba(20, 15, 10, 0.85);
+    -fx-text-fill: #F5E6C8;
+    -fx-font-size: 15px;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(201, 162, 43, 0.45);
+    -fx-border-radius: 8;
+    -fx-border-width: 1.2;
+    -fx-padding: 10 14;
+    -fx-prompt-text-fill: rgba(200, 190, 170, 0.45);
+}
+.lobby-text-field:focused {
+    -fx-border-color: rgba(255, 215, 0, 0.75);
+    -fx-effect: dropshadow(gaussian, rgba(201,162,43,0.20), 6, 0, 0, 2);
+}
+
+.lobby-combo-box {
+    -fx-background-color: rgba(20, 15, 10, 0.85);
+    -fx-text-fill: #F5E6C8;
+    -fx-font-size: 15px;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(201, 162, 43, 0.45);
+    -fx-border-radius: 8;
+    -fx-border-width: 1.2;
+    -fx-padding: 4 10;
+}
+.lobby-combo-box .list-cell {
+    -fx-text-fill: #F5E6C8;
+    -fx-background-color: rgba(20, 15, 10, 0.85);
+}
+.lobby-combo-box .list-view {
+    -fx-background-color: rgba(20, 15, 10, 0.92);
+    -fx-border-color: rgba(201, 162, 43, 0.45);
+    -fx-border-radius: 6;
+}
+.lobby-combo-box .list-cell:hover {
+    -fx-background-color: rgba(201, 162, 43, 0.25);
+}
+
+.lobby-list-view {
+    -fx-background-color: rgba(20, 15, 10, 0.85);
+    -fx-border-color: rgba(201, 162, 43, 0.40);
+    -fx-border-radius: 10;
+    -fx-border-width: 1.2;
+    -fx-background-radius: 10;
+    -fx-padding: 4;
+}
+.lobby-list-view .list-cell {
+    -fx-text-fill: #F5E6C8;
+    -fx-font-size: 15px;
+    -fx-background-color: transparent;
+    -fx-padding: 8 14;
+}
+.lobby-list-view .list-cell:filled:hover {
+    -fx-background-color: rgba(201, 162, 43, 0.20);
+}
+.lobby-list-view .list-cell:filled:selected {
+    -fx-background-color: rgba(201, 162, 43, 0.30);
+}
+
+.lobby-status-label {
+    -fx-font-size: 15px;
+    -fx-text-fill: #FFCC80;
+    -fx-wrap-text: true;
+}
+
+.lobby-helper-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: rgba(200, 190, 170, 0.65);
+    -fx-wrap-text: true;
+}
+
+.lobby-section-panel {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(201, 162, 43, 0.20);
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+}
+
+/* ── Root & Background ─────────────────────────────────────────── */
+.root-bg {
+    -fx-background-color: #0D0D1A;
+}
+.root-pane {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* ── Global focus suppression ────────────────────────────────────
+   Use .root-bg ancestor to boost specificity over Modena's
+   built-in .scroll-pane:focused etc.                              */
+.root-bg .scroll-pane,
+.root-bg .scroll-pane:focused,
+.root-bg .scroll-pane .viewport {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.root-bg .table-panel,
+.root-bg .table-panel:focused,
+.root-bg .hand-panel,
+.root-bg .hand-panel:focused,
+.root-bg .log-panel,
+.root-bg .log-panel:focused,
+.root-bg .sidebar-panel,
+.root-bg .sidebar-panel:focused,
+.root-bg .sidebar-deck-pane,
+.root-bg .sidebar-deck-pane:focused,
+.root-bg .player-board,
+.root-bg .player-board:focused,
+.root-bg .property-column,
+.root-bg .property-column:focused,
+.root-bg .action-dock,
+.root-bg .action-dock:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* ── Top Bar ────────────────────────────────────────────────────── */
+.topbar {
+    -fx-background-color: rgba(24, 12, 0, 0.85);
+    -fx-padding: 8 14 8 14;
+    -fx-border-color: rgba(201, 162, 43, 0.30);
+    -fx-border-width: 0 0 1 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 12, 0, 0, 3);
+}
+.topbar-title {
+    -fx-text-fill: #FFD700;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────── */
+.sidebar-panel {
+    -fx-background-color: rgba(24, 12, 0, 0.78);
+    -fx-background-radius: 0 12 12 0;
+    -fx-border-color: rgba(201, 162, 43, 0.25);
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 12 12 14 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0, 4, 0);
+}
+.sidebar-label {
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+    -fx-text-fill: #FFE082;
+}
+.sidebar-deck-pane {
+    -fx-background-color: rgba(20, 15, 10, 0.85);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(201, 162, 43, 0.30);
+    -fx-border-radius: 10;
+}
+.hud-money {
+    -fx-font-size: 12px;
+    -fx-text-fill: #FFE082;
+    -fx-background-color: rgba(201, 162, 43, 0.12);
+    -fx-padding: 8 10 8 10;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(201, 162, 43, 0.25);
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+.moves-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #F5E6C8;
+    -fx-font-weight: bold;
+}
+.feedback-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #FFD740;
+    -fx-padding: 2 0 4 0;
+    -fx-font-weight: bold;
+}
+.version-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: rgba(200, 190, 170, 0.50);
+}
+
+/* ── Panels ─────────────────────────────────────────────────────── */
+.table-panel {
+    -fx-background-color: rgba(20, 15, 10, 0.85);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(201, 162, 43, 0.25);
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 14, 0, 2, 0);
+}
+.hand-panel {
+    -fx-background-color: rgba(24, 12, 0, 0.78);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(201, 162, 43, 0.40);
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(201, 162, 43, 0.10), 16, 0, 0, 4);
+}
+
+/* ── Player Boards ──────────────────────────────────────────────── */
+.player-board {
+    -fx-background-color: rgba(20, 15, 10, 0.45);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(201, 162, 43, 0.20);
+    -fx-border-radius: 10;
+}
+.player-board-header {
+    -fx-font-weight: bold;
+}
+.player-board-header-opponent {
+    -fx-font-size: 12px;
+    -fx-text-fill: #F5E6C8;
+}
+.player-board-header-self {
+    -fx-font-size: 14px;
+    -fx-text-fill: #FFE082;
+}
+.property-column {
+    -fx-background-color: rgba(201, 162, 43, 0.06);
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(201, 162, 43, 0.22);
+    -fx-border-radius: 8;
+}
+.property-column-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #C9A22B;
+}
+.bank-section-header {
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+    -fx-text-fill: #C9A22B;
+}
+.bank-section-total {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFD700;
+}
+
+/* ── Log Panel ──────────────────────────────────────────────────── */
+.log-panel {
+    -fx-background-color: rgba(20, 15, 10, 0.85);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(201, 162, 43, 0.25);
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 14, 0, 2, 0);
+}
+.log-header {
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-text-fill: #FFD700;
+    -fx-padding: 8 10 4 10;
+    -fx-background-color: rgba(201, 162, 43, 0.15);
+    -fx-background-radius: 10 10 0 0;
+}
+.scroll-pane-transparent {
+    -fx-background: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.scroll-pane-transparent:focused {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.log-entry-normal {
+    -fx-font-size: 12px;
+    -fx-text-fill: #F5E6C8;
+    -fx-padding: 2 6 2 6;
+}
+.log-entry-important {
+    -fx-font-size: 12px;
+    -fx-text-fill: #FFAB91;
+    -fx-background-color: rgba(200, 50, 50, 0.15);
+    -fx-padding: 3 6 3 6;
+    -fx-background-radius: 4;
+    -fx-font-weight: bold;
+}
+.log-entry-separator {
+    -fx-font-size: 12px;
+    -fx-text-fill: #FFD54F;
+    -fx-background-color: rgba(201, 162, 43, 0.12);
+    -fx-padding: 3 6 3 6;
+    -fx-background-radius: 4;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+}
+
+/* ── Action Chrome / Dock ───────────────────────────────────────── */
+.action-dock {
+    -fx-background-color: rgba(24, 12, 0, 0.88);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(201, 162, 43, 0.35);
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 12, 0, 0, 2);
+}
+.action-dock-label {
+    -fx-text-fill: #FFF8E1;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-padding: 0 0 2 0;
+}
+
+/* ── Menu Overlay ───────────────────────────────────────────────── */
+.menu-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.65);
+}
+.menu-dialog {
+    -fx-background-color: rgba(24, 12, 0, 0.92);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(201, 162, 43, 0.35);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 32 44 36 44;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.50), 24, 0, 0, 6);
+}
+.menu-dialog-title {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFF8E1;
+}
+.menu-dialog-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #C9A22B;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+
+/* Primary (gold, main action) */
+.button-primary {
+    -fx-background-color: linear-gradient(to bottom, #FFD54F, #DAA520);
+    -fx-text-fill: #3E2723;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-background-radius: 8;
+    -fx-border-color: #B8860B;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(218,165,32,0.30), 6, 0, 0, 2);
+}
+.button-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, #FFE88C, #FFC107);
+    -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.55), 10, 0, 0, 4);
+}
+.button-primary:pressed {
+    -fx-background-color: linear-gradient(to bottom, #B8860B, #8B6914);
+    -fx-text-fill: #FFF8E1;
+    -fx-effect: dropshadow(gaussian, rgba(218,165,32,0.15), 3, 0, 0, 1);
+}
+.button-primary:disabled {
+    -fx-background-color: #555555;
+    -fx-text-fill: #999999;
+    -fx-opacity: 0.5;
+    -fx-effect: none;
+    -fx-border-color: #555555;
+}
+
+/* Secondary (outline, less important) */
+.button-secondary {
+    -fx-background-color: rgba(255, 248, 225, 0.06);
+    -fx-text-fill: #F5E6C8;
+    -fx-font-size: 12px;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(201, 162, 43, 0.40);
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+.button-secondary:hover {
+    -fx-background-color: rgba(255, 248, 225, 0.15);
+    -fx-border-color: rgba(201, 162, 43, 0.70);
+    -fx-text-fill: #FFE88C;
+}
+.button-secondary:pressed {
+    -fx-background-color: rgba(255, 248, 225, 0.04);
+}
+
+/* Topbar buttons */
+.button-topbar {
+    -fx-background-color: rgba(255, 248, 225, 0.10);
+    -fx-text-fill: #DDD5C5;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(201, 162, 43, 0.30);
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-padding: 6 14;
+    -fx-cursor: hand;
+}
+.button-topbar:hover {
+    -fx-background-color: rgba(255, 248, 225, 0.22);
+    -fx-border-color: rgba(201, 162, 43, 0.60);
+    -fx-text-fill: #FFE88C;
+}
+.button-topbar:pressed {
+    -fx-background-color: rgba(255, 248, 225, 0.06);
+}
+
+/* Chrome action buttons (inside the gold-bordered dock) */
+.button-chrome-action {
+    -fx-background-color: rgba(255, 248, 225, 0.90);
+    -fx-text-fill: #3E2723;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+.button-chrome-action:hover {
+    -fx-background-color: #FFF8E1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 4, 0, 0, 1);
+}
+.button-chrome-action:pressed {
+    -fx-background-color: rgba(255, 248, 225, 0.70);
+}
+.button-chrome-action:disabled {
+    -fx-background-color: rgba(255, 248, 225, 0.30);
+    -fx-text-fill: rgba(62, 39, 35, 0.35);
+    -fx-effect: none;
+}
+
+/* ── ScrollBar ──────────────────────────────────────────────────── */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+.scroll-bar .thumb {
+    -fx-background-color: rgba(201, 162, 43, 0.25);
+    -fx-background-radius: 4;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: rgba(201, 162, 43, 0.50);
+}
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 2;
+}
+
+/* ── Game Over Overlay ──────────────────────────────────────────── */
+.game-over-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.80);
+}
+.game-over-banner {
+    -fx-background-color: rgba(24, 12, 0, 0.92);
+    -fx-background-radius: 20;
+    -fx-border-color: rgba(255, 215, 0, 0.50);
+    -fx-border-radius: 20;
+    -fx-border-width: 2;
+    -fx-padding: 40 60 40 60;
+    -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.25), 30, 0, 0, 8);
+    -fx-max-width: 600;
+}
+.game-over-title {
+    -fx-font-size: 64px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFD700;
+    -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.60), 20, 0, 0, 6);
+}
+.game-over-winner {
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FF8C00;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.70), 12, 0, 0, 3);
+}
+.game-over-detail {
+    -fx-font-size: 18px;
+    -fx-text-fill: #F5E6C8;
+}
