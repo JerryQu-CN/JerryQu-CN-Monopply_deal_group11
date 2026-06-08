@@ -19,7 +19,6 @@ public enum CardColor {
     BLUE        ("Dark Blue",   new int[] {3, 8},       true),
     BLACK       ("Black",       new int[] {1, 2, 3, 4}, true),
     LIGHT_GREEN ("Light Green", new int[] {1, 2},       true),
-    WILD,
     NONE;
 
     private final String displayName;

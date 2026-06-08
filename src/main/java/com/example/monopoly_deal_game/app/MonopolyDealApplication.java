@@ -32,6 +32,6 @@ public class MonopolyDealApplication extends Application {
         }
         stage.setTitle("Monopoly Deal");
         stage.setScene(scene);
-        stage.show();
+       stage.show();
     }
 }

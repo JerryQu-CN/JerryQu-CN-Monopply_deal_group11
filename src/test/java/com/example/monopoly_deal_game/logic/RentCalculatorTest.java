@@ -22,19 +22,17 @@ class RentCalculatorTest {
     }
 
     private static PropertyCard rainbowWild(int id, String name, int value, int[] rentLevels) {
-        return new PropertyCard(id, name, value, rentLevels, true, false, true);
+        return new PropertyCard(id, name, value, rentLevels, false, true);
     }
 
     private Property makeProperty(CardColor color, PropertyCard... cards) {
         Property p = new Property();
-        for (PropertyCard c : cards) p.addCard(c);
-        p.setOwner(player);
-        // If a rainbow wild's currentColor is WILD, align it
         for (PropertyCard c : cards) {
-            if (c.isMultiColorWild() && c.getCurrentColor() == CardColor.WILD) {
-                c.alignToDeclaredColor(color);
-            }
+            p.addCard(c);
+            // Align multi-color cards to the target color
+            if (c.isMultiColor()) c.alignToDeclaredColor(color);
         }
+        p.setOwner(player);
         return p;
     }
 
@@ -240,8 +238,8 @@ class RentCalculatorTest {
     void bestRentForLandlord_nullColors_tolerated() {
         player.getProperties().add(makeProperty(CardColor.BROWN,
                 singleColor(1, "Brown 1", 1, CardColor.BROWN, new int[]{1, 2})));
-        // null/NONE/WILD entries in the list are skipped
-        int best = RentCalculator.bestRentForLandlord(player, java.util.Arrays.asList(CardColor.BROWN, null, CardColor.NONE, CardColor.WILD), false);
+        // null/NONE entries in the list are skipped
+        int best = RentCalculator.bestRentForLandlord(player, java.util.Arrays.asList(CardColor.BROWN, null, CardColor.NONE), false);
         assertEquals(1, best);
     }
 }

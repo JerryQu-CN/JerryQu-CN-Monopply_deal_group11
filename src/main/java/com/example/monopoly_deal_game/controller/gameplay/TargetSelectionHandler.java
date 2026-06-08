@@ -20,6 +20,7 @@ import javafx.stage.Stage;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 /**
  * Resolves target player, property card, color, or property group selections
@@ -98,7 +99,7 @@ public class TargetSelectionHandler {
                 if (out.targetPropertyCard() != null && cards.contains(out.targetPropertyCard())) { yield out; }
                 yield pickPropertyCard( "Sly Deal",
                         "Please select a non-full-set property to take from \"" + target.getName() + "\".",
-                        cards, out);
+                        cards, out, out::withTargetPropertyCard);
             }
             case FORCED_DEAL_PROPERTIES -> {
                 List<PropertyCard> mine = PropertyQuery.allTableProperties(me);
@@ -107,13 +108,13 @@ public class TargetSelectionHandler {
                 if (out.sourcePropertyCard() == null || !mine.contains(out.sourcePropertyCard())) {
                     out = pickPropertyCard( "Forced Deal",
                             "Please select a property card to give to \"" + target.getName() + "\".",
-                            mine, out);
+                            mine, out, out::withSourcePropertyCard);
                     if (out == null) { yield null; }
                 }
                 if (out.targetPropertyCard() == null || !theirs.contains(out.targetPropertyCard())) {
                     out = pickPropertyCard( "Forced Deal",
                             "Please select a property card to take from \"" + target.getName() + "\".",
-                            theirs, out);
+                            theirs, out, out::withTargetPropertyCard);
                 }
                 yield out;
             }
@@ -130,9 +131,10 @@ public class TargetSelectionHandler {
     }
 
     private CardPlayOptions pickPropertyCard(String title, String prompt,
-                                              List<PropertyCard> cards, CardPlayOptions out) {
+                                              List<PropertyCard> cards, CardPlayOptions out,
+                                              Function<PropertyCard, CardPlayOptions> setter) {
         return ActionTargetDialogs.choosePropertyCard(stage, title, prompt, cards)
-                .map(out::withTargetPropertyCard)
+                .map(setter)
                 .orElse(null);
     }
 

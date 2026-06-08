@@ -89,6 +89,11 @@ public class GameServer {
         }
 
         public void broadcastSessionSnapshot(String logText) {
+            broadcastSessionSnapshot(logText, true);
+        }
+
+        /** @param notifyHostUi false to skip notifying the host's own UI (used when the host just submitted an action and doesn't need the echo back) */
+        public void broadcastSessionSnapshot(String logText, boolean notifyHostUi) {
             if (session == null) return;
             var builder = NetworkMessage.builder(NetworkMessage.Type.SESSION_SNAPSHOT)
                     .roomId(roomId)
@@ -101,7 +106,9 @@ public class GameServer {
             }
             NetworkMessage msg = builder.build();
             broadcast(msg);
-            HostLobbyBridge.emit(msg);
+            if (notifyHostUi) {
+                HostLobbyBridge.emit(msg);
+            }
         }
 
         private void startAcceptLoop() {

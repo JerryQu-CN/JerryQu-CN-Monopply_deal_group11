@@ -68,7 +68,7 @@ public final class PropertyPlayHelper {
             }
         }
         Property nov = new Property();
-        if (card.isWild()) {
+        if (card.isMultiColor()) {
             card.alignToDeclaredColor(card.getCurrentColor());
         }
         nov.addCard(card);
@@ -94,26 +94,39 @@ public final class PropertyPlayHelper {
 
     private static boolean chosenColorMatchesRow(Property row, PropertyCard incoming) {
         if (row == null || incoming == null || row.getCards().isEmpty()) return true;
-        if (!incoming.isWild()) return true;
+        if (!incoming.isMultiColor()) return true;
         CardColor chosen = incoming.getCurrentColor();
-        if (chosen == null || chosen == CardColor.NONE || chosen == CardColor.WILD) return true;
+        if (chosen == null || chosen == CardColor.NONE) return true;
         CardColor rowColor = row.getEffectiveColor();
         if (rowColor == CardColor.NONE) return true;
         return rowColor == chosen;
     }
 
     private static void alignWildToRow(Property row, PropertyCard incoming) {
-        if (incoming == null || row == null || !incoming.isWild()) return;
-        if (row.getCards().isEmpty()) return;
+        if (incoming == null || row == null || row.getCards().isEmpty()) return;
         CardColor anchor = row.getEffectiveColor();
         if (anchor == CardColor.NONE) {
             for (PropertyCard pc : row.getCards()) {
+                if (pc.isRainbow()) continue;
                 CardColor c = pc.getCurrentColor();
                 if (c != null && c != CardColor.NONE) { anchor = c; break; }
             }
         }
-        if (anchor != null && anchor != CardColor.NONE) {
+        if (anchor == null || anchor == CardColor.NONE) return;
+
+        if (incoming.isMultiColor()) {
             incoming.alignToDeclaredColor(anchor);
+        } else {
+            // Incoming single-color card — shift existing bi-color cards to match
+            CardColor incC = incoming.getCurrentColor();
+            if (incC != null && incC != CardColor.NONE) {
+                for (PropertyCard pc : row.getCards()) {
+                    if (pc.isBiColor() && pc.getCurrentColor() == anchor
+                            && pc.getApplicableColors().contains(incC)) {
+                        pc.alignToDeclaredColor(incC);
+                    }
+                }
+            }
         }
     }
 

@@ -28,7 +28,7 @@ public final class RentRules {
             return out;
         }
         for (CardColor c : rc.getApplicableColors()) {
-            if (c != null && c != CardColor.NONE && c != CardColor.WILD) out.add(c);
+            if (c != null && c != CardColor.NONE) out.add(c);
         }
         return out;
     }

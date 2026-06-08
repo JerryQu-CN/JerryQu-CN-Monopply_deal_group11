@@ -38,11 +38,6 @@ class CardColorTest {
     }
 
     @Test
-    void getRent_wild_returns0() {
-        assertEquals(0, CardColor.WILD.getRent(1));
-    }
-
-    @Test
     void getRent_none_returns0() {
         assertEquals(0, CardColor.NONE.getRent(1));
     }
@@ -74,8 +69,7 @@ class CardColorTest {
     }
 
     @Test
-    void isBuildable_wildAndNone_notBuildable() {
-        assertFalse(CardColor.WILD.isBuildable());
+    void isBuildable_none_notBuildable() {
         assertFalse(CardColor.NONE.isBuildable());
     }
 
@@ -87,8 +81,7 @@ class CardColorTest {
     }
 
     @Test
-    void tableColors_excludesWildAndNone() {
-        assertFalse(CardColor.TABLE_COLORS.contains(CardColor.WILD));
+    void tableColors_excludesNone() {
         assertFalse(CardColor.TABLE_COLORS.contains(CardColor.NONE));
     }
 
@@ -98,7 +91,6 @@ class CardColorTest {
     void standardColors_returns10Colors() {
         List<CardColor> colors = CardColor.standardColors();
         assertEquals(10, colors.size());
-        assertFalse(colors.contains(CardColor.WILD));
         assertFalse(colors.contains(CardColor.NONE));
     }
 

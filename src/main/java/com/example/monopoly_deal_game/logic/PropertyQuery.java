@@ -47,8 +47,7 @@ public final class PropertyQuery {
     public static PropertyCard firstStealableProperty(Player p) {
         for (Property row : p.getProperties()) {
             if (row.isMonopoly()) continue;
-            if (!row.getCards().isEmpty()) {
-                PropertyCard pc = row.getCards().get(0);
+            for (PropertyCard pc : row.getCards()) {
                 if (pc.isStealable()) return pc;
             }
         }

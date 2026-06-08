@@ -21,7 +21,7 @@ public final class RentCalculator {
             if (row.getEffectiveColor() != color) continue;
             List<PropertyCard> cs = row.getCards();
             if (cs.isEmpty()) continue;
-            int baseRent = baseRentForSet(cs, color);
+            int baseRent = color.getRent(cs.size());
             int bonus = row.getBuildingRentBonus();
             best = Math.max(best, baseRent + bonus);
         }
@@ -33,7 +33,7 @@ public final class RentCalculator {
                                           boolean doubleRent) {
         int best = 0;
         for (CardColor c : chosenColors) {
-            if (c != null && c != CardColor.NONE && c != CardColor.WILD) {
+            if (c != null && c != CardColor.NONE) {
                 best = Math.max(best, rentOnColor(landlord, c));
             }
         }
@@ -54,15 +54,4 @@ public final class RentCalculator {
         return doubleRent ? best * 2 : best;
     }
 
-    private static int baseRentForSet(List<PropertyCard> cs, CardColor color) {
-        int n = cs.size();
-        // Find a non-wild base property card to get the rent tier
-        for (PropertyCard pc : cs) {
-            if (!pc.isWild() || pc.isBase()) {
-                return pc.getRent(n);
-            }
-        }
-        // fallback: use the first card's rent tier
-        return cs.get(0).getRent(n);
-    }
 }

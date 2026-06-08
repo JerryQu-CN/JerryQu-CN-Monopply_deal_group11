@@ -60,8 +60,8 @@ public class PlayChromeBuilder {
 
         switch (selectedCard.getCardType()) {
             case RENT -> buildRentChrome(dock, bar, row, (RentCard) selectedCard, me, session, st, onPlay);
-            case PROPERTY -> buildPropertyChrome(dock, bar, row, (PropertyCard) selectedCard, selectedCard, onPlay, refreshUi);
             case ACTION -> buildActionChrome(dock, bar, row, (ActionCard) selectedCard, session, logic, onPlay);
+            case PROPERTY -> buildPropertyColorChrome(dock, bar, row, (PropertyCard) selectedCard, onPlay);
             default -> { return null; }
         }
 
@@ -95,7 +95,8 @@ public class PlayChromeBuilder {
 
     public static boolean requiresExplicitPlayMode(Card c) {
         return switch (c.getCardType()) {
-            case ACTION, RENT, PROPERTY -> true;
+            case ACTION, RENT -> true;
+            case PROPERTY -> c instanceof PropertyCard pc && pc.isMultiColor();
             default -> false;
         };
     }
@@ -136,36 +137,6 @@ public class PlayChromeBuilder {
         dock.getChildren().addAll(bar, row, fp);
     }
 
-    private void buildPropertyChrome(VBox dock, Label bar, HBox row,
-                                      PropertyCard pc, Card sel,
-                                      Consumer<CardPlayOptions> onPlay, Runnable refreshUi) {
-        Button toTable = new Button("Place on Table (current: " + CardColorLabel.shortLabel(pc.getCurrentColor()) + ")");
-        toTable.getStyleClass().add("button-chrome-action");
-        toTable.setOnAction(e -> onPlay.accept(CardPlayOptions.auto()));
-
-        Button toBank = new Button("Deposit to Bank (value: " + Math.max(0, sel.getValue()) + "M)");
-        toBank.getStyleClass().add("button-chrome-action");
-        toBank.setOnAction(e -> onPlay.accept(CardPlayOptions.bankOnly()));
-
-        row.getChildren().addAll(toTable, toBank);
-        dock.getChildren().addAll(bar, row);
-
-        if (pc.canFlipWildDualColor()) {
-            FlowPane colorChoices = new FlowPane();
-            colorChoices.setAlignment(Pos.CENTER);
-            colorChoices.setHgap(8);
-            colorChoices.setVgap(8);
-            for (CardColor color : pc.getSelectableColors()) {
-                Button choose = new Button("As " + CardColorLabel.shortLabel(color));
-                choose.setDisable(color == pc.getCurrentColor());
-                choose.getStyleClass().add("button-chrome-action");
-                choose.setOnAction(e -> { pc.alignToDeclaredColor(color); refreshUi.run(); });
-                colorChoices.getChildren().add(choose);
-            }
-            dock.getChildren().add(colorChoices);
-        }
-    }
-
     private void buildActionChrome(VBox dock, Label bar, HBox row,
                                     ActionCard ac, GameSession session,
                                     GameLogic logic, Consumer<CardPlayOptions> onPlay) {
@@ -187,6 +158,22 @@ public class PlayChromeBuilder {
             toBank.setOnAction(e -> onPlay.accept(CardPlayOptions.bankOnly()));
 
             row.getChildren().addAll(use, toBank);
+        }
+        dock.getChildren().addAll(bar, row);
+    }
+
+    /** Builds color-selection buttons for multi-color properties. Single-color properties skip the chrome entirely. */
+    private void buildPropertyColorChrome(VBox dock, Label bar, HBox row,
+                                          PropertyCard pc, Consumer<CardPlayOptions> onPlay) {
+        List<CardColor> colors = pc.getSelectableColors();
+        for (CardColor col : colors) {
+            Button cb = new Button("Play as " + CardColorLabel.shortLabel(col));
+            cb.getStyleClass().add("button-chrome-action");
+            cb.setOnAction(e -> {
+                pc.setCurrentColor(col);
+                onPlay.accept(CardPlayOptions.auto());
+            });
+            row.getChildren().add(cb);
         }
         dock.getChildren().addAll(bar, row);
     }

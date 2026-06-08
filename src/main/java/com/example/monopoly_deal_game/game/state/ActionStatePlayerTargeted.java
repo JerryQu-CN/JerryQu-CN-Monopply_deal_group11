@@ -30,11 +30,10 @@ public class ActionStatePlayerTargeted extends ActionState {
         return onAccepted != null;
     }
 
-    /** Execute the post-acceptance business logic (payment, property transfer, etc.). Each target should only be called once. */
+    /** Execute the post-acceptance business logic (payment, property transfer, etc.). */
     public void executeOnAccepted(Player player) {
         if (onAccepted != null) {
             onAccepted.execute(player);
-            onAccepted = null;
         }
     }
 

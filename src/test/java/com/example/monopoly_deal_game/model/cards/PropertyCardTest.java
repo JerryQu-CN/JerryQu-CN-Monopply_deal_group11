@@ -11,15 +11,15 @@ class PropertyCardTest {
     // ---- single-color property ----
 
     @Test
-    void singleColor_isNotWild() {
+    void singleColor_isNotMultiColor() {
         PropertyCard brown = new PropertyCard(1, "Brown", 1, CardColor.BROWN, new int[]{1, 2});
-        assertFalse(brown.isWild());
+        assertFalse(brown.isMultiColor());
     }
 
     @Test
-    void singleColor_isNotMultiColorWild() {
+    void singleColor_isNotRainbow() {
         PropertyCard brown = new PropertyCard(1, "Brown", 1, CardColor.BROWN, new int[]{1, 2});
-        assertFalse(brown.isMultiColorWild());
+        assertFalse(brown.isRainbow());
     }
 
     @Test
@@ -52,12 +52,6 @@ class PropertyCardTest {
         List<CardColor> colors = brown.getApplicableColors();
         assertEquals(1, colors.size());
         assertEquals(CardColor.BROWN, colors.get(0));
-    }
-
-    @Test
-    void singleColor_canFlipWildDualColor_false() {
-        PropertyCard brown = new PropertyCard(1, "Brown", 1, CardColor.BROWN, new int[]{1, 2});
-        assertFalse(brown.canFlipWildDualColor());
     }
 
     @Test
@@ -95,35 +89,29 @@ class PropertyCardTest {
         assertEquals(CardColor.BROWN, brown.getCurrentColor());
     }
 
-    // ---- bi-color wild ----
+    // ---- bi-color ----
 
     @Test
-    void biColorWild_isWild() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
-        assertTrue(bi.isWild());
+    void biColor_isMultiColor() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
+        assertTrue(bi.isMultiColor());
     }
 
     @Test
-    void biColorWild_isNotMultiColorWild() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
-        assertFalse(bi.isMultiColorWild());
+    void biColor_isNotRainbow() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
+        assertFalse(bi.isRainbow());
     }
 
     @Test
-    void biColorWild_isBiColor() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void biColor_isBiColor() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         assertTrue(bi.isBiColor());
     }
 
     @Test
-    void biColorWild_canFlipWildDualColor() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
-        assertTrue(bi.canFlipWildDualColor());
-    }
-
-    @Test
-    void biColorWild_applicableColors_bothColors() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void biColor_applicableColors_bothColors() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         List<CardColor> colors = bi.getApplicableColors();
         assertEquals(2, colors.size());
         assertTrue(colors.contains(CardColor.BROWN));
@@ -131,108 +119,96 @@ class PropertyCardTest {
     }
 
     @Test
-    void biColorWild_alignToDeclaredColor_valid() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void biColor_alignToDeclaredColor_valid() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         bi.alignToDeclaredColor(CardColor.LIGHT_BLUE);
         assertEquals(CardColor.LIGHT_BLUE, bi.getCurrentColor());
     }
 
     @Test
-    void biColorWild_alignToDeclaredColor_invalid_ignored() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void biColor_alignToDeclaredColor_invalid_ignored() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         bi.alignToDeclaredColor(CardColor.BLUE); // BLUE not in colors
         assertEquals(CardColor.BROWN, bi.getCurrentColor()); // unchanged
     }
 
     @Test
-    void biColorWild_alignToDeclaredColor_null_ignored() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void biColor_alignToDeclaredColor_null_ignored() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         bi.alignToDeclaredColor(null);
         assertEquals(CardColor.BROWN, bi.getCurrentColor());
     }
 
     @Test
-    void biColorWild_selectableColors() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void biColor_selectableColors() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         List<CardColor> selectable = bi.getSelectableColors();
         assertEquals(2, selectable.size());
     }
 
-    // ---- rainbow wild ----
+    // ---- rainbow ----
 
     @Test
-    void rainbowWild_isWild() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
-        assertTrue(rainbow.isWild());
+    void rainbow_isMultiColor() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
+        assertTrue(rainbow.isMultiColor());
     }
 
     @Test
-    void rainbowWild_isMultiColorWild() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
-        assertTrue(rainbow.isMultiColorWild());
+    void rainbow_isRainbow() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
+        assertTrue(rainbow.isRainbow());
     }
 
     @Test
-    void rainbowWild_canFlipWildDualColor() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
-        assertTrue(rainbow.canFlipWildDualColor());
-    }
-
-    @Test
-    void rainbowWild_applicableColors_allTen() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+    void rainbow_applicableColors_allTen() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
         List<CardColor> colors = rainbow.getApplicableColors();
         assertEquals(10, colors.size());
     }
 
     @Test
-    void rainbowWild_initialColor_isWild() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
-        assertEquals(CardColor.WILD, rainbow.getCurrentColor());
+    void rainbow_initialColor_isFirstStandardColor() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
+        assertEquals(CardColor.standardColors().get(0), rainbow.getCurrentColor());
     }
 
     @Test
-    void rainbowWild_alignToDeclaredColor_any() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+    void rainbow_alignToDeclaredColor_any() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
         rainbow.alignToDeclaredColor(CardColor.GREEN);
         assertEquals(CardColor.GREEN, rainbow.getCurrentColor());
     }
 
     @Test
-    void rainbowWild_alignToDeclaredColor_wild_ignored() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
-        rainbow.alignToDeclaredColor(CardColor.WILD);
-        assertEquals(CardColor.WILD, rainbow.getCurrentColor());
-    }
-
-    @Test
-    void rainbowWild_alignToDeclaredColor_null_ignored() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+    void rainbow_alignToDeclaredColor_null_ignored() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
+        CardColor initial = rainbow.getCurrentColor();
         rainbow.alignToDeclaredColor(null);
-        assertEquals(CardColor.WILD, rainbow.getCurrentColor());
+        assertEquals(initial, rainbow.getCurrentColor());
     }
 
     @Test
-    void rainbowWild_selectableColors_allTen() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+    void rainbow_selectableColors_allTen() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
         assertEquals(10, rainbow.getSelectableColors().size());
     }
 
     @Test
-    void rainbowWild_isNotBase_byDefault() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+    void rainbow_isNotBase_byDefault() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
         assertFalse(rainbow.isBase());
     }
 
     @Test
-    void rainbowWild_stealableInConstructor() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+    void rainbow_stealableInConstructor() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
         assertTrue(rainbow.isStealable());
     }
 
     @Test
-    void rainbowWild_notStealableInConstructor() {
-        PropertyCard rainbow = new PropertyCard(31, "Rainbow 2", 3, new int[]{1, 2, 3}, true, false, false);
+    void rainbow_notStealableInConstructor() {
+        PropertyCard rainbow = new PropertyCard(31, "Rainbow 2", 3, new int[]{1, 2, 3}, false, false);
         assertFalse(rainbow.isStealable());
     }
 
@@ -258,13 +234,13 @@ class PropertyCardTest {
 
     @Test
     void getColors_biColor_returnsTwo() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         assertEquals(2, bi.getColors().size());
     }
 
     @Test
     void getColors_rainbow_returnsTen() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
         assertEquals(10, rainbow.getColors().size());
     }
 
@@ -279,22 +255,22 @@ class PropertyCardTest {
     // ---- setCurrentColor ----
 
     @Test
-    void setCurrentColor_biWild_validColor_updates() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void setCurrentColor_biColor_validColor_updates() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         bi.setCurrentColor(CardColor.LIGHT_BLUE);
         assertEquals(CardColor.LIGHT_BLUE, bi.getCurrentColor());
     }
 
     @Test
-    void setCurrentColor_biWild_invalidColor_ignored() {
-        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2}, true);
+    void setCurrentColor_biColor_invalidColor_ignored() {
+        PropertyCard bi = new PropertyCard(20, "Brown/LightBlue", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         bi.setCurrentColor(CardColor.BLUE);
         assertEquals(CardColor.BROWN, bi.getCurrentColor()); // unchanged
     }
 
     @Test
-    void setCurrentColor_rainbowWild_anyColor_updates() {
-        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, true, false, true);
+    void setCurrentColor_rainbow_anyColor_updates() {
+        PropertyCard rainbow = new PropertyCard(30, "Rainbow", 3, new int[]{1, 2, 3}, false, true);
         rainbow.setCurrentColor(CardColor.BLACK);
         assertEquals(CardColor.BLACK, rainbow.getCurrentColor());
     }

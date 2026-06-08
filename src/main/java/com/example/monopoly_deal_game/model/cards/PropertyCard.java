@@ -15,11 +15,10 @@ import java.util.List;
  */
 public class PropertyCard extends Card {
 
-    private final List<CardColor> colors;   // Colors the card possesses (1=single, 2=bi-color, 10=rainbow wild)
+    private final List<CardColor> colors;   // Colors the card possesses (1=single, 2=bi-color, 10=rainbow)
     private CardColor currentColor;         // Currently declared/aligned color
 
-    private final boolean isWild;           // Whether this is a wild property
-    private final boolean isBase;           // Whether this is a base property (non-base=wild, cannot serve as set anchor color)
+    private final boolean isBase;           // Whether this is a base property (rainbow non-base cannot serve as set anchor color)
     private final boolean stealable;        // Whether it can be stolen by Sly Deal/Forced Deal
 
     private final int[] rentLevels;         // Rent tier array (starting from 1 card)
@@ -29,21 +28,18 @@ public class PropertyCard extends Card {
         super(id, name, value, "Property Card: " + color.getDisplayName());
         this.colors = new ArrayList<>(List.of(color));
         this.currentColor = color;
-        this.isWild = false;
         this.isBase = true;
         this.stealable = true;
         this.rentLevels = rentLevels;
         this.innerColorRGB = 0xFFFFFF;
-        // Set the outer border color to the corresponding color
         this.outerColorRGB = colorToRGB(color);
     }
 
-    /** Bi-color wild property */
-    public PropertyCard(int id, String name, int value, CardColor c1, CardColor c2, int[] rentLevels, boolean isWild) {
-        super(id, name, value, "Wild Property Card (" + c1.getDisplayName() + "/" + c2.getDisplayName() + ")");
+    /** Bi-color property (supports color switching between its two colors) */
+    public PropertyCard(int id, String name, int value, CardColor c1, CardColor c2, int[] rentLevels) {
+        super(id, name, value, "Multi-Color Property Card (" + c1.getDisplayName() + "/" + c2.getDisplayName() + ")");
         this.colors = new ArrayList<>(List.of(c1, c2));
         this.currentColor = c1;
-        this.isWild = isWild;
         this.isBase = true;
         this.stealable = true;
         this.rentLevels = rentLevels;
@@ -51,12 +47,11 @@ public class PropertyCard extends Card {
         this.outerColorRGB = colorToRGB(c1);
     }
 
-    /** Rainbow wild property (all colors) */
-    public PropertyCard(int id, String name, int value, int[] rentLevels, boolean isWild, boolean isBase, boolean stealable) {
-        super(id, name, value, "Rainbow Wild Property Card");
+    /** Rainbow property (selectable to any standard color) */
+    public PropertyCard(int id, String name, int value, int[] rentLevels, boolean isBase, boolean stealable) {
+        super(id, name, value, "Rainbow Property Card");
         this.colors = new ArrayList<>(CardColor.standardColors());
-        this.currentColor = CardColor.WILD;
-        this.isWild = isWild;
+        this.currentColor = CardColor.standardColors().get(0); // default to first color
         this.isBase = isBase;
         this.stealable = stealable;
         this.rentLevels = rentLevels;
@@ -95,13 +90,13 @@ public class PropertyCard extends Card {
 
     @Override
     public String getImageFileName() {
-        if (isWild()) {
-            return isMultiColorWild() ? "propertyWildCard.png" : wildPropertyFileByColors();
+        if (isMultiColor()) {
+            return isRainbow() ? "propertyWildCard.png" : biColorPropertyFileByColors();
         }
         return colorToPropertyFile(getCurrentColor());
     }
 
-    private String wildPropertyFileByColors() {
+    private String biColorPropertyFileByColors() {
         CardColor a = getPrimaryColor();
         CardColor b = getSecondaryColor();
         if (pairMatches(a, b, CardColor.BROWN, CardColor.LIGHT_BLUE)) return "brown-lightblueCard.png";
@@ -131,7 +126,6 @@ public class PropertyCard extends Card {
             case BROWN -> "brownCard.png";
             case BLACK -> "blackCard.png";
             case LIGHT_GREEN -> "lightGreenCard.png";
-            case WILD -> "propertyWildCard.png";
             default -> "propertyWildCard.png";
         };
     }
@@ -142,31 +136,20 @@ public class PropertyCard extends Card {
 
     /** Set of eligible colors (used for set completion and rent determination) */
     public List<CardColor> getApplicableColors() {
-        LinkedHashSet<CardColor> set = new LinkedHashSet<>();
-        if (isMultiColorWild()) {
-            // Rainbow wild: counts as all standard colors
-            set.addAll(CardColor.standardColors());
-        } else {
-            set.addAll(colors);
-        }
-        return List.copyOf(set);
+        return new ArrayList<>(new LinkedHashSet<>(colors));
     }
 
     public CardColor getCurrentColor() { return currentColor; }
 
     public void setCurrentColor(CardColor color) {
-        if (isMultiColorWild() || getApplicableColors().contains(color)) {
+        if (getApplicableColors().contains(color)) {
             this.currentColor = color;
         }
     }
 
-    /** Align a wild card to the specified anchor color */
+    /** Align a multi-color card to the specified anchor color */
     public void alignToDeclaredColor(CardColor anchor) {
-        if (!isWild || anchor == null || anchor == CardColor.NONE || anchor == CardColor.WILD) return;
-        if (isMultiColorWild()) {
-            this.currentColor = anchor;
-            return;
-        }
+        if (colors.size() <= 1 || anchor == null || anchor == CardColor.NONE) return;
         if (colors.contains(anchor)) {
             this.currentColor = anchor;
         }
@@ -174,33 +157,27 @@ public class PropertyCard extends Card {
 
     // ---- Property queries ----
 
-    public boolean isWild() { return isWild; }
+    /** Whether this card has multiple selectable colors (bi-color or rainbow). Also implies color switching is supported. */
+    public boolean isMultiColor() { return colors.size() > 1; }
 
-    /** Rainbow wild (possesses all 10 standard colors) */
-    public boolean isMultiColorWild() {
-        return isWild && colors.size() >= 10;
-    }
+    /** Rainbow (possesses all 10 standard colors) */
+    public boolean isRainbow() { return colors.size() >= 10; }
 
-    /** Whether this is a bi-color wild (non-rainbow) */
-    public boolean isBiColor() { return colors.size() == 2 && isWild; }
+    /** Whether this is a bi-color card */
+    public boolean isBiColor() { return colors.size() == 2; }
 
-    /** Bi-color wild or rainbow wild supports manual color switching */
-    public boolean canFlipWildDualColor() {
-        return isWild && (isBiColor() || isMultiColorWild());
-    }
-
-    /** List of selectable colors */
+    /** List of colors the user can manually switch this card to */
     public List<CardColor> getSelectableColors() {
-        if (isMultiColorWild()) return CardColor.standardColors();
-        return new ArrayList<>(colors);
+        return getApplicableColors();
     }
 
     public boolean isBase() { return isBase; }
     public boolean isStealable() { return stealable; }
 
-    public boolean hasColor(CardColor color) { return colors.contains(color); }
+    /** Single-color card with no color switching */
+    public boolean isSingleColor() { return colors.size() == 1; }
 
-    public boolean isSingleColor() { return colors.size() == 1 && !isWild; }
+    public boolean hasColor(CardColor color) { return colors.contains(color); }
 
     // ---- Rent ----
 
@@ -212,6 +189,10 @@ public class PropertyCard extends Card {
     }
 
     public int getFullSetThreshold() {
+        CardColor c = getCurrentColor();
+        if (c != null && c != CardColor.NONE) {
+            return c.getMaxProperties();
+        }
         return rentLevels != null ? rentLevels.length : Integer.MAX_VALUE;
     }
 

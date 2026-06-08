@@ -8,6 +8,8 @@ import com.example.monopoly_deal_game.game.state.GameSession;
 import com.example.monopoly_deal_game.game.state.GameState;
 import com.example.monopoly_deal_game.logic.GameConfig;
 import com.example.monopoly_deal_game.logic.*;
+import com.example.monopoly_deal_game.logic.payment.PaymentService;
+import com.example.monopoly_deal_game.model.Property;
 import com.example.monopoly_deal_game.controller.dialog.ActionTargetDialogs;
 import com.example.monopoly_deal_game.controller.dialog.DoubleTheRentPrompter;
 import com.example.monopoly_deal_game.controller.dialog.JustSayNoHandler;
@@ -91,6 +93,14 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     protected GameplayViewCoordinator viewCoordinator;
     private final AtomicBoolean dialogBusy = new AtomicBoolean(false);
     private boolean drawAnimating = false;
+    /**
+     * Snapshot deferred while a dialog was busy — applied on the next
+     * checkAndPromptJustSayNo entry, where local payment selections captured
+     * in the fields below are merged in before publication.
+     */
+    private volatile GameSession deferredIncomingSession;
+    private volatile List<Integer> lastPaymentCardIds;
+    private volatile String lastPaymentReceiverName;
 
     // ---- extracted helpers ----
     private NetworkSyncHelper networkSync;
@@ -117,7 +127,11 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         networkSync = new NetworkSyncHelper(this::setFeedback);
         justSayNoHandler = new JustSayNoHandler(stage, this::setFeedback,
                 this::refreshGameplayUi, networkSync, dialogBusy);
-        paymentHandler = new PaymentHandler(stage, this::setFeedback, networkSync);
+        paymentHandler = new PaymentHandler(stage, this::setFeedback, networkSync, dialogBusy,
+                (receiver, cardIds) -> {
+                    lastPaymentReceiverName = receiver;
+                    lastPaymentCardIds = cardIds;
+                });
         handCardPicker = new HandCardPicker(dialogBusy);
         playChromeBuilder = new PlayChromeBuilder();
         targetSelectionHandler = new TargetSelectionHandler(stage, dialogBusy);
@@ -172,8 +186,39 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 }
 
                 Platform.runLater(() -> {
-                    AppContext.get().networkLobbyState().setSession(msg.getSession());
-                    AppContext.get().gameEngine().resumeSession(msg.getSession());
+                    GameSession incoming = msg.getSession();
+                    if (dialogBusy.get()) {
+                        // Defer rather than drop — the next refreshGameplayUi cycle
+                        // will pick it up via checkAndPromptJustSayNo.
+                        deferredIncomingSession = incoming;
+                        return;
+                    }
+                    // Prevent local player's action response from being overwritten
+                    // by a stale snapshot that hasn't processed our response yet.
+                    // Only apply when the current and incoming action states are the
+                    // same logical action (same class); otherwise a leftover resolved
+                    // state from a prior action could block a new incoming action.
+                    GameSession current = AppContext.get().gameEngine().getCurrentSession();
+                    if (current != null) {
+                        String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
+                        ActionState curAs = current.getGameState().getActionState();
+                        ActionState incAs = incoming.getGameState().getActionState();
+                        if (curAs != null && incAs != null && localName != null
+                                && curAs.getClass() == incAs.getClass()) {
+                            Player curLocal = current.findPlayerByName(localName);
+                            Player incLocal = incoming.findPlayerByName(localName);
+                            if (curLocal != null && incLocal != null) {
+                                boolean curResolved = curAs.isAccepted(curLocal) || curAs.isRefused(curLocal);
+                                boolean incPending = !incAs.isAccepted(incLocal) && !incAs.isRefused(incLocal);
+                                if (curResolved && incPending) {
+                                    refreshGameplayUi();
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    AppContext.get().networkLobbyState().setSession(incoming);
+                    AppContext.get().gameEngine().resumeSession(incoming);
                     handCardPicker.clearAll();
                     String netLog = msg.getLogText();
                     if (netLog != null && !netLog.isBlank()) {
@@ -258,8 +303,8 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                 refreshGameplayUi();
             }
             case WAITING_FOR_SELECTION -> {
-                setFeedback("Please wait for the dialog selection to complete.");
                 refreshGameplayUi();
+                return;
             }
         }
 
@@ -383,6 +428,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     // ---- hand card pick delegate ----
 
 
+
     private void handleHandCardPick(Card card) {
         GameSession session = AppContext.get().gameEngine().getCurrentSession();
         if (handCardPicker.handlePick(card, session, this::setFeedback)) {
@@ -398,9 +444,7 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         Player cur = session.getCurrentPlayer();
         if (cur == null || !isLocalPlayersTurn(session)) return;
 
-        List<CardColor> colors = pc.isMultiColorWild()
-                ? CardColor.standardColors()
-                : pc.getSelectableColors();
+        List<CardColor> colors = pc.getSelectableColors();
         if (colors.isEmpty()) return;
 
         ActionTargetDialogs.chooseColor(stage, "Switch Color",
@@ -411,6 +455,9 @@ AbstractGameplayScreenController implements StageAware, Initializable {
                     String who = cur.getName();
                     actionLogger.setPendingLog(who + " switched " + pc.getName() + " to " + CardColorLabel.shortLabel(newColor));
                     refreshGameplayUi();
+                    String log = actionLogger.getPendingLog();
+                    actionLogger.clearPendingLog();
+                    networkSync.publishSessionChange(session, log);
                 });
     }
 
@@ -578,6 +625,18 @@ AbstractGameplayScreenController implements StageAware, Initializable {
     private void checkAndPromptJustSayNo(GameSession session) {
         if (session == null || dialogBusy.get()) return;
 
+        // Discard any payment card IDs from a previous action — they'll be
+        // re-captured by the payment dialog if the current action needs them.
+        lastPaymentCardIds = null;
+        lastPaymentReceiverName = null;
+
+        // Process any snapshot that was deferred while a dialog was open.
+        GameSession deferred = deferredIncomingSession;
+        if (deferred != null) {
+            deferredIncomingSession = null;
+            session = applySession(deferred);
+        }
+
         GameState gs = session.getGameState();
         ActionState as = gs.getActionState();
         if (as == null || as == gs.getTurnState()) return;
@@ -606,7 +665,12 @@ AbstractGameplayScreenController implements StageAware, Initializable {
         for (Player target : toCheck) {
             if (as.isRefused(target) || as.isAccepted(target)) continue;
 
-            if (target.isAI()) {
+            // In offline mode, all non-local players are auto-accepted.
+            // In networked mode, each client only processes its own target (above),
+            // so the single target here is always the local human player.
+            boolean effectivelyAI = !hasRemote && localName != null && !localName.equals(target.getName());
+
+            if (effectivelyAI) {
                 as.setAccepted(target, true);
                 applyAcceptedSideEffects(as, target);
                 stateChanged = true;
@@ -638,13 +702,62 @@ AbstractGameplayScreenController implements StageAware, Initializable {
             stateChanged = true;
         }
 
-        // Push updated state once after all targets processed.
-        // Host broadcasts to all clients; non-host clients send PLAYER_ACTION to host.
         if (stateChanged && hasRemote) {
+            GameSession def = deferredIncomingSession;
+            if (def != null) {
+                deferredIncomingSession = null;
+                mergeLocalResponseIntoDeferred(session, def);
+                session = applySession(def);
+            }
             String logSt = actionLogger.getPendingLog();
             actionLogger.clearPendingLog();
             networkSync.publishSessionChange(session, logSt);
         }
+    }
+
+    /**
+     * Merge our local player's action-state response and payment card selection
+     * into a deferred snapshot.  The caller guarantees that {@code localSession}
+     * already has the local player as either accepted or refused — this method
+     * only copies that status (and replays payment transfers) into {@code deferred}.
+     */
+    private void mergeLocalResponseIntoDeferred(GameSession localSession, GameSession deferred) {
+        String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
+        if (localName == null) return;
+        Player localPlayer = localSession.findPlayerByName(localName);
+        Player defPlayer = deferred.findPlayerByName(localName);
+        if (localPlayer == null || defPlayer == null) return;
+        ActionState curAs = localSession.getGameState().getActionState();
+        ActionState defAs = deferred.getGameState().getActionState();
+        if (curAs == null || defAs == null
+                || curAs.getClass() != defAs.getClass()
+                || defAs == deferred.getGameState().getTurnState()) return;
+
+        if (curAs.isAccepted(localPlayer)) {
+            defAs.setAccepted(defPlayer, true);
+            List<Integer> cardIds = lastPaymentCardIds;
+            String receiverName = lastPaymentReceiverName;
+            lastPaymentCardIds = null;
+            lastPaymentReceiverName = null;
+            if (cardIds != null && !cardIds.isEmpty() && receiverName != null) {
+                Player receiver = deferred.findPlayerByName(receiverName);
+                if (receiver != null) {
+                    List<Card> resolved = PaymentService.resolveByIds(defPlayer, cardIds);
+                    if (!resolved.isEmpty()) {
+                        PaymentService.applyChosenPayment(defPlayer, receiver, resolved, deferred);
+                    }
+                }
+            }
+        } else if (curAs.isRefused(localPlayer)) {
+            defAs.setRefused(defPlayer, true);
+        }
+    }
+
+    /** Set the engine and lobby state to the given session. */
+    private static GameSession applySession(GameSession session) {
+        AppContext.get().networkLobbyState().setSession(session);
+        AppContext.get().gameEngine().resumeSession(session);
+        return session;
     }
 
     /** Execute business logic (payment, property transfer) after a target accepts. */

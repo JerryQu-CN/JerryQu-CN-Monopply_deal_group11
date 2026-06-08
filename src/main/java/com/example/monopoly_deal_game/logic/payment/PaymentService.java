@@ -173,6 +173,17 @@ public final class PaymentService {
         return executeTransferChosen(payer, receiver, resolveSelectedCardsFromPayer(payer, sel), session);
     }
 
+    /** Resolve card objects by their IDs from the payer's bank and properties. */
+    public static List<Card> resolveByIds(Player payer, List<Integer> cardIds) {
+        List<Card> resolved = new ArrayList<>();
+        if (payer == null || cardIds == null) return resolved;
+        for (int id : cardIds) {
+            Card owned = findPayableCardById(payer, id);
+            if (owned != null) resolved.add(owned);
+        }
+        return resolved;
+    }
+
     private static List<Card> resolveSelectedCardsFromPayer(Player payer, List<Card> selected) {
         List<Card> resolved = new ArrayList<>();
         if (payer == null || selected == null) return resolved;

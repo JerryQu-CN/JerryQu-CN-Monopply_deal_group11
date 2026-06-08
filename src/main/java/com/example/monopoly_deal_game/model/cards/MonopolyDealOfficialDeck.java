@@ -100,34 +100,34 @@ public final class MonopolyDealOfficialDeck {
 
     // ---- Wild Property Cards (11 cards) ----
     private static int appendWildProperties(List<Card> d, int id) {
-        // Bi-color wild property: 2 cards Purple-Orange
-        d.add(new PropertyCard(id++, "Wild (Pur-Org)", 2,
-                CardColor.PURPLE, CardColor.ORANGE, new int[]{1, 2, 3}, true));
-        d.add(new PropertyCard(id++, "Wild (Pur-Org)", 2,
-                CardColor.PURPLE, CardColor.ORANGE, new int[]{1, 2, 3}, true));
-        // Bi-color wild: Light Blue - Brown
-        d.add(new PropertyCard(id++, "Wild (LB-Bro)", 1,
-                CardColor.LIGHT_BLUE, CardColor.BROWN, new int[]{1, 2, 3}, true));
-        // Bi-color wild: Light Blue - Black
-        d.add(new PropertyCard(id++, "Wild (LB-Blk)", 4,
-                CardColor.LIGHT_BLUE, CardColor.BLACK, new int[]{1, 2, 3}, true));
-        // Bi-color wild: Dark Blue - Green
-        d.add(new PropertyCard(id++, "Wild (DB-G)", 4,
-                CardColor.BLUE, CardColor.GREEN, new int[]{1, 2, 3}, true));
-        // Bi-color wild: Black - Green
-        d.add(new PropertyCard(id++, "Wild (Blk-G)", 4,
-                CardColor.BLACK, CardColor.GREEN, new int[]{1, 2, 3}, true));
-        // Bi-color wild: Red - Yellow (x2)
-        d.add(new PropertyCard(id++, "Wild (Red-Yel)", 3,
-                CardColor.RED, CardColor.YELLOW, new int[]{1, 2, 3}, true));
-        d.add(new PropertyCard(id++, "Wild (Red-Yel)", 3,
-                CardColor.RED, CardColor.YELLOW, new int[]{1, 2, 3}, true));
-        // Bi-color wild: Light Green - Black
-        d.add(new PropertyCard(id++, "Wild (LG-Blk)", 2,
-                CardColor.LIGHT_GREEN, CardColor.BLACK, new int[]{1, 2, 3}, true));
-        // Rainbow wild (all colors available): 2 cards (not base, not stealable)
-        d.add(new PropertyCard(id++, "Rainbow Wild", 0, new int[]{1, 1, 1}, true, false, false));
-        d.add(new PropertyCard(id++, "Rainbow Wild", 0, new int[]{1, 1, 1}, true, false, false));
+        // Bi-color property: 2 cards Purple-Orange
+        d.add(new PropertyCard(id++, "Multi (Pur-Org)", 2,
+                CardColor.PURPLE, CardColor.ORANGE, new int[]{1, 2, 3}));
+        d.add(new PropertyCard(id++, "Multi (Pur-Org)", 2,
+                CardColor.PURPLE, CardColor.ORANGE, new int[]{1, 2, 3}));
+        // Bi-color: Light Blue - Brown
+        d.add(new PropertyCard(id++, "Multi (LB-Bro)", 1,
+                CardColor.LIGHT_BLUE, CardColor.BROWN, new int[]{1, 2, 3}));
+        // Bi-color: Light Blue - Black
+        d.add(new PropertyCard(id++, "Multi (LB-Blk)", 4,
+                CardColor.LIGHT_BLUE, CardColor.BLACK, new int[]{1, 2, 3}));
+        // Bi-color: Dark Blue - Green
+        d.add(new PropertyCard(id++, "Multi (DB-G)", 4,
+                CardColor.BLUE, CardColor.GREEN, new int[]{1, 2, 3}));
+        // Bi-color: Black - Green
+        d.add(new PropertyCard(id++, "Multi (Blk-G)", 4,
+                CardColor.BLACK, CardColor.GREEN, new int[]{1, 2, 3}));
+        // Bi-color: Red - Yellow (x2)
+        d.add(new PropertyCard(id++, "Multi (Red-Yel)", 3,
+                CardColor.RED, CardColor.YELLOW, new int[]{1, 2, 3}));
+        d.add(new PropertyCard(id++, "Multi (Red-Yel)", 3,
+                CardColor.RED, CardColor.YELLOW, new int[]{1, 2, 3}));
+        // Bi-color: Light Green - Black
+        d.add(new PropertyCard(id++, "Multi (LG-Blk)", 2,
+                CardColor.LIGHT_GREEN, CardColor.BLACK, new int[]{1, 2, 3}));
+        // Rainbow (all colors selectable): 2 cards (not base, not stealable)
+        d.add(new PropertyCard(id++, "Rainbow", 0, new int[]{1, 1, 1}, false, false));
+        d.add(new PropertyCard(id++, "Rainbow", 0, new int[]{1, 1, 1}, false, false));
         return id;
     }
 

@@ -18,11 +18,11 @@ class PropertyTest {
     }
 
     private static PropertyCard biColorWild(int id, String name, int value, CardColor c1, CardColor c2, int[] rentLevels) {
-        return new PropertyCard(id, name, value, c1, c2, rentLevels, true);
+        return new PropertyCard(id, name, value, c1, c2, rentLevels);
     }
 
     private static PropertyCard rainbowWild(int id, String name, int value, int[] rentLevels) {
-        return new PropertyCard(id, name, value, rentLevels, true, false, true);
+        return new PropertyCard(id, name, value, rentLevels, false, true);
     }
 
     // Brown single cards — full set at 2
@@ -166,11 +166,11 @@ class PropertyTest {
     }
 
     @Test
-    void hasSingleColorProperty_rainbowWildWithDeclaredColor() {
+    void hasSingleColorProperty_rainbowWildWithDeclaredColor_returnsFalse() {
         PropertyCard rainbow = rainbowWild(30, "Rainbow", 3, new int[]{1, 2, 3});
         rainbow.alignToDeclaredColor(CardColor.BROWN);
         property.addCard(rainbow);
-        assertTrue(property.hasSingleColorProperty());
+        assertFalse(property.hasSingleColorProperty());
     }
 
     @Test
@@ -236,11 +236,11 @@ class PropertyTest {
     }
 
     @Test
-    void getEffectiveColor_rainbowWildOnly_withDeclaredColor() {
+    void getEffectiveColor_rainbowWildOnly_withDeclaredColor_returnsNONE() {
         PropertyCard rainbow = rainbowWild(30, "Rainbow", 3, new int[]{1, 2, 3});
         rainbow.setCurrentColor(CardColor.GREEN);
         property.addCard(rainbow);
-        assertEquals(CardColor.GREEN, property.getEffectiveColor());
+        assertEquals(CardColor.NONE, property.getEffectiveColor());
     }
 
     @Test
@@ -432,15 +432,16 @@ class PropertyTest {
 
     @Test
     void hasSingleColorProperty_biWildAnchorShift() {
-        // When first card is a bi-color wild set to BROWN, then a plain LIGHT_BLUE is added,
-        // the anchor should shift because bi-color wilds accept the plain card's color
+        // Bi-color wild (BROWN/LIGHT_BLUE) plus a plain LIGHT_BLUE card.
+        // In the game, PropertyPlayHelper.alignWildToRow shifts the bi-color
+        // to LIGHT_BLUE before adding. Simulate that here manually.
         PropertyCard bi = biColorWild(20, "Brown/LightBlue Wild", 2, CardColor.BROWN, CardColor.LIGHT_BLUE, new int[]{1, 2});
         property.addCard(bi);
         assertTrue(property.hasSingleColorProperty()); // bi wild alone with declared BROWN
 
         PropertyCard lb = singleColor(60, "Light Blue 1", 1, CardColor.LIGHT_BLUE, new int[]{1, 2, 3});
+        bi.alignToDeclaredColor(CardColor.LIGHT_BLUE); // shift before adding (mirrors alignWildToRow)
         property.addCard(lb);
-        // The bi-color wild should shift to match LIGHT_BLUE
         assertTrue(property.hasSingleColorProperty());
         assertEquals(CardColor.LIGHT_BLUE, property.getEffectiveColor());
     }

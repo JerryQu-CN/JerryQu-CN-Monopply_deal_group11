@@ -17,7 +17,7 @@ public class GameEngine {
     }
 
     private final GameLogic gameLogic = new GameLogic();
-    private GameSession currentSession;
+    private volatile GameSession currentSession; // volatile: written by network thread, read by UI thread
     private StateListener stateListener;
 
     /**

@@ -21,7 +21,6 @@ public final class CardColorLabel {
             case BLUE -> "Blu";
             case BLACK -> "Blk";
             case LIGHT_GREEN -> "LGr";
-            case WILD -> "Wld";
             case NONE -> "--";
         };
     }

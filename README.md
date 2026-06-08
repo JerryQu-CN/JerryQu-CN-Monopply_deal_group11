@@ -1,3 +1,4 @@
+
 # Monopoly Deal Game (Group 11)
 
 JavaFX-based **Monopoly Deal** card game with LAN multiplayer support, following a layered MVC architecture with JPMS module system.

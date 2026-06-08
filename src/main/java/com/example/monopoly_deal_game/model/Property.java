@@ -94,75 +94,27 @@ public final class Property implements Serializable {
     public boolean hasSingleColorProperty() {
         if (cards.isEmpty()) return false;
         CardColor anchor = null;
-        boolean anchorFromWild = false;
-        boolean hasNonMultiColorAnchor = false;
-        boolean hasMultiColorWildAnchor = false;
-        CardColor multiWildColor = null;
         for (PropertyCard pc : cards) {
-            if (pc.isMultiColorWild()) {
-                CardColor c = pc.getCurrentColor();
-                if (c != null && c != CardColor.NONE && c != CardColor.WILD) {
-                    hasMultiColorWildAnchor = true;
-                    if (multiWildColor == null) multiWildColor = c;
-                }
-                continue;
-            }
-            CardColor current = pc.getCurrentColor();
-            if (current == null || current == CardColor.NONE || current == CardColor.WILD) {
-                return false;
-            }
-            hasNonMultiColorAnchor = true;
+            if (pc.isRainbow()) continue; // rainbow adapts to any color, does not define the set color
+            CardColor c = pc.getCurrentColor();
+            if (c == null || c == CardColor.NONE) return false;
             if (anchor == null) {
-                anchor = current;
-                anchorFromWild = pc.isWild();
-            } else if (anchor != current) {
-                if (pc.isWild() && pc.getApplicableColors().contains(anchor)) {
-                    continue;
-                }
-                if (anchorFromWild && !pc.isWild()) {
-                    PropertyCard anchorCard = findFirstNonRainbowCard();
-                    if (anchorCard != null && anchorCard.getApplicableColors().contains(current)) {
-                        anchor = current;
-                        anchorFromWild = false;
-                        continue;
-                    }
-                }
-                return false;
+                anchor = c;
+            } else if (c != anchor) {
+                // Bi-color cards can match the anchor if they have it in their palette
+                if (!pc.isBiColor() || !pc.getApplicableColors().contains(anchor)) return false;
             }
         }
-        return hasNonMultiColorAnchor || hasMultiColorWildAnchor;
-    }
-
-    private PropertyCard findFirstNonRainbowCard() {
-        for (PropertyCard pc : cards) {
-            if (!pc.isMultiColorWild()) return pc;
-        }
-        return null;
+        return anchor != null;
     }
 
     public CardColor getEffectiveColor() {
         if (cards.isEmpty()) return CardColor.NONE;
         if (!hasSingleColorProperty()) return CardColor.NONE;
-        // Prefer the color of a non-wild plain card as the anchor color
         for (PropertyCard pc : cards) {
-            if (!pc.isMultiColorWild() && !pc.isWild()) {
-                return pc.getCurrentColor();
-            }
-        }
-        // When all cards are bi-color wilds, use the first one's currentColor
-        for (PropertyCard pc : cards) {
-            if (!pc.isMultiColorWild()) {
-                return pc.getCurrentColor();
-            }
-        }
-        // When only rainbow wilds exist, use the first one with a declared color
-        for (PropertyCard pc : cards) {
-            if (pc.isMultiColorWild()) {
-                CardColor c = pc.getCurrentColor();
-                if (c != null && c != CardColor.NONE && c != CardColor.WILD) {
-                    return c;
-                }
-            }
+            if (pc.isRainbow()) continue;
+            CardColor c = pc.getCurrentColor();
+            if (c != null && c != CardColor.NONE) return c;
         }
         return CardColor.NONE;
     }
@@ -184,10 +136,10 @@ public final class Property implements Serializable {
     }
 
     private int requiredSetSize() {
-        for (PropertyCard pc : cards) {
-            if (!pc.isWild() || !pc.isMultiColorWild()) {
-                return Math.max(1, pc.getFullSetThreshold());
-            }
+        CardColor eff = getEffectiveColor();
+        if (eff != null && eff != CardColor.NONE) {
+            int max = eff.getMaxProperties();
+            if (max > 0) return max;
         }
         return Integer.MAX_VALUE;
     }
@@ -197,29 +149,16 @@ public final class Property implements Serializable {
         if (cards.isEmpty()) return true;
         CardColor anchor = getEffectiveColor();
         if (anchor == CardColor.NONE) {
-            return incoming.isMultiColorWild() || hasCompatibleColorPair(incoming);
+            return hasCompatibleColorPair(incoming);
         }
-        if (cards.size() >= requiredSetSize()) {
-            return false;
-        }
-        if (incoming.isMultiColorWild()) {
-            return true;
-        }
-        for (CardColor color : incoming.getApplicableColors()) {
-            if (color == anchor) {
-                return true;
-            }
-        }
-        return false;
+        if (cards.size() >= requiredSetSize()) return false;
+        return incoming.getApplicableColors().contains(anchor);
     }
 
     private boolean hasCompatibleColorPair(PropertyCard incoming) {
         for (PropertyCard existing : cards) {
-            if (existing.isMultiColorWild() || incoming.isMultiColorWild()) {
-                return true;
-            }
-            for (CardColor color : incoming.getApplicableColors()) {
-                if (color != CardColor.NONE && color != CardColor.WILD && existing.getApplicableColors().contains(color)) {
+            for (CardColor incC : incoming.getApplicableColors()) {
+                if (incC != CardColor.NONE && existing.getApplicableColors().contains(incC)) {
                     return true;
                 }
             }

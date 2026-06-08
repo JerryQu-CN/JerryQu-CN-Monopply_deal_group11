@@ -288,7 +288,7 @@ public class GameplayViewCoordinator {
                 cardFlow.setPrefWrapLength(Math.max(160, cardW * 2.35 + 18));
 
                 for (PropertyCard pc : group.getCards()) {
-                    if (!isOpponent && (pc.isBiColor() || pc.isMultiColorWild())) {
+                    if (!isOpponent && pc.isMultiColor()) {
                         cardFlow.getChildren().add(TableCardKit.createClickableWildCard(pc, propScale, () -> onTableWildCardClick.accept(pc)));
                     } else {
                         cardFlow.getChildren().add(TableCardKit.createReadOnlyCard(pc, propScale));

@@ -55,16 +55,15 @@ JustSayNoHandler {
 
     /**
      * Called when a JustSayNoRequest network message is received.
-     * Forwards the JSN request to the correct targeted player.
+     * Shows the JSN dialog to the local targeted player, then publishes
+     * the session change so the server updates its authoritative state.
      */
     public void handleRequestMessage(NetworkMessage msg) {
         Platform.runLater(() -> {
             String localName = AppContext.get().networkLobbyState().getLocalPlayerName();
             if (localName == null || !localName.equals(msg.getPayerName())) return;
 
-            GameSession session = msg.getSession() != null
-                    ? msg.getSession()
-                    : AppContext.get().gameEngine().getCurrentSession();
+            GameSession session = AppContext.get().gameEngine().getCurrentSession();
             if (session == null) return;
 
             Player respondent = session.findPlayerByName(msg.getPayerName());
@@ -75,6 +74,22 @@ JustSayNoHandler {
 
             boolean used = promptDialog(respondent, activator, session, msg.getText());
             networkSync.sendJustSayNoResponse(msg, localName, respondent, activator, used);
+
+            if (used) {
+                networkSync.publishSessionChange(session,
+                        respondent.getName() + " used Just Say No to refuse "
+                                + (activator != null ? activator.getName() : "the opponent")
+                                + "'s action");
+            } else {
+                ActionState as = session.getGameState().getActionState();
+                if (as != null && as != session.getGameState().getTurnState()
+                        && as.isTarget(respondent)
+                        && !as.isRefused(respondent) && !as.isAccepted(respondent)) {
+                    as.setAccepted(respondent, true);
+                    as.tryExecuteOnAccepted(respondent);
+                    networkSync.publishSessionChange(session);
+                }
+            }
         });
     }
 
